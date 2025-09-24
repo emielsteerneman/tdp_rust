@@ -83,6 +83,3 @@ fn capitalize_words(s: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ")
 }
-
-#[cfg(test)]
-mod tests {}
