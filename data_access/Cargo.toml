@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+qdrant-client = "1.15.0"
+tokio = { version = "1.47.1", features = ["rt-multi-thread", "macros", "test-util", "time"] }
+
+[dev-dependencies]
+anyhow = "1.0.100"
