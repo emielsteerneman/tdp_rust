@@ -1,6 +1,9 @@
 use qdrant_client::{
     Qdrant, QdrantError,
-    qdrant::{CountPointsBuilder, PointId, ScrollPointsBuilder, point_id::PointIdOptions},
+    qdrant::{
+        CountPointsBuilder, NamedVectorsOutput, PointId, ScrollPointsBuilder, VectorOutput,
+        point_id::PointIdOptions, vectors_output::VectorsOptions,
+    },
 };
 
 use crate::vector::VectorClient;
@@ -48,14 +51,26 @@ impl QdrantClient {
                     PointIdOptions::Num(n) => n.to_string(),
                     PointIdOptions::Uuid(u) => u.to_string(),
                 };
-                println!("  {my_string}");
+                println!("\n  {my_string}");
 
                 let payload = result.payload;
                 for (s, v) in payload {
                     println!(
-                        "    {s:>30} {}",
+                        "    {s:>15} {}",
                         v.to_string().chars().take(100).collect::<String>()
                     );
+                }
+
+                let vector = result.vectors.unwrap().vectors_options.unwrap();
+                match vector {
+                    VectorsOptions::Vector(v) => {
+                        println!("Vector {:?}", v.data);
+                    }
+                    VectorsOptions::Vectors(v) => {
+                        for (name, v2) in v.vectors {
+                            println!("Named  {name} {:?}", v2.data);
+                        }
+                    }
                 }
             }
 
