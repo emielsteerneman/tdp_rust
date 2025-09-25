@@ -24,6 +24,49 @@ impl QdrantClient {
         Ok(Self { client })
     }
 
+    pub async fn get_first(self) -> Result<Vec<f32>, QdrantClientError> {
+        let mut next_offset = PointIdOptions::Num(0);
+
+        let builder = ScrollPointsBuilder::new("paragraph")
+            .with_payload(true)
+            .with_vectors(true)
+            .offset(next_offset);
+
+        let scroll = self.client.scroll(builder.clone()).await.unwrap();
+
+        let Some(first) = scroll.result.into_iter().next() else {
+            return Err(QdrantClientError::Internal("Weird"));
+        }
+
+        for result in scroll.result {
+            let my_string = match result.id.unwrap().point_id_options.unwrap() {
+                PointIdOptions::Num(n) => n.to_string(),
+                PointIdOptions::Uuid(u) => u.to_string(),
+            };
+            println!("\n  {my_string}");
+
+            let payload = result.payload;
+            for (s, v) in payload {
+                println!(
+                    "    {s:>15} {}",
+                    v.to_string().chars().take(100).collect::<String>()
+                );
+            }
+
+            let vector = result.vectors.unwrap().vectors_options.unwrap();
+            match vector {
+                VectorsOptions::Vector(v) => {
+                    println!("Vector {:?}", v.data);
+                }
+                VectorsOptions::Vectors(v) => {
+                    for (name, v2) in v.vectors {
+                        println!("Named  {name} {:?}", v2.data);
+                    }
+                }
+            }
+        }
+    }
+
     pub async fn analytics(self) -> Result<(), QdrantClientError> {
         let collections_list = self.client.list_collections().await.unwrap();
 

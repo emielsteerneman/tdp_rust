@@ -1,6 +1,19 @@
+resolver = "2"
+
 [workspace]
-members = [ "data_access",
+members = [ 
+    "data_access",
     "data_structures",
     "mybin",
 ]
-resolver = "2"
+
+[package]
+name = "tdp_rust"   # meta crate name
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+data_access = { path = "data_access" }
+data_structures = { path = "data_structures" }
+
+

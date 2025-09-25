@@ -1,6 +1,6 @@
+use crate::embed::{EmbedClient, EmbedClientError};
+use data_structures::structure::Sentence;
 use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
-
-use crate::embed::EmbedClient;
 
 pub struct FastembedClient {
     model: TextEmbedding,
@@ -17,26 +17,44 @@ impl FastembedClient {
     pub fn new() -> Result<Self, FastembedClientError> {
         let model = TextEmbedding::try_new(
             InitOptions::new(EmbeddingModel::BGESmallENV15)
-                .with_cache_dir("/home/emiel/Desktop/fastembed_cache".into())
+                .with_cache_dir(".fastembed_cache".into())
                 .with_show_download_progress(true),
         )?;
         Ok(Self { model })
     }
+
+    pub fn weird_test_return_sentence() -> Sentence {
+        todo!();
+    }
 }
 
 impl EmbedClient for FastembedClient {
-    fn embed_string(self, string: String) -> Vec<f32> {
-        todo!()
+    fn embed_string(mut self, string: &str) -> Result<Vec<f32>, EmbedClientError> {
+        let vecs = self.model.embed(vec![string], Some(1))?;
+
+        let Some(vec) = vecs.into_iter().next() else {
+            return Err(EmbedClientError::Internal(
+                "No vectors returned".to_string(),
+            ));
+        };
+
+        Ok(vec)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::embed::fastembed_client::FastembedClient;
+    use crate::embed::{EmbedClient, fastembed_client::FastembedClient};
 
     #[tokio::test]
     async fn test_initialization() -> Result<(), anyhow::Error> {
         let client = FastembedClient::new()?;
+
+        let string = "Hello World!";
+
+        let vec = client.embed_string(string)?;
+
+        println!("{:?}", vec);
 
         Ok(())
     }
