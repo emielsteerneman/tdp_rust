@@ -511,6 +511,7 @@ dependencies = [
  "anyhow",
  "fastembed",
  "qdrant-client",
+ "thiserror 2.0.16",
  "tokio",
 ]
 

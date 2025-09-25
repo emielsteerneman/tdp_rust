@@ -1,25 +1,30 @@
+use crate::vector::VectorClient;
 use qdrant_client::{
     Qdrant, QdrantError,
     qdrant::{
-        CountPointsBuilder, NamedVectorsOutput, PointId, ScrollPointsBuilder, VectorOutput,
-        point_id::PointIdOptions, vectors_output::VectorsOptions,
+        CountPointsBuilder, PointId, ScrollPointsBuilder, point_id::PointIdOptions,
+        vectors_output::VectorsOptions,
     },
 };
-
-use crate::vector::VectorClient;
 
 pub struct QdrantClient {
     client: Qdrant,
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum QdrantClientError {
+    #[error("Internal Qdrant error: {0}")]
+    Internal(#[from] QdrantError),
+}
+
 impl QdrantClient {
-    pub fn new() -> Result<Self, QdrantError> {
+    pub fn new() -> Result<Self, QdrantClientError> {
         let client = Qdrant::from_url("http://localhost:6334").build()?;
 
         Ok(Self { client })
     }
 
-    pub async fn analytics(self) -> Result<(), QdrantError> {
+    pub async fn analytics(self) -> Result<(), QdrantClientError> {
         let collections_list = self.client.list_collections().await.unwrap();
 
         for collection in collections_list.collections {
