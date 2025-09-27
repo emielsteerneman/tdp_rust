@@ -15,6 +15,8 @@ pub struct QdrantClient {
 pub enum QdrantClientError {
     #[error("Internal Qdrant error: {0}")]
     Internal(#[from] QdrantError),
+    #[error("Internal Qdrant error: {0}")]
+    Other(String),
 }
 
 impl QdrantClient {
@@ -35,36 +37,25 @@ impl QdrantClient {
         let scroll = self.client.scroll(builder.clone()).await.unwrap();
 
         let Some(first) = scroll.result.into_iter().next() else {
-            return Err(QdrantClientError::Internal("Weird"));
-        }
+            return Err(QdrantClientError::Other("Weird".to_string()));
+        };
 
-        for result in scroll.result {
-            let my_string = match result.id.unwrap().point_id_options.unwrap() {
-                PointIdOptions::Num(n) => n.to_string(),
-                PointIdOptions::Uuid(u) => u.to_string(),
-            };
-            println!("\n  {my_string}");
+        let Some(vec) = first.vectors else {
+            return Err(QdrantClientError::Other("Weird".to_string()));
+        };
 
-            let payload = result.payload;
-            for (s, v) in payload {
-                println!(
-                    "    {s:>15} {}",
-                    v.to_string().chars().take(100).collect::<String>()
-                );
-            }
+        let dense = match vec.vectors_options {
+            Some(VectorsOptions::Vectors(v)) => v.vectors.get("dense").cloned(),
+            _ => None,
+        };
 
-            let vector = result.vectors.unwrap().vectors_options.unwrap();
-            match vector {
-                VectorsOptions::Vector(v) => {
-                    println!("Vector {:?}", v.data);
-                }
-                VectorsOptions::Vectors(v) => {
-                    for (name, v2) in v.vectors {
-                        println!("Named  {name} {:?}", v2.data);
-                    }
-                }
-            }
-        }
+        let Some(dense) = dense else {
+            return Err(QdrantClientError::Other(
+                "Dense vector not found".to_string(),
+            ));
+        };
+
+        Ok(dense.data)
     }
 
     pub async fn analytics(self) -> Result<(), QdrantClientError> {
