@@ -15,5 +15,6 @@ edition = "2021"
 [dependencies]
 data_access = { path = "data_access" }
 data_structures = { path = "data_structures" }
-
+ndarray = "0.16.1"
+tokio = { version = "1.47.1", features = ["rt-multi-thread", "macros", "test-util", "time"] }
 

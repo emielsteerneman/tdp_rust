@@ -26,7 +26,7 @@ impl QdrantClient {
         Ok(Self { client })
     }
 
-    pub async fn get_first(self) -> Result<Vec<f32>, QdrantClientError> {
+    pub async fn get_first(self) -> Result<(String, Vec<f32>), QdrantClientError> {
         let mut next_offset = PointIdOptions::Num(0);
 
         let builder = ScrollPointsBuilder::new("paragraph")
@@ -39,6 +39,8 @@ impl QdrantClient {
         let Some(first) = scroll.result.into_iter().next() else {
             return Err(QdrantClientError::Other("Weird".to_string()));
         };
+
+        let text = first.payload.get("text").unwrap().to_string();
 
         let Some(vec) = first.vectors else {
             return Err(QdrantClientError::Other("Weird".to_string()));
@@ -55,7 +57,7 @@ impl QdrantClient {
             ));
         };
 
-        Ok(dense.data)
+        Ok((text, dense.data))
     }
 
     pub async fn analytics(self) -> Result<(), QdrantClientError> {

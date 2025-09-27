@@ -2807,6 +2807,8 @@ version = "0.1.0"
 dependencies = [
  "data_access",
  "data_structures",
+ "ndarray",
+ "tokio",
 ]
 
 [[package]]
