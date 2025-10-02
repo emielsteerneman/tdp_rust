@@ -10,3 +10,4 @@ tokio = { version = "1.47.1", features = ["rt-multi-thread", "macros", "test-uti
 fastembed = "5.2.0"
 thiserror = "2.0.16"
 anyhow = "1.0.100"
+async-trait = "0.1.89"

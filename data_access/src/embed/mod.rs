@@ -11,5 +11,5 @@ pub enum EmbedClientError {
 }
 
 pub trait EmbedClient {
-    fn embed_string(self, string: &str) -> Result<Vec<f32>, EmbedClientError>;
+    fn embed_string(&mut self, string: &str) -> Result<Vec<f32>, EmbedClientError>;
 }

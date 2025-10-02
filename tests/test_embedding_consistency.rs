@@ -2,27 +2,47 @@ use std::error::Error;
 
 use data_access::{
     embed::{EmbedClient, FastembedClient},
-    vector::QdrantClient,
+    vector::{QdrantClient, VectorClient},
 };
 use ndarray::Array1;
+use ndarray_stats::DeviationExt;
 
 #[tokio::test]
 async fn test_embedding_consistency() -> Result<(), Box<dyn Error>> {
-    let _vector_client = QdrantClient::new()?;
-    let _embed_client = FastembedClient::new()?;
+    let mut _vector_client = QdrantClient::new()?;
+    let mut _embed_client = FastembedClient::new()?;
 
-    let (text, vector) = _vector_client.get_first().await?;
+    let mock_data = _vector_client.get_all_mock().await?;
 
-    let vector2 = _embed_client.embed_string(&text)?;
+    let mut vectors_in = Vec::<Vec<f32>>::new();
+    let mut vectors_out = Vec::<Vec<f32>>::new();
 
-    println!("\n\n{}", text);
-    println!("\n\n{:?}", vector);
-    println!("\n\n{:?}", vector2);
+    for mock_vector in mock_data.into_iter() {
+        let vector2 = _embed_client.embed_string(&mock_vector.text)?;
 
-    let v1 = Array1::from(vector);
-    let v2 = Array1::from(vector2);
+        vectors_in.push(mock_vector.vector.clone());
+        vectors_out.push(vector2.clone());
 
-    let dist = v1.cos
+        let v1 = Array1::from(mock_vector.vector.clone());
+        let v2 = Array1::from(vector2.clone());
+
+        let dist = v1.l1_dist(&v2)?;
+
+        println!("\n\n{}", mock_vector.text);
+        println!("\n\nDistance: {dist}");
+        println!("\n\n{:?}", mock_vector.vector);
+        println!("\n\n{:?}", vector2);
+    }
+
+    for v1 in vectors_in.iter() {
+        for v2 in vectors_out.iter() {
+            let v11 = Array1::from(v1.clone());
+            let v22 = Array1::from(v2.clone());
+
+            let dist = v11.l2_dist(&v22)?;
+            println!("\n\nDistance: {dist}");
+        }
+    }
 
     Ok(())
 }

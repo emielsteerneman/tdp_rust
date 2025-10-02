@@ -16,10 +16,11 @@ pub enum FastembedClientError {
 impl FastembedClient {
     pub fn new() -> Result<Self, FastembedClientError> {
         let model = TextEmbedding::try_new(
-            InitOptions::new(EmbeddingModel::BGESmallENV15)
-                .with_cache_dir(".fastembed_cache".into())
+            InitOptions::new(EmbeddingModel::BGEBaseENV15Q)
+                .with_cache_dir("/home/emiel/Desktop/projects/fastembed_cache".into())
                 .with_show_download_progress(true),
         )?;
+
         Ok(Self { model })
     }
 
@@ -29,7 +30,7 @@ impl FastembedClient {
 }
 
 impl EmbedClient for FastembedClient {
-    fn embed_string(mut self, string: &str) -> Result<Vec<f32>, EmbedClientError> {
+    fn embed_string(&mut self, string: &str) -> Result<Vec<f32>, EmbedClientError> {
         let vecs = self.model.embed(vec![string], Some(1))?;
 
         let Some(vec) = vecs.into_iter().next() else {
@@ -48,7 +49,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_initialization() -> Result<(), anyhow::Error> {
-        let client = FastembedClient::new()?;
+        let mut client = FastembedClient::new()?;
 
         let string = "Hello World!";
 
