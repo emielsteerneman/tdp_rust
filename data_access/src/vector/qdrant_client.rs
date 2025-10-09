@@ -1,14 +1,10 @@
-// #[cfg(test)]
-use std::collections::HashMap;
-
 use crate::vector::{VectorClient, VectorClientError};
-use anyhow::bail;
 use async_trait::async_trait;
 use data_structures::mock::MockVector;
 use qdrant_client::{
     Qdrant, QdrantError,
     qdrant::{
-        CountPointsBuilder, PointId, ScrollPointsBuilder, point_id::PointIdOptions,
+        CountPointsBuilder, PointId, RetrievedPoint, ScrollPointsBuilder, point_id::PointIdOptions,
         vectors_output::VectorsOptions,
     },
 };
@@ -87,7 +83,10 @@ impl QdrantClient {
                     }
                     VectorsOptions::Vectors(v) => {
                         for (name, v2) in v.vectors {
-                            println!("Named  {name} {:?}", v2.data);
+                            println!(
+                                "              Named  {name} {:?}",
+                                v2.data.iter().take(5).collect::<Vec<&f32>>()
+                            );
                         }
                     }
                 }
@@ -107,7 +106,8 @@ impl QdrantClient {
 
 #[async_trait]
 impl VectorClient for QdrantClient {
-    const COLLECTION_NAME_PARAGRAPHS: &'static str = "paragraph";
+    const COLLECTION_NAME_PARAGRAPH: &'static str = "paragraph";
+    const COLLECTION_NAME_MOCK: &'static str = "mock";
 
     async fn get_first_paragraph(&self) -> Result<(String, Vec<f32>), VectorClientError> {
         todo!()
@@ -116,7 +116,7 @@ impl VectorClient for QdrantClient {
     async fn get_first_mock(&self) -> Result<MockVector, VectorClientError> {
         let next_offset = PointIdOptions::Num(0);
 
-        let builder = ScrollPointsBuilder::new("paragraph")
+        let builder = ScrollPointsBuilder::new(Self::COLLECTION_NAME_MOCK)
             .with_payload(true)
             .with_vectors(true)
             .offset(next_offset);
@@ -127,48 +127,28 @@ impl VectorClient for QdrantClient {
             return Err(VectorClientError::Empty);
         };
 
-        // Retrieve text from payload
-        let text = match first.payload.get("text") {
-            Some(v) => v.to_string(),
-            None => return Err(VectorClientError::FieldMissing("text".to_string())),
-        };
-
-        // Retrieve dense vector
-        let Some(vec) = first.vectors else {
-            return Err(VectorClientError::FieldMissing("vectors".to_string()));
-        };
-
-        let vector = match vec.vectors_options {
-            Some(VectorsOptions::Vectors(v)) => v.vectors.get("dense").cloned(),
-            _ => return Err(VectorClientError::FieldMissing("named vectors".to_string())),
-        };
-
-        let Some(vector) = vector else {
-            return Err(VectorClientError::FieldMissing("dense".to_string()));
-        };
-
-        // Return
-        Ok(MockVector {
-            text,
-            vector: vector.data,
-        })
+        first.into_mock()
     }
 
     async fn get_all_mock(&self) -> Result<Vec<MockVector>, VectorClientError> {
         let count = self
             .client
-            .count(CountPointsBuilder::new("mock_data").exact(true))
+            .count(CountPointsBuilder::new(Self::COLLECTION_NAME_MOCK).exact(true))
             .await?;
 
         let count = count.result.unwrap().count;
 
-        println!("Collection: mock_data, count: {}", count);
+        println!(
+            "Collection: {}, count: {}",
+            Self::COLLECTION_NAME_MOCK,
+            count
+        );
 
         if count == 0 {
             return Err(VectorClientError::Empty);
         }
 
-        let builder = ScrollPointsBuilder::new("mock_data")
+        let builder = ScrollPointsBuilder::new(Self::COLLECTION_NAME_MOCK)
             .with_payload(true)
             .with_vectors(true)
             .limit(count as u32);
@@ -181,40 +161,53 @@ impl VectorClient for QdrantClient {
         let mut output = Vec::<MockVector>::new();
 
         for result in scroll.result {
-            let my_string = match result.id.unwrap().point_id_options.unwrap() {
+            let my_string = match result.id.clone().unwrap().point_id_options.unwrap() {
                 PointIdOptions::Num(n) => n.to_string(),
                 PointIdOptions::Uuid(u) => u.to_string(),
             };
             println!("\n  id={my_string}");
 
-            // Retrieve text from payload
-            let text = match result.payload.get("text") {
-                Some(v) => v.to_string(),
-                None => return Err(VectorClientError::FieldMissing("text".to_string())),
-            };
-
-            // Retrieve dense vector
-            let Some(vec) = result.vectors else {
-                return Err(VectorClientError::FieldMissing("vectors".to_string()));
-            };
-
-            let vector = match vec.vectors_options {
-                Some(VectorsOptions::Vectors(v)) => v.vectors.get("dense").cloned(),
-                _ => return Err(VectorClientError::FieldMissing("named vectors".to_string())),
-            };
-
-            let Some(vector) = vector else {
-                return Err(VectorClientError::FieldMissing("dense".to_string()));
-            };
-
-            output.push(MockVector {
-                text,
-                vector: vector.data,
-            });
+            output.push(result.into_mock()?);
         }
 
         Ok(output)
     }
+}
+
+pub trait IntoMockVector {
+    fn into_mock(self) -> Result<MockVector, VectorClientError>;
+}
+
+impl IntoMockVector for RetrievedPoint {
+    fn into_mock(self) -> Result<MockVector, VectorClientError> {
+        // Retrieve text from payload
+        let Some(text) = get_string_from_point(&self, "text") else {
+            return Err(VectorClientError::FieldMissing("text".to_string()));
+        };
+
+        // Retrieve dense vector
+        let Some(vector) = get_dense_vector_from_point(self) else {
+            return Err(VectorClientError::FieldMissing("dense".to_string()));
+        };
+
+        Ok(MockVector { text, vector })
+    }
+}
+
+pub fn get_string_from_point(p: &RetrievedPoint, key: &str) -> Option<String> {
+    p.payload
+        .get(key)
+        .and_then(|v| v.as_str())
+        .map(|v| v.to_string())
+}
+
+pub fn get_dense_vector_from_point(p: RetrievedPoint) -> Option<Vec<f32>> {
+    let v = match p.vectors?.vectors_options? {
+        VectorsOptions::Vectors(v) => v,
+        _ => return None,
+    };
+    let vector = v.vectors.get("dense")?.clone();
+    Some(vector.data)
 }
 
 #[cfg(test)]
@@ -223,7 +216,7 @@ mod tests {
     use crate::vector::QdrantClient;
 
     #[tokio::test]
-    async fn test_initialization() -> Result<(), anyhow::Error> {
+    async fn test_analyze() -> Result<(), anyhow::Error> {
         let client = QdrantClient::new();
         assert!(client.is_ok());
 

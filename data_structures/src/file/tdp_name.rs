@@ -1,13 +1,6 @@
-use crate::file::{League, LeagueParseError, TeamName};
+use serde::Deserialize;
 
-#[derive(Clone)]
-pub struct TDPName {
-    pub league: League,
-    pub team_name: TeamName,
-    pub year: u32,
-    pub index: u32,
-    pub filename: String,
-}
+use crate::file::{League, LeagueParseError, TeamName};
 
 #[derive(thiserror::Error, Debug)]
 pub enum TDPParseError {
@@ -25,21 +18,35 @@ pub enum TDPParseError {
     NoFileStem,
 }
 
+#[derive(Clone, Deserialize)]
+pub struct TDPName {
+    pub league: League,
+    pub team_name: TeamName,
+    pub year: u32,
+    pub index: u32,
+}
+
 impl TDPName {
     pub const PDF_EXT: &'static str = ".pdf";
     pub const HTML_EXT: &'static str = ".html";
 
     pub fn new(league: League, year: u32, team_name: TeamName, index: Option<u32>) -> Self {
         let index = index.unwrap_or(0);
-        let filename = format!("{}__{}__{}__{}", league.name, year, team_name.name, index);
 
         Self {
             league,
             team_name,
             year,
             index,
-            filename,
         }
+    }
+
+    pub fn get_filename(&self) -> String {
+        let filename = format!(
+            "{}__{}__{}__{}",
+            self.league.name, self.year, self.team_name.name, self.index
+        );
+        filename
     }
 }
 
@@ -85,5 +92,22 @@ mod tests {
         assert_eq!(tdp_name.year, 2019);
         assert_eq!(tdp_name.team_name.name_pretty, "RoboTeam Twente");
         assert_eq!(tdp_name.index, 1);
+    }
+
+    #[test]
+    pub fn test_deserialize() {
+        let json = r#"{"league": {"league_major": "industrial", "league_minor": "logistics", "league_sub": null, "name": "industrial_logistics", "name_pretty": "Industrial Logistics"}, "team_name": {"name": "Carologistics", "name_pretty": "Carologistics"}, "year": 2019, "index": 0}"#;
+
+        let tdp_name: TDPName = serde_json::from_str(json).unwrap();
+
+        println!("{}", tdp_name.league.name_pretty);
+        println!("{}", tdp_name.year);
+        println!("{}", tdp_name.team_name.name);
+        println!("{}", tdp_name.index);
+
+        assert_eq!(tdp_name.league.name_pretty, "Industrial Logistics");
+        assert_eq!(tdp_name.year, 2019);
+        assert_eq!(tdp_name.team_name.name_pretty, "Carologistics");
+        assert_eq!(tdp_name.index, 0);
     }
 }

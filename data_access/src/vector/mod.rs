@@ -18,7 +18,8 @@ pub enum VectorClientError {
 
 #[async_trait]
 pub trait VectorClient {
-    const COLLECTION_NAME_PARAGRAPHS: &'static str;
+    const COLLECTION_NAME_PARAGRAPH: &'static str;
+    const COLLECTION_NAME_MOCK: &'static str;
 
     async fn get_first_paragraph(&self) -> Result<(String, Vec<f32>), VectorClientError>;
 

@@ -1,20 +1,20 @@
 use crate::embed::{EmbedClient, EmbedClientError};
-use data_structures::structure::Sentence;
-use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
+use fastembed::{
+    EmbeddingModel, InitOptions, InitOptionsUserDefined, TextEmbedding, TokenizerFiles,
+    UserDefinedEmbeddingModel,
+};
 
 pub struct FastembedClient {
     model: TextEmbedding,
 }
 
-#[derive(thiserror::Error, Debug)]
-pub enum FastembedClientError {
-    #[error("Internal Fastembed error: {0}")]
-    Internal(#[from] fastembed::Error),
+fn init_read_file(path: impl AsRef<std::path::Path>) -> Result<Vec<u8>, EmbedClientError> {
+    std::fs::read(path).map_err(|e| EmbedClientError::Initialization(e.to_string()))
 }
 
 // https://crates.io/crates/fastembed
 impl FastembedClient {
-    pub fn new() -> Result<Self, FastembedClientError> {
+    pub fn new() -> Result<Self, EmbedClientError> {
         let model = TextEmbedding::try_new(
             InitOptions::new(EmbeddingModel::BGEBaseENV15Q)
                 .with_cache_dir("/home/emiel/Desktop/projects/fastembed_cache".into())
@@ -24,8 +24,23 @@ impl FastembedClient {
         Ok(Self { model })
     }
 
-    pub fn weird_test_return_sentence() -> Sentence {
-        todo!();
+    pub fn new_with_custom_model() -> Result<Self, EmbedClientError> {
+        let folder = "/home/emiel/Desktop/projects/fastembed_cache/models--qdrant--bge-base-en-v1.5-onnx-q/snapshots/738cad1c108e2f23649db9e44b2eab988626493b";
+
+        let onnx_file = init_read_file(format!("{folder}/model_optimized.onnx"))?;
+        let tokenizer_files = TokenizerFiles {
+            config_file: init_read_file(format!("{folder}/config.json"))?,
+            special_tokens_map_file: init_read_file(format!("{folder}/special_tokens_map.json"))?,
+            tokenizer_config_file: init_read_file(format!("{folder}/tokenizer_config.json"))?,
+            tokenizer_file: init_read_file(format!("{folder}/tokenizer.json"))?,
+        };
+
+        let udem = UserDefinedEmbeddingModel::new(onnx_file, tokenizer_files);
+        let options = InitOptionsUserDefined::new();
+
+        let model = TextEmbedding::try_new_from_user_defined(udem, options)?;
+
+        Ok(FastembedClient { model })
     }
 }
 

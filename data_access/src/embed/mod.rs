@@ -6,6 +6,8 @@ pub use fastembed_client::FastembedClient;
 pub enum EmbedClientError {
     #[error("Internal client error: {0}")]
     Internal(String),
+    #[error("Initialization error: {0}")]
+    Initialization(String),
     #[error("Internal client error: {0}")]
     Any(#[from] anyhow::Error),
 }

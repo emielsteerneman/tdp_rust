@@ -1,4 +1,6 @@
-#[derive(Clone)]
+use serde::Deserialize;
+
+#[derive(Clone, Deserialize)]
 pub struct League {
     pub league_major: String,
     pub league_minor: String,
