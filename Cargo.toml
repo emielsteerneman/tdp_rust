@@ -18,4 +18,8 @@ data_structures = { path = "data_structures" }
 fastembed = "5.2.0"
 ndarray = "0.16.1"
 ndarray-stats = "0.6.0"
-tokio = { version = "1.47.1", features = ["rt-multi-thread", "macros", "test-util", "time"] }
+tokio = { version = "1.48.0", features = ["rt-multi-thread", "macros", "test-util", "time"] }
+
+[dev-dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0"

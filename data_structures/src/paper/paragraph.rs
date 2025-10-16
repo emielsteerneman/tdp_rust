@@ -1,17 +1,16 @@
 use serde::Deserialize;
 
-use crate::structure::Text;
+use super::Text;
 
 #[derive(Debug, Deserialize)]
 pub struct Paragraph {
-    pub sequence_id: u32,
     pub title: Text,
     pub sentences: Vec<Text>,
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::structure::Paragraph;
+    use crate::paper::Paragraph;
 
     #[test]
     pub fn test_deserialize() {
@@ -19,11 +18,9 @@ mod tests {
 
         let paragraph: Paragraph = serde_json::from_str(json).unwrap();
 
-        println!("{}", paragraph.sequence_id);
         println!("{:?}", paragraph.title);
         println!("{}", paragraph.sentences.len());
 
-        assert_eq!(paragraph.sequence_id, 1);
         assert_eq!(paragraph.title.raw, "1 Introduction");
         assert_eq!(paragraph.sentences.len(), 3);
     }
