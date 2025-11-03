@@ -4,7 +4,7 @@ resolver = "2"
 members = [ 
     "data_access",
     "data_structures",
-    "mybin",
+    "mybin", "utilities",
 ]
 
 [package]
