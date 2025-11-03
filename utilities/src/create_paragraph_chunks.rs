@@ -1,27 +1,7 @@
-use std::{fmt::Debug, ops::AddAssign};
+use std::ops::AddAssign;
 
-use data_structures::paper::Text;
+use data_structures::{intermediate::Chunk, paper::Text};
 use num_traits::Zero;
-
-pub struct Chunk {
-    pub sentences: Vec<Text>,
-    pub start: usize,
-    pub end: usize,
-    pub text: String,
-}
-
-impl Debug for Chunk {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "\nChunk {{ start: {}, end: {}, text_length: {}, text: '{}' }}",
-            self.start,
-            self.end,
-            self.text.len(),
-            self.text
-        )
-    }
-}
 
 pub trait Recreate {
     fn recreate(&self) -> String;
@@ -104,12 +84,12 @@ pub fn create_paragraph_chunks(
             "Text length does not match chunk length"
         );
 
-        result.push(Chunk {
-            sentences: chunk_sentences,
+        result.push(Chunk::from_sentences(
+            chunk_sentences,
             start,
             end,
             text,
-        });
+        ));
     }
 
     result
