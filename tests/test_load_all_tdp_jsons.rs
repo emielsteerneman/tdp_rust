@@ -4,7 +4,7 @@ use data_structures::paper::TDP;
 
 #[tokio::test]
 async fn test_load_all_tdp_jsons() -> Result<(), Box<dyn Error>> {
-    let folder_path = "/home/emiel/Desktop/projects/tdps_parsed";
+    let folder_path = "/home/emiel/projects/tdps_json";
     let files = std::fs::read_dir(folder_path)?;
 
     // parse each file into a TDPStructure

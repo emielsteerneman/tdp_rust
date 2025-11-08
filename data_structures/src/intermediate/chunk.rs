@@ -22,12 +22,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn from_sentences(
-        sentences: Vec<Text>,
-        start: usize,
-        end: usize,
-        text: String,
-    ) -> Self {
+    pub fn from_sentences(sentences: Vec<Text>, start: usize, end: usize, text: String) -> Self {
         Self {
             sentences,
             start,
