@@ -3,8 +3,8 @@ use std::{error::Error, fs::read};
 use data_access::embed::{EmbedClient, FastembedClient};
 use fastembed::{InitOptionsUserDefined, TextEmbedding, TokenizerFiles, UserDefinedEmbeddingModel};
 
-#[test]
-pub fn test_custom_fastembed() -> Result<(), Box<dyn Error>> {
+#[tokio::test]
+pub async fn test_custom_fastembed() -> Result<(), Box<dyn Error>> {
     let folder = "/home/emiel/Desktop/projects/fastembed_cache/models--qdrant--bge-base-en-v1.5-onnx-q/snapshots/738cad1c108e2f23649db9e44b2eab988626493b";
 
     let onnx_file = read(format!("{folder}/model_optimized.onnx"))?;
@@ -24,7 +24,7 @@ pub fn test_custom_fastembed() -> Result<(), Box<dyn Error>> {
     println!("{:?}", vec[0].iter().take(5).collect::<Vec<&f32>>());
 
     let mut f = FastembedClient::new_with_custom_model()?;
-    let vec = f.embed_string("Hello World! What's up")?;
+    let vec = f.embed_string("Hello World! What's up").await?;
     println!("{:?}", vec.iter().take(5).collect::<Vec<&f32>>());
 
     Ok(())

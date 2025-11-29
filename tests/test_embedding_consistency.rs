@@ -20,7 +20,7 @@ async fn test_embedding_consistency() -> Result<(), Box<dyn Error>> {
     for mock_vector in mock_data.into_iter() {
         println!("\n\n");
 
-        let vector2 = _embed_client.embed_string(&mock_vector.text)?;
+        let vector2 = _embed_client.embed_string(&mock_vector.text).await?;
 
         vectors_in.push(mock_vector.vector.clone());
         vectors_out.push(vector2.clone());
