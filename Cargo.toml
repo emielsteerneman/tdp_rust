@@ -3,8 +3,9 @@ resolver = "2"
 [workspace]
 members = [ 
     "data_access",
+    "data_processing",
     "data_structures",
-    "mybin", "utilities",
+    "mybin", "pipeline",
 ]
 
 [package]

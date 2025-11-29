@@ -1,3 +1,5 @@
+use std::pin::Pin;
+
 use crate::embed::{EmbedClient, EmbedClientError};
 use fastembed::{
     EmbeddingModel, InitOptions, InitOptionsUserDefined, TextEmbedding, TokenizerFiles,
@@ -17,7 +19,7 @@ impl FastembedClient {
     pub fn new() -> Result<Self, EmbedClientError> {
         let model = TextEmbedding::try_new(
             InitOptions::new(EmbeddingModel::BGEBaseENV15Q)
-                .with_cache_dir("/home/emiel/Desktop/projects/fastembed_cache".into())
+                .with_cache_dir("/home/emiel/projects/fastembed_cache".into())
                 .with_show_download_progress(true),
         )?;
 
@@ -25,7 +27,7 @@ impl FastembedClient {
     }
 
     pub fn new_with_custom_model() -> Result<Self, EmbedClientError> {
-        let folder = "/home/emiel/Desktop/projects/fastembed_cache/models--qdrant--bge-base-en-v1.5-onnx-q/snapshots/738cad1c108e2f23649db9e44b2eab988626493b";
+        let folder = "/home/emiel/projects/fastembed_cache/models--qdrant--bge-base-en-v1.5-onnx-q/snapshots/738cad1c108e2f23649db9e44b2eab988626493b";
 
         let onnx_file = init_read_file(format!("{folder}/model_optimized.onnx"))?;
         let tokenizer_files = TokenizerFiles {
@@ -45,16 +47,21 @@ impl FastembedClient {
 }
 
 impl EmbedClient for FastembedClient {
-    fn embed_string(&mut self, string: &str) -> Result<Vec<f32>, EmbedClientError> {
-        let vecs = self.model.embed(vec![string], Some(1))?;
+    fn embed_string<'a>(
+        &'a mut self,
+        string: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<f32>, EmbedClientError>> + Send + 'a>> {
+        Box::pin(async move {
+            let vecs = self.model.embed(vec![string], Some(1))?;
 
-        let Some(vec) = vecs.into_iter().next() else {
-            return Err(EmbedClientError::Internal(
-                "No vectors returned".to_string(),
-            ));
-        };
+            let Some(vec) = vecs.into_iter().next() else {
+                return Err(EmbedClientError::Internal(
+                    "No vectors returned".to_string(),
+                ));
+            };
 
-        Ok(vec)
+            Ok(vec)
+        })
     }
 }
 
@@ -68,7 +75,7 @@ mod tests {
 
         let string = "Hello World!";
 
-        let vec = client.embed_string(string)?;
+        let vec = client.embed_string(string).await?;
 
         println!("{:?}", vec);
 
