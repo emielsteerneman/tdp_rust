@@ -18,7 +18,7 @@ pub enum TDPParseError {
     NoFileStem,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct TDPName {
     pub league: League,
     pub team_name: TeamName,
