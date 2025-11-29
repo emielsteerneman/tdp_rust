@@ -52,7 +52,7 @@ impl EmbedClient for FastembedClient {
         string: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<f32>, EmbedClientError>> + Send + 'a>> {
         Box::pin(async move {
-            let vecs = self.model.embed(vec![string], Some(1))?;
+            let vecs = self.model.embed(vec![string], None)?;
 
             let Some(vec) = vecs.into_iter().next() else {
                 return Err(EmbedClientError::Internal(
@@ -61,6 +61,16 @@ impl EmbedClient for FastembedClient {
             };
 
             Ok(vec)
+        })
+    }
+
+    fn embed_strings<'a>(
+        &'a mut self,
+        strings: Vec<&'a str>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<Vec<f32>>, EmbedClientError>> + Send + 'a>> {
+        Box::pin(async move {
+            let vecs = self.model.embed(strings, None)?;
+            Ok(vecs)
         })
     }
 }

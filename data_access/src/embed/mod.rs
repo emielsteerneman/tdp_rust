@@ -23,4 +23,9 @@ pub trait EmbedClient {
         &'a mut self,
         string: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<f32>, EmbedClientError>> + Send + 'a>>;
+
+    fn embed_strings<'a>(
+        &'a mut self,
+        strings: Vec<&'a str>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<Vec<f32>>, EmbedClientError>> + Send + 'a>>;
 }
