@@ -1,6 +1,8 @@
+use serde::Serialize;
+
 use crate::paper::Text;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize)]
 pub struct ChunkMetadata {
     pub team: Option<String>,
     pub league: Option<String>,
@@ -11,7 +13,7 @@ pub struct ChunkMetadata {
     pub source_id: Option<String>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct Chunk {
     pub sentences: Vec<Text>,
     pub start: usize,

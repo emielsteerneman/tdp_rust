@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Text {
     pub raw: String,
     pub processed: String,
