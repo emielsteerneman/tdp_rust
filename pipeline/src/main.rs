@@ -1,9 +1,10 @@
-use std::collections::HashMap;
-
 use data_access::embed::{self, EmbedClient, FastembedClient};
-use data_processing::{Recreate, create_paragraph_chunks};
+use data_processing::{Recreate, create_paragraph_chunks, tdp_to_chunks};
 use data_structures::{intermediate::Chunk, paper::TDP};
 use serde_json;
+use std::collections::HashMap;
+use tracing::{Level, info, instrument, warn};
+use tracing_subscriber::{FmtSubscriber, fmt};
 
 struct SentenceEntry {
     paragraph_title: String,
@@ -12,52 +13,36 @@ struct SentenceEntry {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // a builder for `FmtSubscriber`.
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::TRACE)
+        .with_target(true)
+        .without_time()
+        // completes the builder.
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+
     // let mut embed_client = FastembedClient::new()?;
     let mut embed_client = embed::OpenAIClient::new();
 
     let files =
         std::fs::read_dir("/home/emiel/projects/tdps_json").expect("Failed to read directory");
 
+    info!("Info message!!!");
+
     for file in files {
         let file = file.expect("Failed to read file entry");
         let path = file.path();
+        info!("Reading file {path:?}");
         let content = std::fs::read_to_string(&path).expect("Failed to read file content");
         let tdp: TDP = serde_json::from_str(&content).expect("Failed to parse JSON");
-        println!("\nLoaded TDP: {}", tdp.name.get_filename());
 
-        let mut chunks = Vec::<Chunk>::new();
+        let chunks = tdp_to_chunks(&tdp).await;
+    }
 
-        let mut paragraph_chunks_map = HashMap::<String, (Vec<Chunk>, Vec<Vec<f32>>)>::new();
-
-        for paragraph in &tdp.structure.paragraphs {
-            let chunks_paragraph = create_paragraph_chunks(paragraph.sentences.clone(), 500, 100);
-
-            let texts_raw: Vec<String> = chunks_paragraph.raw();
-            let embeddings: Vec<Vec<f32>> = embed_client
-                .embed_strings(texts_raw.iter().map(|t| t.as_str()).collect())
-                .await?;
-
-            paragraph_chunks_map.insert(
-                paragraph.title.raw.clone(),
-                (chunks_paragraph.clone(), embeddings),
-            );
-
-            println!(
-                "Section: {} - {} chunks",
-                paragraph.title.raw,
-                chunks_paragraph.len()
-            );
-            chunks.extend(chunks_paragraph);
-            // println!("\n----------------------------------------\n");
-        }
-
-        let mut embeddings = Vec::with_capacity(chunks.len());
-        for entry in &chunks {
-            let embedding = embed_client.embed_string(&entry.text).await?;
-            embeddings.push(embedding);
-        }
-
-        let matrix = build_similarity_matrix(&embeddings);
+    /*
+    let matrix = build_similarity_matrix(&embeddings);
 
         // Create map to export to json with chunks and matrix
         let _output = serde_json::json!({
@@ -77,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         print_similarity_matrix(&matrix);
 
         break;
-    }
+    */
 
     Ok(())
 }

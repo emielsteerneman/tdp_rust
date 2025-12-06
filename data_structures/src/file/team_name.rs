@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TeamName {
     pub name: String,
     pub name_pretty: String,
@@ -19,6 +19,18 @@ impl TeamName {
         let name = name_pretty.replace(" ", "_");
 
         TeamName { name, name_pretty }
+    }
+}
+
+impl Into<String> for TeamName {
+    fn into(self) -> String {
+        self.name
+    }
+}
+
+impl Into<String> for &TeamName {
+    fn into(self) -> String {
+        self.name.clone()
     }
 }
 

@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct League {
     pub league_major: String,
     pub league_minor: String,
@@ -11,7 +11,7 @@ pub struct League {
 
 #[derive(thiserror::Error, Debug)]
 pub enum LeagueParseError {
-    #[error("expected 4 fields separated by '__', got {0}")]
+    #[error("expected 2 or 3 fields separated by '_', got {0}")]
     BadFieldCount(usize),
 }
 
@@ -48,6 +48,18 @@ impl TryFrom<&str> for League {
             )),
             _ => Err(LeagueParseError::BadFieldCount(parts.len())),
         }
+    }
+}
+
+impl Into<String> for League {
+    fn into(self) -> String {
+        self.name
+    }
+}
+
+impl Into<String> for &League {
+    fn into(self) -> String {
+        self.name.clone()
     }
 }
 

@@ -1,7 +1,8 @@
 use std::ops::AddAssign;
 
-use data_structures::{intermediate::Chunk, paper::Text};
+use data_structures::{file::TDPName, intermediate::Chunk, paper::Text};
 use num_traits::Zero;
+use tracing::{info, instrument};
 
 pub trait Recreate {
     fn recreate(&self) -> String;
@@ -44,7 +45,9 @@ impl Recreate for Vec<Chunk> {
     }
 }
 
+#[instrument("data_processing", skip_all)]
 pub fn create_paragraph_chunks(
+    tdp: &TDPName,
     sentences: Vec<Text>,
     n_characters_per_chunk: usize,
     n_characters_overlap: usize,
@@ -53,6 +56,8 @@ pub fn create_paragraph_chunks(
         .iter()
         .map(|t| t.raw.len() + 2) // +2 for the ". " that will be added when joining
         .collect::<Vec<usize>>();
+
+    info!("Created lengths");
 
     let cumsum_end = cumsum(&lengths, |t| *t);
     let mut cumsum_start = Vec::with_capacity(cumsum_end.len() + 1);
@@ -67,7 +72,7 @@ pub fn create_paragraph_chunks(
 
     let mut result = Vec::<Chunk>::new();
 
-    for indices in chunks.clone() {
+    for chunk_sentence_ids in chunks.clone() {
         // println!(
         //     "{}",
         //     indices
@@ -77,13 +82,13 @@ pub fn create_paragraph_chunks(
         //         .join(", ")
         // );
 
-        let chunk_sentences = indices
+        let chunk_sentences = chunk_sentence_ids
             .iter()
             .map(|&i| sentences[i].clone())
             .collect::<Vec<Text>>();
 
-        let start = cumsum_start[*indices.first().unwrap()];
-        let end = cumsum_end[*indices.last().unwrap()];
+        let start = cumsum_start[*chunk_sentence_ids.first().unwrap()];
+        let end = cumsum_end[*chunk_sentence_ids.last().unwrap()];
 
         let text = chunk_sentences
             .iter()
@@ -97,7 +102,7 @@ pub fn create_paragraph_chunks(
             "Text length does not match chunk length"
         );
 
-        result.push(Chunk::from_sentences(chunk_sentences, start, end, text));
+        // result.push(Chunk::from_sentences(chunk_sentences, start, end, text));
     }
 
     result
@@ -217,7 +222,19 @@ where
 mod tests {
 
     use crate::create_paragraph_chunks::Recreate;
-    use data_structures::paper::Text;
+    use data_structures::{
+        file::{League, TDPName, TeamName},
+        paper::Text,
+    };
+
+    fn get_tdp_name() -> TDPName {
+        TDPName {
+            league: League::try_from("soccer_smallsize").unwrap(),
+            team_name: TeamName::new("RoboTeam_Twente"),
+            year: 2017,
+            index: 0,
+        }
+    }
 
     fn clean_text(text: &str) -> String {
         text.chars()
@@ -252,7 +269,7 @@ mod tests {
             });
         }
 
-        let _chunks = super::create_paragraph_chunks(sentences, 10, 3);
+        let _chunks = super::create_paragraph_chunks(&get_tdp_name(), sentences, 10, 3);
         println!("{_chunks:?}");
     }
 
@@ -296,7 +313,7 @@ mod tests {
         };
         let sentences = vec![txt1, txt2, txt3, txt4, txt5, txt6, txt7, txt8, txt9];
 
-        let _chunks = super::create_paragraph_chunks(sentences, 5, 1);
+        let _chunks = super::create_paragraph_chunks(&get_tdp_name(), sentences, 5, 1);
 
         println!("{_chunks:?}");
 
@@ -334,7 +351,7 @@ When travelers now speak of the dragon of Thrynn, they tell not of his greed, bu
             })
             .collect::<Vec<Text>>();
 
-        let chunks = super::create_paragraph_chunks(texts, 500, 100);
+        let chunks = super::create_paragraph_chunks(&get_tdp_name(), texts, 500, 100);
 
         println!("\n\nChunks:\n{:?}", chunks);
 

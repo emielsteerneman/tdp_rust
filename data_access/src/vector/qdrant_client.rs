@@ -1,13 +1,14 @@
 use crate::vector::{VectorClient, VectorClientError};
 use async_trait::async_trait;
-use data_structures::mock::MockVector;
+use data_structures::{intermediate::Chunk, mock::MockVector};
 use qdrant_client::{
     Qdrant, QdrantError,
     qdrant::{
-        CountPointsBuilder, PointId, RetrievedPoint, ScrollPointsBuilder, point_id::PointIdOptions,
-        vectors_output::VectorsOptions,
+        CountPointsBuilder, PointId, PointStruct, RetrievedPoint, ScrollPointsBuilder,
+        point_id::PointIdOptions, vectors_output::VectorsOptions,
     },
 };
+use uuid::Uuid;
 
 impl From<QdrantError> for VectorClientError {
     fn from(value: QdrantError) -> Self {
@@ -172,6 +173,38 @@ impl VectorClient for QdrantClient {
 
         Ok(output)
     }
+
+    /*
+    async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError> {
+        let ps = PointStruct {
+            id: todo!(),
+            payload: todo!(),
+            vectors: todo!(),
+        };
+        Ok(())
+    }
+
+    async fn get_first_chunk(&self) -> Result<Chunk, VectorClientError> {
+        Ok(Chunk {
+            sentences: todo!(),
+            start: todo!(),
+            end: todo!(),
+            text: todo!(),
+            metadata: todo!(),
+            embedding: todo!(),
+        })
+    }
+
+    async fn get_all_chunks(&self) -> Result<Vec<Chunk>, VectorClientError> {
+        Ok(vec![Chunk {
+            sentences: todo!(),
+            start: todo!(),
+            end: todo!(),
+            text: todo!(),
+            metadata: todo!(),
+            embedding: todo!(),
+        }])
+    }*/
 }
 
 pub trait IntoMockVector {
@@ -208,6 +241,11 @@ pub fn get_dense_vector_from_point(p: RetrievedPoint) -> Option<Vec<f32>> {
     };
     let vector = v.vectors.get("dense")?.clone();
     Some(vector.data)
+}
+
+pub fn get_hash(s: &str) -> Uuid {
+    static ZERO_NAMESPACE: Uuid = Uuid::from_bytes([0u8; 16]);
+    Uuid::new_v5(&ZERO_NAMESPACE, s.as_bytes())
 }
 
 #[cfg(test)]

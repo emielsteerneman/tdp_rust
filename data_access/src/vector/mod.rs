@@ -1,7 +1,7 @@
 mod qdrant_client;
 
 use async_trait::async_trait;
-use data_structures::mock::MockVector;
+use data_structures::{intermediate::Chunk, mock::MockVector};
 pub use qdrant_client::QdrantClient;
 
 #[derive(thiserror::Error, Debug)]
@@ -25,4 +25,14 @@ pub trait VectorClient {
 
     async fn get_first_mock(&self) -> Result<MockVector, VectorClientError>;
     async fn get_all_mock(&self) -> Result<Vec<MockVector>, VectorClientError>;
+
+    /*
+    async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError>;
+    async fn get_first_chunk(&self) -> Result<Chunk, VectorClientError>;
+    async fn get_all_chunks(&self) -> Result<Vec<Chunk>, VectorClientError>;
+    */
+}
+
+pub trait VectorPoint<T> {
+    fn to_point() -> T;
 }
