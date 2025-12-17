@@ -29,13 +29,13 @@ pub struct Chunk {
     pub text: String,
 }
 
-// impl Chunk {
-//     pub fn to_uuid(&self) -> Uuid {
-//         static ZERO_NAMESPACE: Uuid = Uuid::from_bytes([0u8; 16]);
-//         let s = self.league_year_team_idx;
-//         Uuid::new_v5(&ZERO_NAMESPACE, s.as_bytes())
-//     }
-// }
+impl Chunk {
+    pub fn to_uuid(&self) -> Uuid {
+        static ZERO_NAMESPACE: Uuid = Uuid::from_bytes([0u8; 16]);
+        let s = self.league_year_team_idx;
+        Uuid::new_v5(&ZERO_NAMESPACE, s.as_bytes())
+    }
+}
 
 impl std::fmt::Debug for Chunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

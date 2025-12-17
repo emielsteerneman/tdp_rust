@@ -21,16 +21,9 @@ pub trait VectorClient {
     const COLLECTION_NAME_PARAGRAPH: &'static str;
     const COLLECTION_NAME_MOCK: &'static str;
 
-    async fn get_first_paragraph(&self) -> Result<(String, Vec<f32>), VectorClientError>;
-
-    async fn get_first_mock(&self) -> Result<MockVector, VectorClientError>;
-    async fn get_all_mock(&self) -> Result<Vec<MockVector>, VectorClientError>;
-
-    /*
     async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError>;
     async fn get_first_chunk(&self) -> Result<Chunk, VectorClientError>;
     async fn get_all_chunks(&self) -> Result<Vec<Chunk>, VectorClientError>;
-    */
 }
 
 pub trait VectorPoint<T> {

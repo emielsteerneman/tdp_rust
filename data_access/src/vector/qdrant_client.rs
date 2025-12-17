@@ -110,10 +110,7 @@ impl VectorClient for QdrantClient {
     const COLLECTION_NAME_PARAGRAPH: &'static str = "paragraph";
     const COLLECTION_NAME_MOCK: &'static str = "mock";
 
-    async fn get_first_paragraph(&self) -> Result<(String, Vec<f32>), VectorClientError> {
-        todo!()
-    }
-
+    /*
     async fn get_first_mock(&self) -> Result<MockVector, VectorClientError> {
         let next_offset = PointIdOptions::Num(0);
 
@@ -173,38 +170,7 @@ impl VectorClient for QdrantClient {
 
         Ok(output)
     }
-
-    /*
-    async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError> {
-        let ps = PointStruct {
-            id: todo!(),
-            payload: todo!(),
-            vectors: todo!(),
-        };
-        Ok(())
-    }
-
-    async fn get_first_chunk(&self) -> Result<Chunk, VectorClientError> {
-        Ok(Chunk {
-            sentences: todo!(),
-            start: todo!(),
-            end: todo!(),
-            text: todo!(),
-            metadata: todo!(),
-            embedding: todo!(),
-        })
-    }
-
-    async fn get_all_chunks(&self) -> Result<Vec<Chunk>, VectorClientError> {
-        Ok(vec![Chunk {
-            sentences: todo!(),
-            start: todo!(),
-            end: todo!(),
-            text: todo!(),
-            metadata: todo!(),
-            embedding: todo!(),
-        }])
-    }*/
+    */
 }
 
 pub trait IntoMockVector {
