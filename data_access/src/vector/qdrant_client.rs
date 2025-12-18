@@ -1,13 +1,18 @@
 use crate::vector::{VectorClient, VectorClientError};
 use async_trait::async_trait;
-use data_structures::{intermediate::Chunk, mock::MockVector};
+use data_structures::intermediate::Chunk;
+use point_id::PointIdOptions::Uuid as PointUuid;
 use qdrant_client::{
     Qdrant, QdrantError,
     qdrant::{
-        CountPointsBuilder, PointId, PointStruct, RetrievedPoint, ScrollPointsBuilder,
-        point_id::PointIdOptions, vectors_output::VectorsOptions,
+        CountPointsBuilder, GetPointsBuilder, PointId, PointStruct, RetrievedPoint,
+        ScrollPointsBuilder, UpsertPointsBuilder, Value, Vectors, point_id, vectors,
+        vectors_output::VectorsOptions,
     },
 };
+use serde_json;
+use std::collections::HashMap;
+use tracing::{info, instrument};
 use uuid::Uuid;
 
 impl From<QdrantError> for VectorClientError {
@@ -36,7 +41,7 @@ impl QdrantClient {
     }
 
     pub async fn analytics(&self) -> Result<(), QdrantClientError> {
-        let collections_list = self.client.list_collections().await.unwrap();
+        let collections_list = self.client.list_collections().await?;
 
         for collection in collections_list.collections {
             let count = self
@@ -44,30 +49,41 @@ impl QdrantClient {
                 .count(CountPointsBuilder::new(&collection.name).exact(true))
                 .await?;
 
+            let count_result = count
+                .result
+                .ok_or_else(|| QdrantClientError::Other("Count result is empty".to_string()))?;
             println!(
                 "Collection: {}, count: {}",
-                collection.name,
-                count.result.unwrap().count
+                collection.name, count_result.count,
             );
         }
 
-        let mut next_offset = PointIdOptions::Num(0);
+        let mut next_offset: Option<PointId> = None;
 
         loop {
             println!(".");
-            let builder = ScrollPointsBuilder::new("paragraph")
+            let mut builder = ScrollPointsBuilder::new("paragraph")
                 .with_payload(true)
-                .with_vectors(true)
-                .offset(next_offset);
+                .with_vectors(true);
 
-            let scroll = self.client.scroll(builder.clone()).await.unwrap();
+            if let Some(offset) = next_offset {
+                builder = builder.offset(offset);
+            }
+
+            let scroll = self.client.scroll(builder.clone()).await?;
 
             for result in scroll.result {
-                let my_string = match result.id.unwrap().point_id_options.unwrap() {
-                    PointIdOptions::Num(n) => n.to_string(),
-                    PointIdOptions::Uuid(u) => u.to_string(),
+                let id = result
+                    .id
+                    .ok_or_else(|| QdrantClientError::Other("Point ID is missing".to_string()))?;
+                let point_id_options = id.point_id_options.ok_or_else(|| {
+                    QdrantClientError::Other("Point ID options are missing".to_string())
+                })?;
+                let my_string = match point_id_options {
+                    point_id::PointIdOptions::Num(n) => n.to_string(),
+                    point_id::PointIdOptions::Uuid(u) => u.to_string(),
                 };
-                println!("\n  {my_string}");
+                println!("\n  {}", my_string);
 
                 let payload = result.payload;
                 for (s, v) in payload {
@@ -77,27 +93,28 @@ impl QdrantClient {
                     );
                 }
 
-                let vector = result.vectors.unwrap().vectors_options.unwrap();
-                match vector {
-                    VectorsOptions::Vector(v) => {
-                        println!("Vector {:?}", v.data);
-                    }
-                    VectorsOptions::Vectors(v) => {
-                        for (name, v2) in v.vectors {
-                            println!(
-                                "              Named  {name} {:?}",
-                                v2.data.iter().take(5).collect::<Vec<&f32>>()
-                            );
+                if let Some(vectors) = result.vectors {
+                    if let Some(vector) = vectors.vectors_options {
+                        match vector {
+                            VectorsOptions::Vector(v) => {
+                                println!("Vector {:?}", v.data);
+                            }
+                            VectorsOptions::Vectors(v) => {
+                                for (name, v2) in v.vectors {
+                                    println!(
+                                        "              Named  {name} {:?}",
+                                        v2.data.iter().take(5).collect::<Vec<&f32>>()
+                                    );
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            match scroll.next_page_offset {
-                Some(PointId {
-                    point_id_options: Some(offset),
-                }) => next_offset = offset,
-                _ => break,
+            next_offset = scroll.next_page_offset;
+            if next_offset.is_none() {
+                break;
             }
         }
 
@@ -107,111 +124,200 @@ impl QdrantClient {
 
 #[async_trait]
 impl VectorClient for QdrantClient {
-    const COLLECTION_NAME_PARAGRAPH: &'static str = "paragraph";
+    const COLLECTION_NAME_CHUNK: &'static str = "paragraph";
     const COLLECTION_NAME_MOCK: &'static str = "mock";
 
-    /*
-    async fn get_first_mock(&self) -> Result<MockVector, VectorClientError> {
-        let next_offset = PointIdOptions::Num(0);
+    async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError> {
+        let id = chunk.to_uuid();
+        let point_id: PointId = id.to_string().into();
 
-        let builder = ScrollPointsBuilder::new(Self::COLLECTION_NAME_MOCK)
-            .with_payload(true)
-            .with_vectors(true)
-            .offset(next_offset);
+        let mut payload: HashMap<String, Value> = HashMap::new();
+        payload.insert(
+            "league_year_team_idx".to_string(),
+            chunk.league_year_team_idx.into(),
+        );
+        let league_str = serde_json::to_string(&chunk.league)
+            .map_err(|e| VectorClientError::Internal(e.to_string()))?;
+        payload.insert("league".to_string(), league_str.into());
+        payload.insert("year".to_string(), (chunk.year as i64).into());
+        let team_str = serde_json::to_string(&chunk.team)
+            .map_err(|e| VectorClientError::Internal(e.to_string()))?;
+        payload.insert("team".to_string(), team_str.into());
+        payload.insert(
+            "paragraph_sequence_id".to_string(),
+            (chunk.paragraph_sequence_id as i64).into(),
+        );
+        payload.insert(
+            "chunk_sequence_id".to_string(),
+            (chunk.chunk_sequence_id as i64).into(),
+        );
+        payload.insert("idx_begin".to_string(), (chunk.idx_begin as i64).into());
+        payload.insert("idx_end".to_string(), (chunk.idx_end as i64).into());
+        payload.insert("text".to_string(), chunk.text.into());
 
-        let scroll = self.client.scroll(builder.clone()).await.unwrap();
-
-        let Some(first) = scroll.result.into_iter().next() else {
-            return Err(VectorClientError::Empty);
+        let point = PointStruct {
+            id: Some(point_id),
+            vectors: Some(Vectors {
+                vectors_options: Some(vectors::VectorsOptions::Vector(chunk.embedding.into())),
+            }),
+            payload,
         };
 
-        first.into_mock()
-    }
-
-    async fn get_all_mock(&self) -> Result<Vec<MockVector>, VectorClientError> {
-        let count = self
-            .client
-            .count(CountPointsBuilder::new(Self::COLLECTION_NAME_MOCK).exact(true))
+        self.client
+            .upsert_points(UpsertPointsBuilder::new(
+                Self::COLLECTION_NAME_CHUNK,
+                vec![point],
+            ))
             .await?;
 
-        let count = count.result.unwrap().count;
+        Ok(())
+    }
 
-        println!(
-            "Collection: {}, count: {}",
-            Self::COLLECTION_NAME_MOCK,
-            count
-        );
+    #[instrument(name = "vector", skip(self))]
+    async fn get_all_chunks(&self) -> Result<Vec<Chunk>, VectorClientError> {
+        info!("Retrieving all chunks from Qdrant");
+        let count_response = self
+            .client
+            .count(CountPointsBuilder::new(Self::COLLECTION_NAME_CHUNK).exact(true))
+            .await?;
 
-        if count == 0 {
-            return Err(VectorClientError::Empty);
+        let total_count = count_response
+            .result
+            .ok_or_else(|| VectorClientError::Internal("Count result missing".to_string()))?
+            .count;
+
+        info!("Total chunks to retrieve: {}", total_count);
+        if total_count == 0 {
+            return Ok(vec![]);
         }
 
-        let builder = ScrollPointsBuilder::new(Self::COLLECTION_NAME_MOCK)
-            .with_payload(true)
-            .with_vectors(true)
-            .limit(count as u32);
+        let scroll_response = self
+            .client
+            .scroll(
+                ScrollPointsBuilder::new(Self::COLLECTION_NAME_CHUNK)
+                    .with_payload(true)
+                    .with_vectors(true)
+                    .limit(total_count as u32),
+            )
+            .await?;
 
-        let scroll = match self.client.scroll(builder.clone()).await {
-            Ok(s) => s,
-            Err(e) => return Err(e.into()),
-        };
-
-        let mut output = Vec::<MockVector>::new();
-
-        for result in scroll.result {
-            let my_string = match result.id.clone().unwrap().point_id_options.unwrap() {
-                PointIdOptions::Num(n) => n.to_string(),
-                PointIdOptions::Uuid(u) => u.to_string(),
-            };
-            println!("\n  id={my_string}");
-
-            output.push(result.into_mock()?);
+        let mut chunks = Vec::with_capacity(scroll_response.result.len());
+        for retrieved_point in scroll_response.result {
+            chunks.push(retrieved_point.into_chunk()?);
         }
 
-        Ok(output)
+        Ok(chunks)
     }
-    */
-}
 
-pub trait IntoMockVector {
-    fn into_mock(self) -> Result<MockVector, VectorClientError>;
-}
-
-impl IntoMockVector for RetrievedPoint {
-    fn into_mock(self) -> Result<MockVector, VectorClientError> {
-        // Retrieve text from payload
-        let Some(text) = get_string_from_point(&self, "text") else {
-            return Err(VectorClientError::FieldMissing("text".to_string()));
+    async fn get_chunk_by_id(&self, id: Uuid) -> Result<Chunk, VectorClientError> {
+        let point_id = PointId {
+            point_id_options: Some(PointUuid(id.to_string())),
         };
 
-        // Retrieve dense vector
-        let Some(vector) = get_dense_vector_from_point(self) else {
-            return Err(VectorClientError::FieldMissing("dense".to_string()));
+        let retrieved_points = self
+            .client
+            .get_points(GetPointsBuilder::new(
+                Self::COLLECTION_NAME_CHUNK,
+                vec![point_id],
+            ))
+            .await?
+            .result;
+
+        let Some(point) = retrieved_points.first() else {
+            return Err(VectorClientError::NotFound(format!(
+                "Chunk with ID {} not found",
+                id
+            )));
         };
 
-        Ok(MockVector { text, vector })
+        Ok(point.clone().into_chunk()?)
     }
 }
 
-pub fn get_string_from_point(p: &RetrievedPoint, key: &str) -> Option<String> {
-    p.payload
+pub trait IntoChunk {
+    fn into_chunk(self) -> Result<Chunk, VectorClientError>;
+}
+
+impl IntoChunk for RetrievedPoint {
+    fn into_chunk(self) -> Result<Chunk, VectorClientError> {
+        let embedding = get_dense_vector_from_point(&self)
+            .ok_or_else(|| VectorClientError::FieldMissing("embedding".to_string()))?;
+
+        let payload = self.payload;
+
+        let league_year_team_idx = get_string_from_payload(&payload, "league_year_team_idx")
+            .ok_or_else(|| VectorClientError::FieldMissing("league_year_team_idx".to_string()))?;
+
+        let league_str = get_string_from_payload(&payload, "league")
+            .ok_or_else(|| VectorClientError::FieldMissing("league".to_string()))?;
+        let league: data_structures::file::League =
+            serde_json::from_str(&league_str).map_err(|e| {
+                VectorClientError::Internal(format!("Failed to deserialize League: {}", e))
+            })?;
+
+        let year = get_i64_from_payload(&payload, "year")
+            .map(|i| i as u32)
+            .ok_or_else(|| VectorClientError::FieldMissing("year".to_string()))?;
+
+        let team_str = get_string_from_payload(&payload, "team")
+            .ok_or_else(|| VectorClientError::FieldMissing("team".to_string()))?;
+        let team: data_structures::file::TeamName =
+            serde_json::from_str(&team_str).map_err(|e| {
+                VectorClientError::Internal(format!("Failed to deserialize TeamName: {}", e))
+            })?;
+
+        let paragraph_sequence_id = get_i64_from_payload(&payload, "paragraph_sequence_id")
+            .map(|i| i as u32)
+            .ok_or_else(|| VectorClientError::FieldMissing("paragraph_sequence_id".to_string()))?;
+
+        let chunk_sequence_id = get_i64_from_payload(&payload, "chunk_sequence_id")
+            .map(|i| i as u32)
+            .ok_or_else(|| VectorClientError::FieldMissing("chunk_sequence_id".to_string()))?;
+
+        let idx_begin = get_i64_from_payload(&payload, "idx_begin")
+            .map(|i| i as u32)
+            .ok_or_else(|| VectorClientError::FieldMissing("idx_begin".to_string()))?;
+
+        let idx_end = get_i64_from_payload(&payload, "idx_end")
+            .map(|i| i as u32)
+            .ok_or_else(|| VectorClientError::FieldMissing("idx_end".to_string()))?;
+
+        let text = get_string_from_payload(&payload, "text")
+            .ok_or_else(|| VectorClientError::FieldMissing("text".to_string()))?;
+
+        Ok(Chunk {
+            embedding,
+            league_year_team_idx,
+            league,
+            year,
+            team,
+            paragraph_sequence_id,
+            chunk_sequence_id,
+            idx_begin,
+            idx_end,
+            text,
+        })
+    }
+}
+
+pub fn get_string_from_payload(payload: &HashMap<String, Value>, key: &str) -> Option<String> {
+    payload
         .get(key)
         .and_then(|v| v.as_str())
-        .map(|v| v.to_string())
+        .map(|s| s.to_string())
 }
 
-pub fn get_dense_vector_from_point(p: RetrievedPoint) -> Option<Vec<f32>> {
-    let v = match p.vectors?.vectors_options? {
+pub fn get_i64_from_payload(payload: &HashMap<String, Value>, key: &str) -> Option<i64> {
+    payload.get(key).and_then(|v| v.as_integer())
+}
+
+pub fn get_dense_vector_from_point(p: &RetrievedPoint) -> Option<Vec<f32>> {
+    let v = match p.vectors.as_ref()?.vectors_options.as_ref()? {
         VectorsOptions::Vectors(v) => v,
         _ => return None,
     };
     let vector = v.vectors.get("dense")?.clone();
     Some(vector.data)
-}
-
-pub fn get_hash(s: &str) -> Uuid {
-    static ZERO_NAMESPACE: Uuid = Uuid::from_bytes([0u8; 16]);
-    Uuid::new_v5(&ZERO_NAMESPACE, s.as_bytes())
 }
 
 #[cfg(test)]
@@ -230,4 +336,6 @@ mod tests {
 
         Ok(())
     }
+
+    async fn test_store_and_retrieve() -> Result<(), anyhow::Error> {}
 }

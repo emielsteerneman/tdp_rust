@@ -1,8 +1,9 @@
 mod qdrant_client;
 
 use async_trait::async_trait;
-use data_structures::{intermediate::Chunk, mock::MockVector};
+use data_structures::intermediate::Chunk;
 pub use qdrant_client::QdrantClient;
+use uuid::Uuid;
 
 #[derive(thiserror::Error, Debug)]
 pub enum VectorClientError {
@@ -18,12 +19,12 @@ pub enum VectorClientError {
 
 #[async_trait]
 pub trait VectorClient {
-    const COLLECTION_NAME_PARAGRAPH: &'static str;
+    const COLLECTION_NAME_CHUNK: &'static str;
     const COLLECTION_NAME_MOCK: &'static str;
 
     async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError>;
-    async fn get_first_chunk(&self) -> Result<Chunk, VectorClientError>;
     async fn get_all_chunks(&self) -> Result<Vec<Chunk>, VectorClientError>;
+    async fn get_chunk_by_id(&self, id: Uuid) -> Result<Chunk, VectorClientError>;
 }
 
 pub trait VectorPoint<T> {

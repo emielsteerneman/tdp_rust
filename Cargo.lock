@@ -545,6 +545,8 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.16",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 
@@ -567,6 +569,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.16",
+ "uuid",
 ]
 
 [[package]]
@@ -2019,6 +2022,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

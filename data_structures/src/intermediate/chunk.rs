@@ -1,4 +1,5 @@
 use serde::Serialize;
+use uuid::Uuid;
 
 use crate::file::{League, TeamName};
 
@@ -22,17 +23,23 @@ pub struct Chunk {
     pub year: u32,
     pub team: TeamName,
     // Reconstruct
-    paragraph_sequence_id: u32,
-    chunk_sequence_id: u32,
-    idx_begin: u32,
-    idx_end: u32,
+    pub paragraph_sequence_id: u32,
+    pub chunk_sequence_id: u32,
+    pub idx_begin: u32,
+    pub idx_end: u32,
     pub text: String,
 }
 
 impl Chunk {
     pub fn to_uuid(&self) -> Uuid {
         static ZERO_NAMESPACE: Uuid = Uuid::from_bytes([0u8; 16]);
-        let s = self.league_year_team_idx;
+        let s = format!(
+            "{}__{}__{}",
+            self.league_year_team_idx.clone(),
+            self.paragraph_sequence_id,
+            self.chunk_sequence_id
+        );
+
         Uuid::new_v5(&ZERO_NAMESPACE, s.as_bytes())
     }
 }

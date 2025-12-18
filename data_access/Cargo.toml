@@ -5,6 +5,9 @@ edition = "2024"
 
 [dependencies]
 data_structures = { path = "../data_structures" }
+
+tracing = { workspace=true }
+tracing-subscriber = { workspace=true }
 qdrant-client = "1.15.0"
 tokio = { version = "1.47.1", features = ["rt-multi-thread", "macros", "test-util", "time"] }
 fastembed = "5.2.0"
