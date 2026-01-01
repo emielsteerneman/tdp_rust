@@ -5,6 +5,12 @@ use fastembed::{
     EmbeddingModel, InitOptions, InitOptionsUserDefined, TextEmbedding, TokenizerFiles,
     UserDefinedEmbeddingModel,
 };
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct FastEmbedConfig {
+    pub model_name: String,
+}
 
 pub struct FastembedClient {
     model: TextEmbedding,
@@ -16,10 +22,19 @@ fn init_read_file(path: impl AsRef<std::path::Path>) -> Result<Vec<u8>, EmbedCli
 
 // https://crates.io/crates/fastembed
 impl FastembedClient {
-    pub fn new() -> Result<Self, EmbedClientError> {
+    pub fn new(config: &FastEmbedConfig) -> Result<Self, EmbedClientError> {
+        // Map string to enum. This is a simple manual mapping.
+        // fastembed doesn't seem to export a FromStr for EmbeddingModel easily visible here.
+        let model_enum = match config.model_name.as_str() {
+            "BGEBaseENV15Q" => EmbeddingModel::BGEBaseENV15Q,
+            "AllMiniLML6V2" => EmbeddingModel::AllMiniLML6V2,
+            // Add other models as needed
+            _ => return Err(EmbedClientError::Initialization(format!("Unknown or unsupported model name: {}", config.model_name))),
+        };
+
         let model = TextEmbedding::try_new(
-            InitOptions::new(EmbeddingModel::BGEBaseENV15Q)
-                .with_cache_dir("/home/emiel/projects/fastembed_cache".into())
+            InitOptions::new(model_enum)
+                .with_cache_dir("/home/emiel/projects/fastembed_cache".into()) // ideally also config
                 .with_show_download_progress(true),
         )?;
 
@@ -77,11 +92,14 @@ impl EmbedClient for FastembedClient {
 
 #[cfg(test)]
 mod tests {
-    use crate::embed::{EmbedClient, fastembed_client::FastembedClient};
+    use crate::embed::{EmbedClient, fastembed_client::{FastembedClient, FastEmbedConfig}};
 
     #[tokio::test]
     async fn test_initialization() -> Result<(), anyhow::Error> {
-        let mut client = FastembedClient::new()?;
+        let config = FastEmbedConfig {
+            model_name: "BGEBaseENV15Q".to_string(),
+        };
+        let mut client = FastembedClient::new(&config)?;
 
         let string = "Hello World!";
 

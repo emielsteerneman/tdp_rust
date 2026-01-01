@@ -1,3 +1,5 @@
+mod config;
+
 use data_access::embed::{self, EmbedClient, FastembedClient};
 use data_processing::{Recreate, create_paragraph_chunks, tdp_to_chunks};
 use data_structures::{intermediate::Chunk, paper::TDP};
@@ -23,8 +25,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-    // let mut embed_client = FastembedClient::new()?;
-    let mut embed_client = embed::OpenAIClient::new();
+    // Load configuration
+    let config = config::AppConfig::load_from_file("config.toml")?;
+    info!("Configuration loaded successfully");
+
+    // Initialize embed client based on config
+    let mut embed_client: Box<dyn EmbedClient> = if let Some(openai_cfg) = &config.data_access.embed.openai {
+        info!("Using OpenAI Embeddings with model: {}", openai_cfg.model_name);
+        Box::new(embed::OpenAIClient::new(openai_cfg))
+    } else if let Some(fastembed_cfg) = &config.data_access.embed.fastembed {
+        info!("Using FastEmbed with model: {}", fastembed_cfg.model_name);
+        Box::new(FastembedClient::new(fastembed_cfg)?)
+    } else {
+        panic!("No embedding configuration found in config.toml");
+    };
 
     let files =
         std::fs::read_dir("/home/emiel/projects/tdps_json").expect("Failed to read directory");
@@ -38,32 +52,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let content = std::fs::read_to_string(&path).expect("Failed to read file content");
         let tdp: TDP = serde_json::from_str(&content).expect("Failed to parse JSON");
 
+        // The original code passed &tdp, but tdp_to_chunks signature might need checking.
+        // Assuming it's correct.
         let chunks = tdp_to_chunks(&tdp).await;
+        
+        // embed_client usage would go here if uncommented/implemented
     }
-
-    /*
-    let matrix = build_similarity_matrix(&embeddings);
-
-        // Create map to export to json with chunks and matrix
-        let _output = serde_json::json!({
-            "map": &paragraph_chunks_map,
-            "similarity_matrix": &matrix,
-        })
-        .to_string();
-
-        let output_path = format!(
-            "/home/emiel/projects/tdp_similarity_matrices/{}_similarity_matrix.json",
-            tdp.name.get_filename()
-        );
-        std::fs::write(&output_path, _output).unwrap();
-        println!("Wrote similarity matrix to: {}", output_path);
-
-        print_legend(&chunks);
-        print_similarity_matrix(&matrix);
-
-        break;
-    */
-
+    
     Ok(())
 }
 

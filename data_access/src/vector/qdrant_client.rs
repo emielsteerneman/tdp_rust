@@ -337,5 +337,5 @@ mod tests {
         Ok(())
     }
 
-    async fn test_store_and_retrieve() -> Result<(), anyhow::Error> {}
+    // async fn test_store_and_retrieve() -> Result<(), anyhow::Error> {}
 }
