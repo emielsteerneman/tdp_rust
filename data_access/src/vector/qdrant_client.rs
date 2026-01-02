@@ -6,9 +6,9 @@ use qdrant_client::{
     Qdrant, QdrantError,
     qdrant::{
         CollectionExistsRequest, CountPointsBuilder, CreateCollectionBuilder, Distance,
-        GetPointsBuilder, PointId, PointStruct, RetrievedPoint, ScrollPointsBuilder,
-        UpsertPointsBuilder, Value, VectorParamsBuilder, Vectors, point_id, vectors,
-        vectors_output::VectorsOptions,
+        GetPointsBuilder, NamedVectors, PointId, PointStruct, RetrievedPoint, ScrollPointsBuilder,
+        UpsertPointsBuilder, Value, VectorParamsBuilder, VectorParamsMap, Vectors, VectorsConfig,
+        point_id, vectors, vectors_config, vectors_output::VectorsOptions,
     },
 };
 use serde::Deserialize;
@@ -52,9 +52,18 @@ impl QdrantClient {
             .await?;
 
         if !collection_exists {
-            let builder = CreateCollectionBuilder::new(Self::COLLECTION_NAME_CHUNK).vectors_config(
-                VectorParamsBuilder::new(config.embedding_size, Distance::Cosine),
+            let mut vectors_config = HashMap::new();
+            vectors_config.insert(
+                "dense".to_string(),
+                VectorParamsBuilder::new(config.embedding_size, Distance::Cosine).into(),
             );
+            let check = VectorsConfig {
+                config: Some(vectors_config::Config::ParamsMap(VectorParamsMap {
+                    map: vectors_config,
+                })),
+            };
+            let builder =
+                CreateCollectionBuilder::new(Self::COLLECTION_NAME_CHUNK).vectors_config(check);
             client.create_collection(builder).await?;
         }
 
@@ -179,7 +188,9 @@ impl VectorClient for QdrantClient {
         let point = PointStruct {
             id: Some(point_id),
             vectors: Some(Vectors {
-                vectors_options: Some(vectors::VectorsOptions::Vector(chunk.embedding.into())),
+                vectors_options: Some(vectors::VectorsOptions::Vectors(NamedVectors {
+                    vectors: HashMap::from([("dense".to_string(), chunk.embedding.into())]),
+                })),
             }),
             payload,
         };
@@ -237,10 +248,11 @@ impl VectorClient for QdrantClient {
 
         let retrieved_points = self
             .client
-            .get_points(GetPointsBuilder::new(
-                Self::COLLECTION_NAME_CHUNK,
-                vec![point_id],
-            ))
+            .get_points(
+                GetPointsBuilder::new(Self::COLLECTION_NAME_CHUNK, vec![point_id])
+                    .with_vectors(true)
+                    .with_payload(true),
+            )
             .await?
             .result;
 
