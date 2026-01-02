@@ -5,8 +5,9 @@ use point_id::PointIdOptions::Uuid as PointUuid;
 use qdrant_client::{
     Qdrant, QdrantError,
     qdrant::{
-        CountPointsBuilder, GetPointsBuilder, PointId, PointStruct, RetrievedPoint,
-        ScrollPointsBuilder, UpsertPointsBuilder, Value, Vectors, point_id, vectors,
+        CollectionExistsRequest, CountPointsBuilder, CreateCollectionBuilder, Distance,
+        GetPointsBuilder, PointId, PointStruct, RetrievedPoint, ScrollPointsBuilder,
+        UpsertPointsBuilder, Value, VectorParamsBuilder, Vectors, point_id, vectors,
         vectors_output::VectorsOptions,
     },
 };
@@ -15,6 +16,14 @@ use serde_json;
 use std::collections::HashMap;
 use tracing::{info, instrument};
 use uuid::Uuid;
+
+#[derive(thiserror::Error, Debug)]
+pub enum QdrantClientError {
+    #[error("Internal Qdrant error: {0}")]
+    Internal(#[from] QdrantError),
+    #[error("Internal Qdrant error: {0}")]
+    Other(String),
+}
 
 impl From<QdrantError> for VectorClientError {
     fn from(value: QdrantError) -> Self {
@@ -29,19 +38,25 @@ pub struct QdrantClient {
 #[derive(Debug, Deserialize, Clone)]
 pub struct QdrantConfig {
     pub url: String,
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum QdrantClientError {
-    #[error("Internal Qdrant error: {0}")]
-    Internal(#[from] QdrantError),
-    #[error("Internal Qdrant error: {0}")]
-    Other(String),
+    pub embedding_size: u64,
 }
 
 impl QdrantClient {
-    pub fn new(config: QdrantConfig) -> Result<Self, QdrantClientError> {
+    pub async fn new(config: QdrantConfig) -> Result<Self, QdrantClientError> {
         let client = Qdrant::from_url(&config.url).build()?;
+
+        let collection_exists = client
+            .collection_exists(CollectionExistsRequest {
+                collection_name: Self::COLLECTION_NAME_CHUNK.to_string(),
+            })
+            .await?;
+
+        if !collection_exists {
+            let builder = CreateCollectionBuilder::new(Self::COLLECTION_NAME_CHUNK).vectors_config(
+                VectorParamsBuilder::new(config.embedding_size, Distance::Cosine),
+            );
+            client.create_collection(builder).await?;
+        }
 
         Ok(Self { client })
     }
@@ -68,7 +83,7 @@ impl QdrantClient {
 
         loop {
             println!(".");
-            let mut builder = ScrollPointsBuilder::new("paragraph")
+            let mut builder = ScrollPointsBuilder::new(Self::COLLECTION_NAME_CHUNK)
                 .with_payload(true)
                 .with_vectors(true);
 
@@ -343,7 +358,10 @@ mod tests {
     async fn test_analyze() -> Result<(), anyhow::Error> {
         let client = QdrantClient::new(QdrantConfig {
             url: "http://localhost:6334".to_string(),
-        });
+            embedding_size: 1536,
+        })
+        .await;
+
         assert!(client.is_ok());
 
         let client = client.unwrap();
@@ -364,19 +382,21 @@ mod tests {
             .await
             .expect("Failed to start Qdrant");
 
-        // sleep 5 seconds
-        sleep(Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(2)).await;
 
         let client = QdrantClient::new(QdrantConfig {
             url: "http://localhost:7334".to_string(),
-        });
+            embedding_size: 10,
+        })
+        .await;
+
         assert!(client.is_ok());
 
         let client = client.unwrap();
 
         // Create chunk and store in database
         let chunk = Chunk {
-            embedding: vec![0.0; 1536],
+            embedding: vec![0.0; 10],
             league_year_team_idx: "test_league__1998__test_team__0".to_string(),
             league: League::try_from("test_league").unwrap(),
             year: 1998,
