@@ -2,7 +2,7 @@ mod qdrant_client;
 
 use async_trait::async_trait;
 use data_structures::intermediate::Chunk;
-pub use qdrant_client::QdrantClient;
+pub use qdrant_client::{QdrantClient, QdrantConfig};
 use uuid::Uuid;
 
 #[derive(thiserror::Error, Debug)]

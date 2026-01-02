@@ -10,6 +10,7 @@ use qdrant_client::{
         vectors_output::VectorsOptions,
     },
 };
+use serde::Deserialize;
 use serde_json;
 use std::collections::HashMap;
 use tracing::{info, instrument};
@@ -25,6 +26,11 @@ pub struct QdrantClient {
     client: Qdrant,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct QdrantConfig {
+    pub url: String,
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum QdrantClientError {
     #[error("Internal Qdrant error: {0}")]
@@ -34,8 +40,8 @@ pub enum QdrantClientError {
 }
 
 impl QdrantClient {
-    pub fn new() -> Result<Self, QdrantClientError> {
-        let client = Qdrant::from_url("http://localhost:6334").build()?;
+    pub fn new(config: QdrantConfig) -> Result<Self, QdrantClientError> {
+        let client = Qdrant::from_url(&config.url).build()?;
 
         Ok(Self { client })
     }
@@ -124,7 +130,7 @@ impl QdrantClient {
 
 #[async_trait]
 impl VectorClient for QdrantClient {
-    const COLLECTION_NAME_CHUNK: &'static str = "paragraph";
+    const COLLECTION_NAME_CHUNK: &'static str = "chunk";
     const COLLECTION_NAME_MOCK: &'static str = "mock";
 
     async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError> {
@@ -323,11 +329,21 @@ pub fn get_dense_vector_from_point(p: &RetrievedPoint) -> Option<Vec<f32>> {
 #[cfg(test)]
 mod tests {
 
-    use crate::vector::QdrantClient;
+    use std::time::Duration;
+
+    use crate::vector::{QdrantClient, QdrantConfig, VectorClient};
+    use data_structures::file::{League, TeamName};
+    use data_structures::intermediate::Chunk;
+    use testcontainers::ImageExt;
+    use testcontainers::core::IntoContainerPort;
+    use testcontainers::{GenericImage, runners::AsyncRunner};
+    use tokio::time::sleep;
 
     #[tokio::test]
     async fn test_analyze() -> Result<(), anyhow::Error> {
-        let client = QdrantClient::new();
+        let client = QdrantClient::new(QdrantConfig {
+            url: "http://localhost:6334".to_string(),
+        });
         assert!(client.is_ok());
 
         let client = client.unwrap();
@@ -337,5 +353,54 @@ mod tests {
         Ok(())
     }
 
-    // async fn test_store_and_retrieve() -> Result<(), anyhow::Error> {}
+    #[tokio::test]
+    async fn test_store_and_retrieve() -> Result<(), anyhow::Error> {
+        let image = GenericImage::new("qdrant/qdrant", "v1.16")
+            .with_exposed_port(6333.tcp())
+            .with_exposed_port(6334.tcp())
+            .with_mapped_port(7333, 6333.tcp())
+            .with_mapped_port(7334, 6334.tcp())
+            .start()
+            .await
+            .expect("Failed to start Qdrant");
+
+        // sleep 5 seconds
+        sleep(Duration::from_secs(5)).await;
+
+        let client = QdrantClient::new(QdrantConfig {
+            url: "http://localhost:7334".to_string(),
+        });
+        assert!(client.is_ok());
+
+        let client = client.unwrap();
+
+        // Create chunk and store in database
+        let chunk = Chunk {
+            embedding: vec![0.0; 1536],
+            league_year_team_idx: "test_league__1998__test_team__0".to_string(),
+            league: League::try_from("test_league").unwrap(),
+            year: 1998,
+            team: TeamName::new("test_team"),
+            paragraph_sequence_id: 0,
+            chunk_sequence_id: 0,
+            idx_begin: 0,
+            idx_end: 0,
+            text: "test_text".to_string(),
+        };
+
+        let id = chunk.to_uuid();
+
+        client.store_chunk(chunk.clone()).await?;
+
+        client.analytics().await?;
+
+        let retrieved_chunk = client.get_chunk_by_id(id).await?;
+
+        assert_eq!(
+            chunk.league_year_team_idx,
+            retrieved_chunk.league_year_team_idx
+        );
+
+        Ok(())
+    }
 }

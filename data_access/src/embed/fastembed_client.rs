@@ -29,7 +29,12 @@ impl FastembedClient {
             "BGEBaseENV15Q" => EmbeddingModel::BGEBaseENV15Q,
             "AllMiniLML6V2" => EmbeddingModel::AllMiniLML6V2,
             // Add other models as needed
-            _ => return Err(EmbedClientError::Initialization(format!("Unknown or unsupported model name: {}", config.model_name))),
+            _ => {
+                return Err(EmbedClientError::Initialization(format!(
+                    "Unknown or unsupported model name: {}",
+                    config.model_name
+                )));
+            }
         };
 
         let model = TextEmbedding::try_new(
@@ -92,7 +97,10 @@ impl EmbedClient for FastembedClient {
 
 #[cfg(test)]
 mod tests {
-    use crate::embed::{EmbedClient, fastembed_client::{FastembedClient, FastEmbedConfig}};
+    use crate::embed::{
+        EmbedClient,
+        fastembed_client::{FastEmbedConfig, FastembedClient},
+    };
 
     #[tokio::test]
     async fn test_initialization() -> Result<(), anyhow::Error> {
