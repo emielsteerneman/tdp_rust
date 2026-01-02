@@ -1,15 +1,16 @@
 use std::ops::AddAssign;
 
-use data_structures::{file::TDPName, intermediate::Chunk, paper::Text};
+use data_structures::{file::TDPName, paper::Text};
 use num_traits::Zero;
 use tracing::{info, instrument};
 
+use crate::RawChunk;
 pub trait Recreate {
     fn recreate(&self) -> String;
     fn raw(&self) -> Vec<String>;
 }
 
-impl Recreate for Vec<Chunk> {
+impl Recreate for Vec<RawChunk> {
     fn recreate(&self) -> String {
         if self.is_empty() {
             return String::new();
@@ -47,11 +48,10 @@ impl Recreate for Vec<Chunk> {
 
 #[instrument("data_processing", skip_all)]
 pub fn create_paragraph_chunks(
-    tdp: &TDPName,
     sentences: Vec<Text>,
     n_characters_per_chunk: usize,
     n_characters_overlap: usize,
-) -> Vec<Chunk> {
+) -> Vec<RawChunk> {
     let lengths = sentences
         .iter()
         .map(|t| t.raw.len() + 2) // +2 for the ". " that will be added when joining
@@ -64,15 +64,15 @@ pub fn create_paragraph_chunks(
     cumsum_start.push(0);
     cumsum_start.extend(&cumsum_end);
 
-    let chunks = lengths_to_chunks(
+    let chunks_sentence_ids = lengths_to_chunks(
         lengths.clone(),
         n_characters_per_chunk,
         n_characters_overlap,
     );
 
-    let mut result = Vec::<Chunk>::new();
+    let mut result = Vec::<RawChunk>::new();
 
-    for chunk_sentence_ids in chunks.clone() {
+    for sentence_ids in chunks_sentence_ids.clone() {
         // println!(
         //     "{}",
         //     indices
@@ -82,13 +82,13 @@ pub fn create_paragraph_chunks(
         //         .join(", ")
         // );
 
-        let chunk_sentences = chunk_sentence_ids
+        let chunk_sentences = sentence_ids
             .iter()
             .map(|&i| sentences[i].clone())
             .collect::<Vec<Text>>();
 
-        let start = cumsum_start[*chunk_sentence_ids.first().unwrap()];
-        let end = cumsum_end[*chunk_sentence_ids.last().unwrap()];
+        let start = cumsum_start[*sentence_ids.first().unwrap()];
+        let end = cumsum_end[*sentence_ids.last().unwrap()];
 
         let text = chunk_sentences
             .iter()
@@ -102,7 +102,12 @@ pub fn create_paragraph_chunks(
             "Text length does not match chunk length"
         );
 
-        // result.push(Chunk::from_sentences(chunk_sentences, start, end, text));
+        result.push(RawChunk {
+            sentences: chunk_sentences,
+            start,
+            end,
+            text,
+        });
     }
 
     result
@@ -269,7 +274,7 @@ mod tests {
             });
         }
 
-        let _chunks = super::create_paragraph_chunks(&get_tdp_name(), sentences, 10, 3);
+        let _chunks = super::create_paragraph_chunks(sentences, 10, 3);
         println!("{_chunks:?}");
     }
 
@@ -313,7 +318,7 @@ mod tests {
         };
         let sentences = vec![txt1, txt2, txt3, txt4, txt5, txt6, txt7, txt8, txt9];
 
-        let _chunks = super::create_paragraph_chunks(&get_tdp_name(), sentences, 5, 1);
+        let _chunks = super::create_paragraph_chunks(sentences, 5, 1);
 
         println!("{_chunks:?}");
 
@@ -351,7 +356,7 @@ When travelers now speak of the dragon of Thrynn, they tell not of his greed, bu
             })
             .collect::<Vec<Text>>();
 
-        let chunks = super::create_paragraph_chunks(&get_tdp_name(), texts, 500, 100);
+        let chunks = super::create_paragraph_chunks(texts, 500, 100);
 
         println!("\n\nChunks:\n{:?}", chunks);
 

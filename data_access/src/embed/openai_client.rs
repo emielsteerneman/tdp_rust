@@ -1,6 +1,8 @@
 use std::pin::Pin;
 
-use async_openai::{Client, config::OpenAIConfig as AsyncOpenAIConfig, types::CreateEmbeddingRequestArgs};
+use async_openai::{
+    Client, config::OpenAIConfig as AsyncOpenAIConfig, types::CreateEmbeddingRequestArgs,
+};
 use serde::Deserialize;
 
 use super::EmbedClient;
@@ -19,10 +21,9 @@ pub struct OpenAIClient {
 
 impl OpenAIClient {
     pub fn new(config: &OpenAiConfig) -> Self {
-        let client_config = AsyncOpenAIConfig::new()
-            .with_api_key(&config.api_key);
+        let client_config = AsyncOpenAIConfig::new().with_api_key(&config.api_key);
         let client = Client::with_config(client_config);
-        OpenAIClient { 
+        OpenAIClient {
             client,
             model_name: config.model_name.clone(),
         }
@@ -109,7 +110,7 @@ mod tests {
         // This test will fail if we don't provide a valid key, but for CI/mock purposes we can use a dummy.
         // If the original test relied on .env, we should probably skip it or mock it.
         // For now, I'll update it to construct the config.
-        
+
         // Note: Real network calls in tests without .env might fail.
         // Assuming user handles secrets securely.
         let config = OpenAiConfig {
@@ -118,7 +119,7 @@ mod tests {
         };
 
         let mut client = OpenAIClient::new(&config);
-        
+
         // We can't actually call embed_string without a real key.
         // Commenting out the network call for safety in this refactor unless user wants it.
         // client.embed_string("Hello World!").await?;

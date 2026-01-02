@@ -697,6 +697,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "configuration"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "config",
+ "data_access",
+ "dotenvy",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.16",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "console"
 version = "0.15.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1007,8 +1023,9 @@ dependencies = [
 name = "data_processing"
 version = "0.1.0"
 dependencies = [
+ "data_access",
  "data_structures",
- "ndarray",
+ "ndarray 0.17.1",
  "num-traits",
  "tracing",
  "uuid",
@@ -1377,7 +1394,7 @@ dependencies = [
  "anyhow",
  "hf-hub",
  "image",
- "ndarray",
+ "ndarray 0.16.1",
  "ort",
  "serde_json",
  "tokenizers",
@@ -2689,6 +2706,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ndarray"
+version = "0.17.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c7c9125e8f6f10c9da3aad044cc918cf8784fa34de857b1aa68038eb05a50a9"
+dependencies = [
+ "matrixmultiply",
+ "num-complex",
+ "num-integer",
+ "num-traits",
+ "portable-atomic",
+ "portable-atomic-util",
+ "rawpointer",
+]
+
+[[package]]
 name = "ndarray-stats"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2696,7 +2728,7 @@ checksum = "17ebbe97acce52d06aebed4cd4a87c0941f4b2519b59b82b4feb5bd0ce003dfd"
 dependencies = [
  "indexmap 2.11.4",
  "itertools 0.13.0",
- "ndarray",
+ "ndarray 0.16.1",
  "noisy_float",
  "num-integer",
  "num-traits",
@@ -2969,7 +3001,7 @@ version = "2.0.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fa7e49bd669d32d7bc2a15ec540a527e7764aec722a45467814005725bcd721"
 dependencies = [
- "ndarray",
+ "ndarray 0.16.1",
  "ort-sys",
  "smallvec 2.0.0-alpha.10",
  "tracing",
@@ -3203,7 +3235,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 name = "pipeline"
 version = "0.1.0"
 dependencies = [
- "config",
+ "configuration",
  "data_access",
  "data_processing",
  "data_structures",
@@ -3212,7 +3244,6 @@ dependencies = [
  "thiserror 2.0.16",
  "tokio",
  "tracing",
- "tracing-subscriber",
  "uuid",
 ]
 
@@ -4675,7 +4706,7 @@ dependencies = [
  "data_access",
  "data_structures",
  "fastembed",
- "ndarray",
+ "ndarray 0.16.1",
  "ndarray-stats",
  "serde",
  "serde_json",

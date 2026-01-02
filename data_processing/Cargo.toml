@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 tracing = { workspace=true }
 data_structures = { path = "../data_structures" }
-ndarray = "0.16.1"
+data_access = { path = "../data_access" }
+ndarray = "0.17.1"
 num-traits = "0.2.19"
 uuid = { version = "1.19.0", features = ["v5"] }

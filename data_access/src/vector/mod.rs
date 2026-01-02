@@ -19,9 +19,6 @@ pub enum VectorClientError {
 
 #[async_trait]
 pub trait VectorClient {
-    const COLLECTION_NAME_CHUNK: &'static str;
-    const COLLECTION_NAME_MOCK: &'static str;
-
     async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError>;
     async fn get_all_chunks(&self) -> Result<Vec<Chunk>, VectorClientError>;
     async fn get_chunk_by_id(&self, id: Uuid) -> Result<Chunk, VectorClientError>;

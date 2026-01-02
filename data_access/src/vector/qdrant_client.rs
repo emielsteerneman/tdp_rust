@@ -42,6 +42,8 @@ pub struct QdrantConfig {
 }
 
 impl QdrantClient {
+    const COLLECTION_NAME_CHUNK: &'static str = "chunk";
+
     pub async fn new(config: QdrantConfig) -> Result<Self, QdrantClientError> {
         let client = Qdrant::from_url(&config.url).build()?;
 
@@ -154,9 +156,6 @@ impl QdrantClient {
 
 #[async_trait]
 impl VectorClient for QdrantClient {
-    const COLLECTION_NAME_CHUNK: &'static str = "chunk";
-    const COLLECTION_NAME_MOCK: &'static str = "mock";
-
     async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError> {
         let id = chunk.to_uuid();
         let point_id: PointId = id.to_string().into();
@@ -385,7 +384,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_store_and_retrieve() -> Result<(), anyhow::Error> {
-        let image = GenericImage::new("qdrant/qdrant", "v1.16")
+        let _image = GenericImage::new("qdrant/qdrant", "v1.16")
             .with_exposed_port(6333.tcp())
             .with_exposed_port(6334.tcp())
             .with_mapped_port(7333, 6333.tcp())

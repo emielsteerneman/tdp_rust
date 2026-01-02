@@ -14,8 +14,7 @@ pub async fn tdp_to_chunks(tdp: &TDP) -> Vec<Chunk> {
     let mut paragraph_chunks_map = HashMap::<String, (Vec<Chunk>, Vec<Vec<f32>>)>::new();
 
     for paragraph in &tdp.structure.paragraphs {
-        let chunks_paragraph =
-            create_paragraph_chunks(&tdp.name, paragraph.sentences.clone(), 500, 100);
+        let chunks_paragraph = create_paragraph_chunks(paragraph.sentences.clone(), 500, 100);
     }
 
     /*

@@ -1,5 +1,4 @@
-mod config;
-
+use configuration::AppConfig;
 use data_access::embed::{self, EmbedClient, FastembedClient};
 use data_processing::{Recreate, create_paragraph_chunks, tdp_to_chunks};
 use data_structures::{intermediate::Chunk, paper::TDP};
@@ -30,15 +29,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Configuration loaded successfully");
 
     // Initialize embed client based on config
-    let mut embed_client: Box<dyn EmbedClient> = if let Some(openai_cfg) = &config.data_access.embed.openai {
-        info!("Using OpenAI Embeddings with model: {}", openai_cfg.model_name);
-        Box::new(embed::OpenAIClient::new(openai_cfg))
-    } else if let Some(fastembed_cfg) = &config.data_access.embed.fastembed {
-        info!("Using FastEmbed with model: {}", fastembed_cfg.model_name);
-        Box::new(FastembedClient::new(fastembed_cfg)?)
-    } else {
-        panic!("No embedding configuration found in config.toml");
-    };
+    let mut embed_client: Box<dyn EmbedClient> =
+        if let Some(openai_cfg) = &config.data_access.embed.openai {
+            info!(
+                "Using OpenAI Embeddings with model: {}",
+                openai_cfg.model_name
+            );
+            Box::new(embed::OpenAIClient::new(openai_cfg))
+        } else if let Some(fastembed_cfg) = &config.data_access.embed.fastembed {
+            info!("Using FastEmbed with model: {}", fastembed_cfg.model_name);
+            Box::new(FastembedClient::new(fastembed_cfg)?)
+        } else {
+            panic!("No embedding configuration found in config.toml");
+        };
 
     let files =
         std::fs::read_dir("/home/emiel/projects/tdps_json").expect("Failed to read directory");
@@ -55,10 +58,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // The original code passed &tdp, but tdp_to_chunks signature might need checking.
         // Assuming it's correct.
         let chunks = tdp_to_chunks(&tdp).await;
-        
+
         // embed_client usage would go here if uncommented/implemented
     }
-    
+
     Ok(())
 }
 
