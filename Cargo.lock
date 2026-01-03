@@ -1025,6 +1025,7 @@ version = "0.1.0"
 dependencies = [
  "data_access",
  "data_structures",
+ "futures",
  "ndarray 0.17.1",
  "num-traits",
  "tracing",

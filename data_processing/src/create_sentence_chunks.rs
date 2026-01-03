@@ -1,6 +1,6 @@
 use std::ops::AddAssign;
 
-use data_structures::{file::TDPName, paper::Text};
+use data_structures::paper::Text;
 use num_traits::Zero;
 use tracing::{info, instrument};
 
@@ -47,7 +47,7 @@ impl Recreate for Vec<RawChunk> {
 }
 
 #[instrument("data_processing", skip_all)]
-pub fn create_paragraph_chunks(
+pub fn create_sentence_chunks(
     sentences: Vec<Text>,
     n_characters_per_chunk: usize,
     n_characters_overlap: usize,
@@ -72,7 +72,7 @@ pub fn create_paragraph_chunks(
 
     let mut result = Vec::<RawChunk>::new();
 
-    for sentence_ids in chunks_sentence_ids.clone() {
+    for (chunk_sequence_id, sentence_ids) in chunks_sentence_ids.clone().into_iter().enumerate() {
         // println!(
         //     "{}",
         //     indices
@@ -87,8 +87,8 @@ pub fn create_paragraph_chunks(
             .map(|&i| sentences[i].clone())
             .collect::<Vec<Text>>();
 
-        let start = cumsum_start[*sentence_ids.first().unwrap()];
-        let end = cumsum_end[*sentence_ids.last().unwrap()];
+        let idx_begin = cumsum_start[*sentence_ids.first().unwrap()];
+        let idx_end = cumsum_end[*sentence_ids.last().unwrap()];
 
         let text = chunk_sentences
             .iter()
@@ -98,14 +98,15 @@ pub fn create_paragraph_chunks(
             + ". ";
 
         assert!(
-            text.len() == end - start,
+            text.len() == idx_end - idx_begin,
             "Text length does not match chunk length"
         );
 
         result.push(RawChunk {
+            chunk_sequence_id: chunk_sequence_id as u32,
             sentences: chunk_sentences,
-            start,
-            end,
+            idx_begin: idx_begin as u32,
+            idx_end: idx_end as u32,
             text,
         });
     }
@@ -226,20 +227,8 @@ where
 #[cfg(test)]
 mod tests {
 
-    use crate::create_paragraph_chunks::Recreate;
-    use data_structures::{
-        file::{League, TDPName, TeamName},
-        paper::Text,
-    };
-
-    fn get_tdp_name() -> TDPName {
-        TDPName {
-            league: League::try_from("soccer_smallsize").unwrap(),
-            team_name: TeamName::new("RoboTeam_Twente"),
-            year: 2017,
-            index: 0,
-        }
-    }
+    use crate::create_sentence_chunks::Recreate;
+    use data_structures::paper::Text;
 
     fn clean_text(text: &str) -> String {
         text.chars()
@@ -274,7 +263,7 @@ mod tests {
             });
         }
 
-        let _chunks = super::create_paragraph_chunks(sentences, 10, 3);
+        let _chunks = super::create_sentence_chunks(sentences, 10, 3);
         println!("{_chunks:?}");
     }
 
@@ -318,7 +307,7 @@ mod tests {
         };
         let sentences = vec![txt1, txt2, txt3, txt4, txt5, txt6, txt7, txt8, txt9];
 
-        let _chunks = super::create_paragraph_chunks(sentences, 5, 1);
+        let _chunks = super::create_sentence_chunks(sentences, 5, 1);
 
         println!("{_chunks:?}");
 
@@ -356,7 +345,7 @@ When travelers now speak of the dragon of Thrynn, they tell not of his greed, bu
             })
             .collect::<Vec<Text>>();
 
-        let chunks = super::create_paragraph_chunks(texts, 500, 100);
+        let chunks = super::create_sentence_chunks(texts, 500, 100);
 
         println!("\n\nChunks:\n{:?}", chunks);
 

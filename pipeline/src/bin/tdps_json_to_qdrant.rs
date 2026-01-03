@@ -17,7 +17,7 @@ async fn main() {
 
     for paragraph in &tdp.structure.paragraphs {
         println!("Processing paragraph : {}", paragraph.title.raw);
-        let chunks = create_paragraph_chunks(&tdp.name, paragraph.sentences.clone(), 500, 100);
+        let chunks = create_sentence_chunks(&tdp.name, paragraph.sentences.clone(), 500, 100);
         let texts = chunks
             .iter()
             .map(|c| c.text.as_ref())

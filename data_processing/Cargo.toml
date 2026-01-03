@@ -10,3 +10,4 @@ data_access = { path = "../data_access" }
 ndarray = "0.17.1"
 num-traits = "0.2.19"
 uuid = { version = "1.19.0", features = ["v5"] }
+futures = "0.3.31"
