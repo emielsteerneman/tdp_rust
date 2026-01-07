@@ -44,7 +44,7 @@ impl OpenAIClient {
 
 impl EmbedClient for OpenAIClient {
     fn embed_string<'a>(
-        &'a mut self,
+        &'a self,
         text: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<f32>, EmbedClientError>> + Send + 'a>> {
         Box::pin(async move {
@@ -59,7 +59,7 @@ impl EmbedClient for OpenAIClient {
     }
 
     fn embed_strings<'a>(
-        &'a mut self,
+        &'a self,
         strings: Vec<&'a str>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<Vec<f32>>, EmbedClientError>> + Send + 'a>> {
         Box::pin(async move {
@@ -118,7 +118,7 @@ mod tests {
             api_key: "test-key".to_string(),
         };
 
-        let mut client = OpenAIClient::new(&config);
+        let client = OpenAIClient::new(&config);
 
         // We can't actually call embed_string without a real key.
         // Commenting out the network call for safety in this refactor unless user wants it.

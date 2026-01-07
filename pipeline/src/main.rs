@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // The original code passed &tdp, but tdp_to_chunks signature might need checking.
         // Assuming it's correct.
-        let chunks = tdp_to_chunks(&tdp).await;
+        let chunks = tdp_to_chunks(&tdp, Some(embed_client.as_ref())).await;
 
         // embed_client usage would go here if uncommented/implemented
     }

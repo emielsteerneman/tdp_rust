@@ -1,6 +1,10 @@
-[data_access.embed.openai]
-model_name = "text-embedding-3-small"
-api_key = "sk-placeholder-key"
+#[data_access.embed.openai]
+#model_name = "text-embedding-3-small"
+#api_key = "sk-placeholder-key"
 
 [data_access.embed.fastembed]
 model_name = "BGEBaseENV15Q"
+
+[data_access.vector.qdrant]
+url = "http://localhost:6334"
+embedding_size = 768

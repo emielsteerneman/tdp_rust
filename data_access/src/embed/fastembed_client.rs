@@ -1,4 +1,4 @@
-use std::pin::Pin;
+use std::{pin::Pin, sync::Mutex};
 
 use crate::embed::{EmbedClient, EmbedClientError};
 use fastembed::{
@@ -6,6 +6,7 @@ use fastembed::{
     UserDefinedEmbeddingModel,
 };
 use serde::Deserialize;
+use tracing::debug;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct FastEmbedConfig {
@@ -13,7 +14,7 @@ pub struct FastEmbedConfig {
 }
 
 pub struct FastembedClient {
-    model: TextEmbedding,
+    model: Mutex<TextEmbedding>,
 }
 
 fn init_read_file(path: impl AsRef<std::path::Path>) -> Result<Vec<u8>, EmbedClientError> {
@@ -23,12 +24,9 @@ fn init_read_file(path: impl AsRef<std::path::Path>) -> Result<Vec<u8>, EmbedCli
 // https://crates.io/crates/fastembed
 impl FastembedClient {
     pub fn new(config: &FastEmbedConfig) -> Result<Self, EmbedClientError> {
-        // Map string to enum. This is a simple manual mapping.
-        // fastembed doesn't seem to export a FromStr for EmbeddingModel easily visible here.
         let model_enum = match config.model_name.as_str() {
             "BGEBaseENV15Q" => EmbeddingModel::BGEBaseENV15Q,
             "AllMiniLML6V2" => EmbeddingModel::AllMiniLML6V2,
-            // Add other models as needed
             _ => {
                 return Err(EmbedClientError::Initialization(format!(
                     "Unknown or unsupported model name: {}",
@@ -43,7 +41,9 @@ impl FastembedClient {
                 .with_show_download_progress(true),
         )?;
 
-        Ok(Self { model })
+        Ok(Self {
+            model: Mutex::new(model),
+        })
     }
 
     pub fn new_with_custom_model() -> Result<Self, EmbedClientError> {
@@ -62,17 +62,26 @@ impl FastembedClient {
 
         let model = TextEmbedding::try_new_from_user_defined(udem, options)?;
 
-        Ok(FastembedClient { model })
+        Ok(FastembedClient {
+            model: Mutex::new(model),
+        })
     }
 }
 
 impl EmbedClient for FastembedClient {
     fn embed_string<'a>(
-        &'a mut self,
+        &'a self,
         string: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<f32>, EmbedClientError>> + Send + 'a>> {
         Box::pin(async move {
-            let vecs = self.model.embed(vec![string], None)?;
+            debug!("Embedding string: {}", string);
+            let start = std::time::Instant::now();
+
+            let vecs = self
+                .model
+                .lock()
+                .map_err(|e| EmbedClientError::Internal(e.to_string()))?
+                .embed(vec![string], None)?;
 
             let Some(vec) = vecs.into_iter().next() else {
                 return Err(EmbedClientError::Internal(
@@ -80,16 +89,21 @@ impl EmbedClient for FastembedClient {
                 ));
             };
 
+            debug!("String embedded in {}ms", start.elapsed().as_millis());
             Ok(vec)
         })
     }
 
     fn embed_strings<'a>(
-        &'a mut self,
+        &'a self,
         strings: Vec<&'a str>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<Vec<f32>>, EmbedClientError>> + Send + 'a>> {
         Box::pin(async move {
-            let vecs = self.model.embed(strings, None)?;
+            let vecs = self
+                .model
+                .lock()
+                .map_err(|e| EmbedClientError::Internal(e.to_string()))?
+                .embed(strings, None)?;
             Ok(vecs)
         })
     }
@@ -107,7 +121,7 @@ mod tests {
         let config = FastEmbedConfig {
             model_name: "BGEBaseENV15Q".to_string(),
         };
-        let mut client = FastembedClient::new(&config)?;
+        let client = FastembedClient::new(&config)?;
 
         let string = "Hello World!";
 

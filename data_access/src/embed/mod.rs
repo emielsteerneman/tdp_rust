@@ -1,6 +1,6 @@
 mod fastembed_client;
 mod openai_client;
-pub use fastembed_client::{FastembedClient, FastEmbedConfig};
+pub use fastembed_client::{FastEmbedConfig, FastembedClient};
 pub use openai_client::{OpenAIClient, OpenAiConfig};
 
 use async_openai::error::OpenAIError;
@@ -20,12 +20,12 @@ pub enum EmbedClientError {
 
 pub trait EmbedClient {
     fn embed_string<'a>(
-        &'a mut self,
+        &'a self,
         string: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<f32>, EmbedClientError>> + Send + 'a>>;
 
     fn embed_strings<'a>(
-        &'a mut self,
+        &'a self,
         strings: Vec<&'a str>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<Vec<f32>>, EmbedClientError>> + Send + 'a>>;
 }

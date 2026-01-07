@@ -57,8 +57,6 @@ pub fn create_sentence_chunks(
         .map(|t| t.raw.len() + 2) // +2 for the ". " that will be added when joining
         .collect::<Vec<usize>>();
 
-    info!("Created lengths");
-
     let cumsum_end = cumsum(&lengths, |t| *t);
     let mut cumsum_start = Vec::with_capacity(cumsum_end.len() + 1);
     cumsum_start.push(0);

@@ -1,34 +1,27 @@
 use data_access::file::utilities::load_from_dir_all_tdp_json;
-use data_processing::create_paragraph_chunks;
+use data_processing::{create_sentence_chunks, tdp_to_chunks};
+use tracing::info;
 
 #[tokio::main]
 async fn main() {
-    println!("Running TDPs JSON to Qdrant importer");
+    let _stdout_subscriber = tracing_subscriber::fmt::init();
+
+    info!("Running TDPs JSON to Qdrant importer");
 
     let config = configuration::AppConfig::load_from_file("config.toml").unwrap();
 
-    let mut embed_client = configuration::helpers::load_any_embed_client(&config);
-    let mut vector_client = configuration::helpers::load_any_vector_client(&config).await;
+    let embed_client = configuration::helpers::load_any_embed_client(&config);
+    let vector_client = configuration::helpers::load_any_vector_client(&config).await;
 
     let tdps = load_from_dir_all_tdp_json("/home/emiel/projects/tdps_json").unwrap();
-    println!("Loaded {} TDPs", tdps.len());
+    info!("Loaded {} TDPs", tdps.len());
 
     let tdp = &tdps[0];
+    info!("Processing TDP: {}", tdp.name.get_filename());
 
-    for paragraph in &tdp.structure.paragraphs {
-        println!("Processing paragraph : {}", paragraph.title.raw);
-        let chunks = create_sentence_chunks(&tdp.name, paragraph.sentences.clone(), 500, 100);
-        let texts = chunks
-            .iter()
-            .map(|c| c.text.as_ref())
-            .collect::<Vec<&str>>();
-        let embeddings = embed_client.embed_strings(texts).await.unwrap();
-
-        for (chunk, embedding) in chunks.iter().zip(embeddings.iter()) {
-            chunk.embedding = Some(embedding.clone());
-            vector_client.store_chunk(chunk.clone()).await.unwrap();
-        }
-
-        println!("Generated {} embeddings", embeddings.len());
+    let chunks = tdp_to_chunks(tdp, Some(embed_client.as_ref())).await;
+    info!("Generated {} chunks. Storing..", chunks.len());
+    for chunk in chunks {
+        vector_client.store_chunk(chunk).await.unwrap();
     }
 }

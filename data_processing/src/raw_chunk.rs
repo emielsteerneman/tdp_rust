@@ -13,7 +13,7 @@ pub struct RawChunk {
 impl RawChunk {
     pub async fn into_chunk(
         self,
-        embed_client: Option<&mut dyn EmbedClient>,
+        embed_client: Option<&dyn EmbedClient>,
         tdp_name: TDPName,
         paragraph_sequence_id: usize,
     ) -> Chunk {
@@ -26,9 +26,9 @@ impl RawChunk {
         Chunk {
             embedding,
             league_year_team_idx: tdp_name.get_filename(),
-            league: tdp_name.league,
+            league: tdp_name.league.name,
             year: tdp_name.year,
-            team: tdp_name.team_name,
+            team: tdp_name.team_name.name,
             paragraph_sequence_id: paragraph_sequence_id as u32,
             chunk_sequence_id: self.chunk_sequence_id,
             idx_begin: self.idx_begin,
