@@ -7,7 +7,7 @@ use tracing::info;
 
 pub fn load_any_embed_client(config: &AppConfig) -> Box<dyn EmbedClient> {
     // Initialize embed client based on config
-    let mut embed_client: Box<dyn EmbedClient> =
+    let embed_client: Box<dyn EmbedClient> =
         if let Some(openai_cfg) = &config.data_access.embed.openai {
             info!(
                 "Using OpenAI Embeddings with model: {}",
@@ -26,7 +26,7 @@ pub fn load_any_embed_client(config: &AppConfig) -> Box<dyn EmbedClient> {
 
 pub async fn load_any_vector_client(config: &AppConfig) -> Box<dyn VectorClient> {
     // Initialize vector client based on config
-    let mut vector_client: Box<dyn VectorClient> =
+    let vector_client: Box<dyn VectorClient> =
         if let Some(qdrant_cfg) = &config.data_access.vector.qdrant {
             info!("Using Qdrant with URL: {}", qdrant_cfg.url);
             let client = QdrantClient::new(qdrant_cfg.clone()).await.unwrap();

@@ -2,7 +2,7 @@ use config::{Config as ConfigLoader, File};
 use data_access::config::DataAccessConfig;
 use serde::Deserialize;
 use std::{fs::canonicalize, path::Path};
-use tracing::{debug, info};
+use tracing::info;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {

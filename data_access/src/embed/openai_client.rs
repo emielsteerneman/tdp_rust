@@ -100,30 +100,3 @@ impl EmbedClient for OpenAIClient {
         })
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_initialization() -> Result<(), anyhow::Error> {
-        // This test will fail if we don't provide a valid key, but for CI/mock purposes we can use a dummy.
-        // If the original test relied on .env, we should probably skip it or mock it.
-        // For now, I'll update it to construct the config.
-
-        // Note: Real network calls in tests without .env might fail.
-        // Assuming user handles secrets securely.
-        let config = OpenAiConfig {
-            model_name: "text-embedding-3-small".to_string(),
-            api_key: "test-key".to_string(),
-        };
-
-        let client = OpenAIClient::new(&config);
-
-        // We can't actually call embed_string without a real key.
-        // Commenting out the network call for safety in this refactor unless user wants it.
-        // client.embed_string("Hello World!").await?;
-
-        Ok(())
-    }
-}

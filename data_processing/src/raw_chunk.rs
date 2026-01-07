@@ -26,9 +26,9 @@ impl RawChunk {
         Chunk {
             embedding,
             league_year_team_idx: tdp_name.get_filename(),
-            league: tdp_name.league.name,
+            league: tdp_name.league,
             year: tdp_name.year,
-            team: tdp_name.team_name.name,
+            team: tdp_name.team_name,
             paragraph_sequence_id: paragraph_sequence_id as u32,
             chunk_sequence_id: self.chunk_sequence_id,
             idx_begin: self.idx_begin,

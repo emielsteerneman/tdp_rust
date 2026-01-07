@@ -1,16 +1,15 @@
 use configuration::AppConfig;
 use data_access::embed::{self, EmbedClient, FastembedClient};
-use data_processing::{Recreate, create_paragraph_chunks, tdp_to_chunks};
+use data_processing::tdp_to_chunks;
 use data_structures::{intermediate::Chunk, paper::TDP};
 use serde_json;
-use std::collections::HashMap;
-use tracing::{Level, info, instrument, warn};
-use tracing_subscriber::{FmtSubscriber, fmt};
+use tracing::{Level, info};
+use tracing_subscriber::FmtSubscriber;
 
-struct SentenceEntry {
-    paragraph_title: String,
-    text: String,
-}
+// struct SentenceEntry {
+//     paragraph_title: String,
+//     text: String,
+// }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -25,11 +24,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
     // Load configuration
-    let config = config::AppConfig::load_from_file("config.toml")?;
+    let config = AppConfig::load_from_file("config.toml")?;
     info!("Configuration loaded successfully");
 
     // Initialize embed client based on config
-    let mut embed_client: Box<dyn EmbedClient> =
+    let embed_client: Box<dyn EmbedClient> =
         if let Some(openai_cfg) = &config.data_access.embed.openai {
             info!(
                 "Using OpenAI Embeddings with model: {}",
@@ -57,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // The original code passed &tdp, but tdp_to_chunks signature might need checking.
         // Assuming it's correct.
-        let chunks = tdp_to_chunks(&tdp, Some(embed_client.as_ref())).await;
+        let _chunks = tdp_to_chunks(&tdp, Some(embed_client.as_ref())).await;
 
         // embed_client usage would go here if uncommented/implemented
     }
@@ -65,6 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn build_similarity_matrix(embeddings: &[Vec<f32>]) -> Vec<Vec<f32>> {
     let len = embeddings.len();
     if len == 0 {
@@ -83,6 +83,7 @@ fn build_similarity_matrix(embeddings: &[Vec<f32>]) -> Vec<Vec<f32>> {
     matrix
 }
 
+#[allow(dead_code)]
 fn normalized_cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     if a.len() != b.len() || a.is_empty() {
         return 0.0;
@@ -100,6 +101,7 @@ fn normalized_cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     ((cosine + 1.0) / 2.0).clamp(0.0, 1.0)
 }
 
+#[allow(dead_code)]
 fn euclidean_distance(a: &[f32], b: &[f32]) -> f32 {
     if a.len() != b.len() || a.is_empty() {
         return f32::MAX;
@@ -110,6 +112,7 @@ fn euclidean_distance(a: &[f32], b: &[f32]) -> f32 {
     sum_sq.sqrt()
 }
 
+#[allow(dead_code)]
 fn print_legend(sentences: &[Chunk]) {
     println!("\nLegend:");
     for (idx, entry) in sentences.iter().enumerate() {
@@ -117,6 +120,7 @@ fn print_legend(sentences: &[Chunk]) {
     }
 }
 
+#[allow(dead_code)]
 fn print_similarity_matrix(matrix: &[Vec<f32>]) {
     if matrix.is_empty() {
         println!("No similarity matrix to display.");

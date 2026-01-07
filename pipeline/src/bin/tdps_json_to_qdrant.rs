@@ -1,5 +1,5 @@
 use data_access::file::utilities::load_from_dir_all_tdp_json;
-use data_processing::{create_sentence_chunks, tdp_to_chunks};
+use data_processing::tdp_to_chunks;
 use tracing::info;
 
 #[tokio::main]

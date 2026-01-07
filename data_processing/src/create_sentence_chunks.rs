@@ -2,7 +2,7 @@ use std::ops::AddAssign;
 
 use data_structures::paper::Text;
 use num_traits::Zero;
-use tracing::{info, instrument};
+use tracing::instrument;
 
 use crate::RawChunk;
 pub trait Recreate {
