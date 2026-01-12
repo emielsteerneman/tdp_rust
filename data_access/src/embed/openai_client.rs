@@ -4,6 +4,7 @@ use async_openai::{
     Client, config::OpenAIConfig as AsyncOpenAIConfig, types::CreateEmbeddingRequestArgs,
 };
 use serde::Deserialize;
+use std::sync::Mutex;
 
 use super::EmbedClient;
 use super::EmbedClientError;
@@ -17,6 +18,7 @@ pub struct OpenAiConfig {
 pub struct OpenAIClient {
     client: Client<AsyncOpenAIConfig>,
     model_name: String,
+    total_costs: Mutex<f64>,
 }
 
 impl OpenAIClient {
@@ -26,6 +28,7 @@ impl OpenAIClient {
         OpenAIClient {
             client,
             model_name: config.model_name.clone(),
+            total_costs: Mutex::new(0.0),
         }
     }
 
@@ -39,6 +42,10 @@ impl OpenAIClient {
             "text-embedding-3-large" => (0.13 / 1e6) * (n_tokens as f32),
             _ => 0.0, // Don't panic, just return 0 if unknown
         }
+    }
+
+    pub fn get_total_cost(&self) -> f64 {
+        *self.total_costs.lock().unwrap()
     }
 }
 
@@ -76,10 +83,16 @@ impl EmbedClient for OpenAIClient {
 
             let tokens_used = response.usage.prompt_tokens;
             let cost = OpenAIClient::cost_in_cents(&self.model_name, tokens_used);
-            println!(
-                "Embedded strings using {} tokens, cost: ${:.6}",
-                tokens_used, cost
-            );
+
+            {
+                let mut total = self.total_costs.lock().unwrap();
+                *total += cost as f64;
+
+                println!(
+                    "Embedded strings using {} tokens, cost: ${:.6}, total cost so far: ${:.6}",
+                    tokens_used, cost, *total
+                );
+            }
 
             #[cfg(test)]
             for data in response.clone().data {
