@@ -317,7 +317,7 @@ impl VectorClient for QdrantClient {
 
         // println!("response: {response:?}");
 
-        for point in response.result {
+        for point in &response.result {
             println!("\n");
             println!("score: {}", point.score);
             println!(
@@ -330,7 +330,11 @@ impl VectorClient for QdrantClient {
             );
         }
 
-        Ok(vec![])
+        response
+            .result
+            .into_iter()
+            .map(|point| point.payload.into_chunk())
+            .collect()
     }
 }
 
@@ -345,48 +349,58 @@ impl IntoChunk for RetrievedPoint {
 
         let payload = self.payload;
 
-        let league_year_team_idx = from_payload_get_string(&payload, "league_year_team_idx")
+        let mut chunk: Chunk = payload.into_chunk()?;
+
+        chunk.embedding = embedding;
+
+        Ok(chunk)
+    }
+}
+
+impl IntoChunk for HashMap<String, Value> {
+    fn into_chunk(self) -> Result<Chunk, VectorClientError> {
+        let league_year_team_idx = from_payload_get_string(&self, "league_year_team_idx")
             .ok_or_else(|| VectorClientError::FieldMissing("league_year_team_idx".to_string()))?;
 
-        let league_str = from_payload_get_string(&payload, "league")
+        let league_str = from_payload_get_string(&self, "league")
             .ok_or_else(|| VectorClientError::FieldMissing("league".to_string()))?;
         let league: data_structures::file::League =
             serde_json::from_str(&league_str).map_err(|e| {
                 VectorClientError::Internal(format!("Failed to deserialize League: {}", e))
             })?;
 
-        let year = from_payload_get_i64(&payload, "year")
+        let year = from_payload_get_i64(&self, "year")
             .map(|i| i as u32)
             .ok_or_else(|| VectorClientError::FieldMissing("year".to_string()))?;
 
-        let team_str = from_payload_get_string(&payload, "team")
+        let team_str = from_payload_get_string(&self, "team")
             .ok_or_else(|| VectorClientError::FieldMissing("team".to_string()))?;
         let team: data_structures::file::TeamName =
             serde_json::from_str(&team_str).map_err(|e| {
                 VectorClientError::Internal(format!("Failed to deserialize TeamName: {}", e))
             })?;
 
-        let paragraph_sequence_id = from_payload_get_i64(&payload, "paragraph_sequence_id")
+        let paragraph_sequence_id = from_payload_get_i64(&self, "paragraph_sequence_id")
             .map(|i| i as u32)
             .ok_or_else(|| VectorClientError::FieldMissing("paragraph_sequence_id".to_string()))?;
 
-        let chunk_sequence_id = from_payload_get_i64(&payload, "chunk_sequence_id")
+        let chunk_sequence_id = from_payload_get_i64(&self, "chunk_sequence_id")
             .map(|i| i as u32)
             .ok_or_else(|| VectorClientError::FieldMissing("chunk_sequence_id".to_string()))?;
 
-        let idx_begin = from_payload_get_i64(&payload, "idx_begin")
+        let idx_begin = from_payload_get_i64(&self, "idx_begin")
             .map(|i| i as u32)
             .ok_or_else(|| VectorClientError::FieldMissing("idx_begin".to_string()))?;
 
-        let idx_end = from_payload_get_i64(&payload, "idx_end")
+        let idx_end = from_payload_get_i64(&self, "idx_end")
             .map(|i| i as u32)
             .ok_or_else(|| VectorClientError::FieldMissing("idx_end".to_string()))?;
 
-        let text = from_payload_get_string(&payload, "text")
+        let text = from_payload_get_string(&self, "text")
             .ok_or_else(|| VectorClientError::FieldMissing("text".to_string()))?;
 
         Ok(Chunk {
-            embedding,
+            embedding: vec![],
             league_year_team_idx,
             league,
             year,
