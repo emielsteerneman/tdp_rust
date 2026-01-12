@@ -24,16 +24,18 @@ pub fn load_any_embed_client(config: &AppConfig) -> Box<dyn EmbedClient> {
     embed_client
 }
 
-pub async fn load_any_vector_client(config: &AppConfig) -> Box<dyn VectorClient> {
+pub async fn load_any_vector_client(
+    config: &AppConfig,
+) -> Result<Box<dyn VectorClient>, Box<dyn std::error::Error>> {
     // Initialize vector client based on config
     let vector_client: Box<dyn VectorClient> =
         if let Some(qdrant_cfg) = &config.data_access.vector.qdrant {
-            info!("Using Qdrant with URL: {}", qdrant_cfg.url);
-            let client = QdrantClient::new(qdrant_cfg.clone()).await.unwrap();
+            info!("Using Qdrant");
+            let client = QdrantClient::new(qdrant_cfg.clone()).await?;
             Box::new(client)
         } else {
             panic!("No vector configuration found in config.toml");
         };
 
-    vector_client
+    Ok(vector_client)
 }

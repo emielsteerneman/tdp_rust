@@ -1,4 +1,3 @@
-use data_access::embed::EmbedClient;
 use data_structures::{file::TDPName, intermediate::Chunk, paper::Text};
 
 #[derive(Clone, Debug)]
@@ -11,14 +10,15 @@ pub struct RawChunk {
 }
 
 impl RawChunk {
-    pub async fn into_chunk(
+    pub fn into_chunk(
         self,
-        embed_client: Option<&dyn EmbedClient>,
+        // embed_client: Option<&dyn EmbedClient>,
+        embedding: Option<Vec<f32>>,
         tdp_name: TDPName,
         paragraph_sequence_id: usize,
     ) -> Chunk {
-        let embedding = if let Some(embed_client) = embed_client {
-            embed_client.embed_string(&self.text).await.unwrap()
+        let embedding = if let Some(embedding) = embedding {
+            embedding
         } else {
             vec![]
         };

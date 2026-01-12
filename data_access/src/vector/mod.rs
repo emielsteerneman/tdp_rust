@@ -15,6 +15,8 @@ pub enum VectorClientError {
     Empty,
     #[error("Field missing: {0}")]
     FieldMissing(String),
+    #[error("Invalid vector dimension: {0}")]
+    InvalidVectorDimension(String),
 }
 
 #[async_trait]
@@ -22,6 +24,11 @@ pub trait VectorClient {
     async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError>;
     async fn get_all_chunks(&self) -> Result<Vec<Chunk>, VectorClientError>;
     async fn get_chunk_by_id(&self, id: Uuid) -> Result<Chunk, VectorClientError>;
+    async fn search_chunks_by_embedding(
+        &self,
+        embedding: Vec<f32>,
+        limit: u64,
+    ) -> Result<Vec<Chunk>, VectorClientError>;
 }
 
 pub trait VectorPoint<T> {
