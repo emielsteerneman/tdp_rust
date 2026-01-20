@@ -1,5 +1,6 @@
 use crate::embed::FastEmbedConfig;
 use crate::embed::OpenAiConfig;
+use crate::metadata::SqliteConfig;
 use crate::vector::QdrantConfig;
 use serde::Deserialize;
 
@@ -7,6 +8,7 @@ use serde::Deserialize;
 pub struct DataAccessConfig {
     pub embed: EmbedConfig,
     pub vector: VectorConfig,
+    pub metadata: MetadataConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -18,4 +20,9 @@ pub struct EmbedConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct VectorConfig {
     pub qdrant: Option<QdrantConfig>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct MetadataConfig {
+    pub sqlite: Option<SqliteConfig>,
 }

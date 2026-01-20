@@ -113,6 +113,7 @@ impl QdrantClient {
             );
         }
 
+        /*
         let mut next_offset: Option<PointId> = None;
 
         loop {
@@ -172,6 +173,7 @@ impl QdrantClient {
                 break;
             }
         }
+        */
 
         Ok(())
     }

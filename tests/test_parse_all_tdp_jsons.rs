@@ -7,8 +7,10 @@ async fn test_load_all_tdp_jsons() -> Result<(), Box<dyn Error>> {
     let folder_path = "/home/emiel/projects/tdps_json";
     let files = std::fs::read_dir(folder_path)?;
 
+    let mut count = 0;
     // parse each file into a TDPStructure
     for file in files {
+        count += 1;
         // print filename
         println!("Processing file: {:?}", file);
         let file = file?;
@@ -19,6 +21,8 @@ async fn test_load_all_tdp_jsons() -> Result<(), Box<dyn Error>> {
             println!("Loaded TDP: {}", tdp.name.get_filename());
         }
     }
+
+    println!("Processed {count} files");
 
     Ok(())
 }
