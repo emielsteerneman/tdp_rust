@@ -1,6 +1,7 @@
 use super::AppConfig;
 use data_access::{
     embed::{EmbedClient, FastembedClient, OpenAIClient},
+    metadata::{MetadataClient, SqliteClient},
     vector::{QdrantClient, VectorClient},
 };
 use tracing::info;
@@ -38,4 +39,17 @@ pub async fn load_any_vector_client(
         };
 
     Ok(vector_client)
+}
+
+pub fn load_any_metadata_client(config: &AppConfig) -> Box<dyn MetadataClient> {
+    // Initialize metadata client based on config
+    let metadata_client: Box<dyn MetadataClient> =
+        if let Some(sqlite_cfg) = &config.data_access.metadata.sqlite {
+            info!("Using SQLite Metadata with file: {}", sqlite_cfg.filename);
+            Box::new(SqliteClient::new(sqlite_cfg.clone()))
+        } else {
+            panic!("No metadata configuration found in config.toml");
+        };
+
+    metadata_client
 }

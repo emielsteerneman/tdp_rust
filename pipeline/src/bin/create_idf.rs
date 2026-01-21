@@ -7,8 +7,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     /* Assumption: A "document" in my inverse document frequency is a chunk */
     let config = configuration::AppConfig::load_from_file("config.toml").unwrap();
 
-    let embed_client = configuration::helpers::load_any_embed_client(&config);
-    let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
+    let metadata_client = configuration::helpers::load_any_metadata_client(&config);
 
     let mut vocabulary = HashMap::<String, u32>::new();
     let mut doc_freq = HashMap::<String, u32>::new();
@@ -52,12 +51,14 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
         idf_map.insert(word, idf);
     }
 
+    metadata_client.store_idf(idf_map.clone()).await?;
+
     let mut items: Vec<_> = doc_freq.iter().collect();
     items.sort_by_key(|&(_, count)| std::cmp::Reverse(count));
 
-    for (word, _) in items.iter().take(20) {
-        let count = doc_freq.get(word.clone()).unwrap();
-        let idf = idf_map.get(word.clone()).unwrap();
+    for (word, _) in items.into_iter().take(20) {
+        let count = doc_freq.get(word).unwrap();
+        let idf = idf_map.get(word).unwrap();
         println!("{word:<20}: {count:<10} {idf:<10}");
     }
 

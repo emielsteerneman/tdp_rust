@@ -1,4 +1,4 @@
-use config::{Config as ConfigLoader, File};
+use config::{Config as ConfigLoader, File, FileFormat};
 use data_access::config::DataAccessConfig;
 use serde::Deserialize;
 use std::{fs::canonicalize, path::Path};
@@ -23,7 +23,29 @@ impl AppConfig {
         let abs = canonicalize(&path).map_err(|e| ConfigError::Load(Box::new(e)))?;
         info!("Loading configuration from: {}", abs.display());
 
-        let builder = ConfigLoader::builder().add_source(File::from(path.as_ref()));
+        let mut builder =
+            ConfigLoader::builder().add_source(File::from(path.as_ref()).format(FileFormat::Toml));
+
+        // Initial build to extract the global run variable
+        let temp_config = builder
+            .clone()
+            .build()
+            .map_err(|e| ConfigError::Load(Box::new(e)))?;
+
+        if let Ok(run) = temp_config.get_string("data_access.run") {
+            info!("Spreading global run: {}", run);
+
+            if temp_config.get_table("data_access.vector.qdrant").is_ok() {
+                builder = builder
+                    .set_default("data_access.vector.qdrant.run", run.clone())
+                    .map_err(|e| ConfigError::Load(Box::new(e)))?;
+            }
+            if temp_config.get_table("data_access.metadata.sqlite").is_ok() {
+                builder = builder
+                    .set_default("data_access.metadata.sqlite.run", run)
+                    .map_err(|e| ConfigError::Load(Box::new(e)))?;
+            }
+        }
 
         let config_loader = builder
             .build()
@@ -34,5 +56,86 @@ impl AppConfig {
             .map_err(ConfigError::Parse)?;
 
         Ok(config)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_config_spreading() -> Result<(), Box<dyn std::error::Error>> {
+        let mut file = NamedTempFile::new()?;
+        writeln!(
+            file,
+            r#"
+[data_access]
+run = "test_run"
+
+[data_access.embed.openai]
+model_name = "text-embedding-3-small"
+api_key = "sk-..."
+
+[data_access.embed.fastembed]
+model_name = "BGEBaseENV15Q"
+
+[data_access.vector.qdrant]
+url = "http://localhost:6334"
+embedding_size = 1536
+
+[data_access.metadata.sqlite]
+filename = "my_sqlite.db"
+"#
+        )?;
+
+        let config = AppConfig::load_from_file(file.path())?;
+
+        assert_eq!(config.data_access.run, "test_run");
+        assert_eq!(
+            config.data_access.vector.qdrant.as_ref().unwrap().run,
+            "test_run"
+        );
+        assert_eq!(
+            config.data_access.metadata.sqlite.as_ref().unwrap().run,
+            "test_run"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_config_override() -> Result<(), Box<dyn std::error::Error>> {
+        let mut file = NamedTempFile::new()?;
+        writeln!(
+            file,
+            r#"
+[data_access]
+run = "global_run"
+
+[data_access.embed.fastembed]
+model_name = "BGEBaseENV15Q"
+
+[data_access.vector.qdrant]
+url = "http://localhost:6334"
+embedding_size = 1536
+run = "local_override"
+
+[data_access.metadata.sqlite]
+filename = "my_sqlite.db"
+"#
+        )?;
+
+        let config = AppConfig::load_from_file(file.path())?;
+
+        assert_eq!(config.data_access.run, "global_run");
+        // Other fields should still get the global run via spreading
+        assert_eq!(
+            config.data_access.vector.qdrant.as_ref().unwrap().run,
+            "local_override"
+        );
+
+        Ok(())
     }
 }

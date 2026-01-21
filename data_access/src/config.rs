@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct DataAccessConfig {
+    pub run: String,
     pub embed: EmbedConfig,
     pub vector: VectorConfig,
     pub metadata: MetadataConfig,

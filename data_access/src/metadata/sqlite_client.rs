@@ -14,7 +14,7 @@ pub struct SqliteClient {
 #[derive(Debug, Deserialize, Clone)]
 pub struct SqliteConfig {
     pub filename: String,
-    pub run_id: String,
+    pub run: String,
 }
 
 impl SqliteClient {
@@ -32,19 +32,16 @@ impl SqliteClient {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS idf_index (
                 word TEXT NOT NULL,
-                run_id TEXT NOT NULL,
+                run TEXT NOT NULL,
                 idf_value REAL NOT NULL,
-                UNIQUE(word, run_id)
+                UNIQUE(word, run)
             )",
             [],
         )
         .expect("Failed to create idf_index table");
 
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_run_id ON idf_index (run_id)",
-            [],
-        )
-        .expect("Failed to create index on run_id");
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_run ON idf_index (run)", [])
+            .expect("Failed to create index on run");
     }
 }
 
@@ -54,7 +51,7 @@ impl MetadataClient for SqliteClient {
         map: HashMap<String, f32>,
     ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
         let filename = self.config.filename.clone();
-        let run_id = self.config.run_id.clone();
+        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
@@ -67,17 +64,15 @@ impl MetadataClient for SqliteClient {
 
                 {
                     // Clear existing entries for this run_id to ensure overwrite
-                    tx.execute("DELETE FROM idf_index WHERE run_id = ?1", params![run_id])
+                    tx.execute("DELETE FROM idf_index WHERE run = ?1", params![run])
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     let mut stmt = tx
-                        .prepare(
-                            "INSERT INTO idf_index (word, run_id, idf_value) VALUES (?1, ?2, ?3)",
-                        )
+                        .prepare("INSERT INTO idf_index (word, run, idf_value) VALUES (?1, ?2, ?3)")
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     for (word, idf) in map.iter() {
-                        stmt.execute(params![word, run_id, idf])
+                        stmt.execute(params![word, run, idf])
                             .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     }
                 }
@@ -105,7 +100,7 @@ impl MetadataClient for SqliteClient {
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let mut stmt = conn
-                    .prepare("SELECT word, idf_value FROM idf_index WHERE run_id = ?1")
+                    .prepare("SELECT word, idf_value FROM idf_index WHERE run = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
@@ -144,13 +139,13 @@ mod tests {
             .as_nanos();
         let db_filename = format!("test_idf_{}.db", timestamp);
 
-        let run_id_1 = "run_1";
-        let run_id_2 = "run_2";
+        let run_1 = "run_1";
+        let run_2 = "run_2";
 
         // Setup client 1
         let config_1 = SqliteConfig {
             filename: db_filename.clone(),
-            run_id: run_id_1.to_string(),
+            run: run_1.to_string(),
         };
         let client_1 = SqliteClient::new(config_1);
 
@@ -166,7 +161,7 @@ mod tests {
 
         // 2. Load map for run_1
         let loaded_map_1 = client_1
-            .load_idf(run_id_1.to_string())
+            .load_idf(run_1.to_string())
             .await
             .expect("Failed to load map 1");
         assert_eq!(
@@ -177,7 +172,7 @@ mod tests {
         // 3. Store map for run_2
         let config_2 = SqliteConfig {
             filename: db_filename.clone(),
-            run_id: run_id_2.to_string(),
+            run: run_2.to_string(),
         };
         let client_2 = SqliteClient::new(config_2);
 
@@ -191,7 +186,7 @@ mod tests {
 
         // 4. Load map for run_2 and verify run_1 is untouched
         let loaded_map_2 = client_2
-            .load_idf(run_id_2.to_string())
+            .load_idf(run_2.to_string())
             .await
             .expect("Failed to load map 2");
         assert_eq!(
@@ -200,7 +195,7 @@ mod tests {
         );
 
         let loaded_map_1_again = client_1
-            .load_idf(run_id_1.to_string())
+            .load_idf(run_1.to_string())
             .await
             .expect("Failed to reload map 1");
         assert_eq!(
@@ -221,7 +216,7 @@ mod tests {
 
         // 6. Verify overwrite
         let loaded_map_1_new = client_1
-            .load_idf(run_id_1.to_string())
+            .load_idf(run_1.to_string())
             .await
             .expect("Failed to load overwritten map 1");
         assert_eq!(

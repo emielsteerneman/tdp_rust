@@ -8,8 +8,8 @@ use qdrant_client::{
         CollectionExistsRequest, CountPointsBuilder, CreateCollectionBuilder, Distance,
         GetCollectionInfoResponse, GetPointsBuilder, NamedVectors, PointId, PointStruct,
         QueryPointsBuilder, RetrievedPoint, ScrollPointsBuilder, UpsertPointsBuilder, Value,
-        VectorParamsBuilder, VectorParamsMap, Vectors, VectorsConfig, point_id, vectors,
-        vectors_config, vectors_output::VectorsOptions,
+        VectorParamsBuilder, VectorParamsMap, Vectors, VectorsConfig, point_id, vector_output,
+        vectors, vectors_config, vectors_output::VectorsOptions,
     },
 };
 use serde::Deserialize;
@@ -41,6 +41,7 @@ pub struct QdrantClient {
 pub struct QdrantConfig {
     pub url: String,
     pub embedding_size: u64,
+    pub run: String,
 }
 
 impl QdrantClient {
@@ -433,7 +434,12 @@ fn from_point_get_dense_vector(p: &RetrievedPoint) -> Option<Vec<f32>> {
         _ => return None,
     };
     let vector = v.vectors.get("dense")?.clone();
-    Some(vector.data)
+
+    if let vector_output::Vector::Dense(v) = vector.into_vector() {
+        Some(v.data)
+    } else {
+        None
+    }
 }
 
 fn from_collection_info_get_size(info: GetCollectionInfoResponse) -> u64 {
@@ -473,6 +479,7 @@ mod tests {
         let client = QdrantClient::new(QdrantConfig {
             url: "http://localhost:6334".to_string(),
             embedding_size: 1536,
+            run: "test_run".to_string(),
         })
         .await;
 
@@ -486,6 +493,7 @@ mod tests {
         let client = QdrantClient::new(QdrantConfig {
             url: "http://localhost:6334".to_string(),
             embedding_size: 1536,
+            run: "test_run".to_string(),
         })
         .await;
 
@@ -514,6 +522,7 @@ mod tests {
         let client = QdrantClient::new(QdrantConfig {
             url: "http://localhost:7334".to_string(),
             embedding_size: 3,
+            run: "test_run".to_string(),
         })
         .await;
 
@@ -523,7 +532,7 @@ mod tests {
 
         // Create chunk and store in database
         let chunk = Chunk {
-            embedding: vec![0.0; 10],
+            embedding: vec![0.0; 3],
             league_year_team_idx: "test_league__1998__test_team__0".to_string(),
             league: League::try_from("test_league").unwrap(),
             year: 1998,

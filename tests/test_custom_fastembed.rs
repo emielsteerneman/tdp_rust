@@ -23,7 +23,7 @@ pub async fn test_custom_fastembed() -> Result<(), Box<dyn Error>> {
     let vec = model.embed(vec!["Hello World! What's up"], Some(1))?;
     println!("{:?}", vec[0].iter().take(5).collect::<Vec<&f32>>());
 
-    let mut f = FastembedClient::new_with_custom_model()?;
+    let f = FastembedClient::new_with_custom_model()?;
     let vec = f.embed_string("Hello World! What's up").await?;
     println!("{:?}", vec.iter().take(5).collect::<Vec<&f32>>());
 
