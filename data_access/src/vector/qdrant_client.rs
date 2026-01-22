@@ -47,6 +47,8 @@ pub struct QdrantConfig {
 
 impl QdrantClient {
     const COLLECTION_NAME_CHUNK: &'static str = "chunk";
+    const EMBEDDING_NAME_DENSE: &'static str = "dense";
+    const EMBEDDING_NAME_SPARSE: &'static str = "sparse";
 
     pub async fn new(config: QdrantConfig) -> Result<Self, VectorClientError> {
         info!(
@@ -66,7 +68,7 @@ impl QdrantClient {
             let dense_vector_config = VectorsConfig {
                 config: Some(vectors_config::Config::ParamsMap(VectorParamsMap {
                     map: HashMap::from([(
-                        "dense".to_string(),
+                        Self::EMBEDDING_NAME_DENSE.to_string(),
                         VectorParamsBuilder::new(config.embedding_size, Distance::Cosine).into(),
                     )]),
                 })),
@@ -74,7 +76,7 @@ impl QdrantClient {
 
             let sparse_vector_config = SparseVectorConfig {
                 map: HashMap::from([(
-                    "sparse".to_string(),
+                    Self::EMBEDDING_NAME_SPARSE.to_string(),
                     SparseVectorParamsBuilder::default().into(),
                 )]),
             };
@@ -236,7 +238,16 @@ impl VectorClient for QdrantClient {
             id: Some(point_id),
             vectors: Some(Vectors {
                 vectors_options: Some(vectors::VectorsOptions::Vectors(NamedVectors {
-                    vectors: HashMap::from([("dense".to_string(), chunk.dense_embedding.into())]),
+                    vectors: HashMap::from([
+                        (
+                            Self::EMBEDDING_NAME_DENSE.to_string(),
+                            chunk.dense_embedding.into(),
+                        ),
+                        (
+                            Self::EMBEDDING_NAME_SPARSE.to_string(),
+                            chunk.sparse_embedding.into(),
+                        ),
+                    ]),
                 })),
             }),
             payload,
@@ -321,7 +332,7 @@ impl VectorClient for QdrantClient {
 
         let query = QueryPointsBuilder::new(Self::COLLECTION_NAME_CHUNK)
             .query(embedding)
-            .using("dense")
+            .using(Self::EMBEDDING_NAME_DENSE)
             .limit(limit)
             .with_payload(true);
 
@@ -356,14 +367,20 @@ pub trait IntoChunk {
 
 impl IntoChunk for RetrievedPoint {
     fn into_chunk(self) -> Result<Chunk, VectorClientError> {
-        let dense_embedding = from_point_get_dense_vector(&self)
-            .ok_or_else(|| VectorClientError::FieldMissing("embedding".to_string()))?;
+        let dense_embedding = from_point_get_dense_vector(&self).ok_or_else(|| {
+            VectorClientError::FieldMissing(QdrantClient::EMBEDDING_NAME_DENSE.to_string())
+        })?;
+
+        let sparse_embedding = from_point_get_sparse_vector(&self).ok_or_else(|| {
+            VectorClientError::FieldMissing(QdrantClient::EMBEDDING_NAME_SPARSE.to_string())
+        })?;
 
         let payload = self.payload;
 
         let mut chunk: Chunk = payload.into_chunk()?;
 
         chunk.dense_embedding = dense_embedding;
+        chunk.sparse_embedding = sparse_embedding;
 
         Ok(chunk)
     }
@@ -443,7 +460,7 @@ fn from_point_get_dense_vector(p: &RetrievedPoint) -> Option<Vec<f32>> {
         VectorsOptions::Vectors(v) => v,
         _ => return None,
     };
-    let vector = v.vectors.get("dense")?.clone();
+    let vector = v.vectors.get(QdrantClient::EMBEDDING_NAME_DENSE)?.clone();
 
     if let vector_output::Vector::Dense(v) = vector.into_vector() {
         Some(v.data)
@@ -457,7 +474,7 @@ fn from_point_get_sparse_vector(p: &RetrievedPoint) -> Option<HashMap<u32, f32>>
         VectorsOptions::Vectors(v) => v,
         _ => return None,
     };
-    let vector = v.vectors.get("sparse")?.clone();
+    let vector = v.vectors.get(QdrantClient::EMBEDDING_NAME_SPARSE)?.clone();
 
     if let vector_output::Vector::Sparse(v) = vector.into_vector() {
         let values = v.values;
@@ -476,7 +493,10 @@ fn from_collection_info_get_size(info: GetCollectionInfoResponse) -> u64 {
             todo!()
         }
         vectors_config::Config::ParamsMap(vector_params_map) => {
-            let params = vector_params_map.map.get("dense").unwrap();
+            let params = vector_params_map
+                .map
+                .get(QdrantClient::EMBEDDING_NAME_DENSE)
+                .unwrap();
             params.size
         }
     };
