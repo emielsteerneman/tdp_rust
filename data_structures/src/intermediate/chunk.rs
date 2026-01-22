@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -16,7 +18,8 @@ pub struct ChunkMetadata {
 
 #[derive(Clone, Serialize)]
 pub struct Chunk {
-    pub embedding: Vec<f32>,
+    pub dense_embedding: Vec<f32>,
+    pub sparse_embedding: HashMap<u32, f32>,
     // Filter
     pub league_year_team_idx: String,
     pub league: League,

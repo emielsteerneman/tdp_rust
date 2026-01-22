@@ -37,7 +37,7 @@ pub async fn tdp_to_chunks(tdp: &TDP, embed_client: Option<&dyn EmbedClient>) ->
             .into_iter()
             .zip(embeddings)
             .map(|(raw_chunk, embedding)| {
-                raw_chunk.into_chunk(embedding, tdp.name.clone(), i_paragraph)
+                raw_chunk.into_chunk(embedding, None, tdp.name.clone(), i_paragraph)
             })
             .collect::<Vec<Chunk>>();
         chunks.extend(paragraph_chunks);

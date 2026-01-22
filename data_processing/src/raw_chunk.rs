@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use data_structures::{file::TDPName, intermediate::Chunk, paper::Text};
 
 #[derive(Clone, Debug)]
@@ -12,19 +14,14 @@ pub struct RawChunk {
 impl RawChunk {
     pub fn into_chunk(
         self,
-        // embed_client: Option<&dyn EmbedClient>,
         embedding: Option<Vec<f32>>,
+        sparse_embedding: Option<HashMap<u32, f32>>,
         tdp_name: TDPName,
         paragraph_sequence_id: usize,
     ) -> Chunk {
-        let embedding = if let Some(embedding) = embedding {
-            embedding
-        } else {
-            vec![]
-        };
-
         Chunk {
-            embedding,
+            dense_embedding: embedding.unwrap_or_default(),
+            sparse_embedding: sparse_embedding.unwrap_or_default(),
             league_year_team_idx: tdp_name.get_filename(),
             league: tdp_name.league,
             year: tdp_name.year,

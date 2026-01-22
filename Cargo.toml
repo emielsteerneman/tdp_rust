@@ -4,7 +4,7 @@ members = [
     "configuration",
     "data_access",
     "data_processing",
-    "data_structures", "mcp",
+    "data_structures",
     "pipeline",
 ]
 

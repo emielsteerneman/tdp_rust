@@ -7,9 +7,10 @@ use qdrant_client::{
     qdrant::{
         CollectionExistsRequest, CountPointsBuilder, CreateCollectionBuilder, Distance,
         GetCollectionInfoResponse, GetPointsBuilder, NamedVectors, PointId, PointStruct,
-        QueryPointsBuilder, RetrievedPoint, ScrollPointsBuilder, UpsertPointsBuilder, Value,
-        VectorParamsBuilder, VectorParamsMap, Vectors, VectorsConfig, point_id, vector_output,
-        vectors, vectors_config, vectors_output::VectorsOptions,
+        QueryPointsBuilder, RetrievedPoint, ScrollPointsBuilder, SparseVectorConfig,
+        SparseVectorParamsBuilder, UpsertPointsBuilder, Value, VectorParamsBuilder,
+        VectorParamsMap, Vectors, VectorsConfig, point_id, vector_output, vectors, vectors_config,
+        vectors_output::VectorsOptions,
     },
 };
 use serde::Deserialize;
@@ -62,18 +63,26 @@ impl QdrantClient {
             .await?;
 
         if !collection_exists {
-            let mut vectors_config = HashMap::new();
-            vectors_config.insert(
-                "dense".to_string(),
-                VectorParamsBuilder::new(config.embedding_size, Distance::Cosine).into(),
-            );
-            let check = VectorsConfig {
+            let dense_vector_config = VectorsConfig {
                 config: Some(vectors_config::Config::ParamsMap(VectorParamsMap {
-                    map: vectors_config,
+                    map: HashMap::from([(
+                        "dense".to_string(),
+                        VectorParamsBuilder::new(config.embedding_size, Distance::Cosine).into(),
+                    )]),
                 })),
             };
-            let builder =
-                CreateCollectionBuilder::new(Self::COLLECTION_NAME_CHUNK).vectors_config(check);
+
+            let sparse_vector_config = SparseVectorConfig {
+                map: HashMap::from([(
+                    "sparse".to_string(),
+                    SparseVectorParamsBuilder::default().into(),
+                )]),
+            };
+
+            let builder = CreateCollectionBuilder::new(Self::COLLECTION_NAME_CHUNK)
+                .vectors_config(dense_vector_config)
+                .sparse_vectors_config(sparse_vector_config);
+
             client.create_collection(builder).await?;
         }
 
@@ -194,7 +203,7 @@ impl QdrantClient {
 #[async_trait]
 impl VectorClient for QdrantClient {
     async fn store_chunk(&self, chunk: Chunk) -> Result<(), VectorClientError> {
-        self.validate_embedding_size(chunk.embedding.len())?;
+        self.validate_embedding_size(chunk.dense_embedding.len())?;
 
         let id = chunk.to_uuid();
         let point_id: PointId = id.to_string().into();
@@ -227,7 +236,7 @@ impl VectorClient for QdrantClient {
             id: Some(point_id),
             vectors: Some(Vectors {
                 vectors_options: Some(vectors::VectorsOptions::Vectors(NamedVectors {
-                    vectors: HashMap::from([("dense".to_string(), chunk.embedding.into())]),
+                    vectors: HashMap::from([("dense".to_string(), chunk.dense_embedding.into())]),
                 })),
             }),
             payload,
@@ -347,14 +356,14 @@ pub trait IntoChunk {
 
 impl IntoChunk for RetrievedPoint {
     fn into_chunk(self) -> Result<Chunk, VectorClientError> {
-        let embedding = from_point_get_dense_vector(&self)
+        let dense_embedding = from_point_get_dense_vector(&self)
             .ok_or_else(|| VectorClientError::FieldMissing("embedding".to_string()))?;
 
         let payload = self.payload;
 
         let mut chunk: Chunk = payload.into_chunk()?;
 
-        chunk.embedding = embedding;
+        chunk.dense_embedding = dense_embedding;
 
         Ok(chunk)
     }
@@ -403,7 +412,8 @@ impl IntoChunk for HashMap<String, Value> {
             .ok_or_else(|| VectorClientError::FieldMissing("text".to_string()))?;
 
         Ok(Chunk {
-            embedding: vec![],
+            dense_embedding: vec![],
+            sparse_embedding: HashMap::new(),
             league_year_team_idx,
             league,
             year,
@@ -442,6 +452,22 @@ fn from_point_get_dense_vector(p: &RetrievedPoint) -> Option<Vec<f32>> {
     }
 }
 
+fn from_point_get_sparse_vector(p: &RetrievedPoint) -> Option<HashMap<u32, f32>> {
+    let v = match p.vectors.as_ref()?.vectors_options.as_ref()? {
+        VectorsOptions::Vectors(v) => v,
+        _ => return None,
+    };
+    let vector = v.vectors.get("sparse")?.clone();
+
+    if let vector_output::Vector::Sparse(v) = vector.into_vector() {
+        let values = v.values;
+        let indices = v.indices;
+        Some(indices.into_iter().zip(values.into_iter()).collect())
+    } else {
+        None
+    }
+}
+
 fn from_collection_info_get_size(info: GetCollectionInfoResponse) -> u64 {
     let params = info.result.unwrap().config.unwrap().params.unwrap();
     let config = params.vectors_config.unwrap().config.unwrap();
@@ -464,6 +490,7 @@ fn from_collection_info_get_n(info: GetCollectionInfoResponse) -> u64 {
 #[cfg(test)]
 mod tests {
 
+    use std::collections::HashMap;
     use std::time::Duration;
 
     use crate::vector::{QdrantClient, QdrantConfig, VectorClient};
@@ -532,7 +559,8 @@ mod tests {
 
         // Create chunk and store in database
         let chunk = Chunk {
-            embedding: vec![0.0; 3],
+            dense_embedding: vec![0.0; 3],
+            sparse_embedding: HashMap::from([(1, 1.0), (2, 2.0)]),
             league_year_team_idx: "test_league__1998__test_team__0".to_string(),
             league: League::try_from("test_league").unwrap(),
             year: 1998,
