@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 
+use data_structures::IDF;
 use rusqlite::{Connection, params};
 use serde::Deserialize;
 
@@ -49,7 +50,7 @@ impl SqliteClient {
 impl MetadataClient for SqliteClient {
     fn store_idf<'a>(
         &'a self,
-        map: HashMap<String, (u32, f32)>,
+        map: IDF,
     ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
         let filename = self.config.filename.clone();
         let run = self.config.run.clone();

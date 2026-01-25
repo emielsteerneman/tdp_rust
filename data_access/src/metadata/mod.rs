@@ -1,6 +1,7 @@
 use std::{collections::HashMap, pin::Pin};
 
 mod sqlite_client;
+use data_structures::IDF;
 pub use sqlite_client::{SqliteClient, SqliteConfig};
 
 #[derive(thiserror::Error, Debug)]
@@ -20,7 +21,7 @@ pub enum MetadataClientError {
 pub trait MetadataClient {
     fn store_idf<'a>(
         &'a self,
-        map: HashMap<String, (u32, f32)>,
+        map: IDF,
     ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>>;
 
     fn load_idf<'a>(

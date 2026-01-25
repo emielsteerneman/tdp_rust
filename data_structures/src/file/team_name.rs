@@ -22,6 +22,15 @@ impl TeamName {
     }
 }
 
+impl Default for TeamName {
+    fn default() -> Self {
+        Self {
+            name: "roboteam_twente".to_string(),
+            name_pretty: "RoboTeam Twente".to_string(),
+        }
+    }
+}
+
 impl Into<String> for TeamName {
     fn into(self) -> String {
         self.name

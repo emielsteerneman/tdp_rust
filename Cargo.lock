@@ -1131,6 +1131,8 @@ dependencies = [
  "ndarray",
  "num-traits",
  "scirs2-text",
+ "serde_json",
+ "tokio",
  "tracing",
  "uuid",
 ]

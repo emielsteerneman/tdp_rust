@@ -1,4 +1,8 @@
+use data_structures::{intermediate::Chunk, paper::TDP};
 use scirs2_text::{BasicNormalizer, BasicTextCleaner, preprocess::TextPreprocessor};
+use tracing::{info, warn};
+
+use crate::tdp_to_chunks;
 
 pub fn process_text_to_words(text: &str) -> (Vec<String>, Vec<String>, Vec<String>) {
     let cleaner = TextPreprocessor::new(
@@ -22,12 +26,52 @@ pub fn process_text_to_words(text: &str) -> (Vec<String>, Vec<String>, Vec<Strin
         .map(|a_b: &[String]| format!("{} {} {}", a_b[0], a_b[1], a_b[2]))
         .collect::<Vec<_>>();
 
-    // let mut all = Vec::<String>::with_capacity(words.len() + ngram2.len() + ngram2.len());
-    // all.extend(words);
-    // all.extend(ngram2);
-    // all.extend(ngram3);
-
     (words, ngram2, ngram3)
+}
+
+pub async fn load_all_tdp_jsons() -> Result<Vec<TDP>, Box<dyn std::error::Error>> {
+    let mut tdps = Vec::new();
+    let folder_path = "/home/emiel/projects/tdps_json";
+    let files = std::fs::read_dir(folder_path)?;
+
+    for entry in files {
+        let path = entry?.path();
+
+        if path.extension().and_then(|s| s.to_str()) != Some("json") {
+            continue;
+        }
+
+        // Check if "smallsize" in the path
+        // warn!("Don't forget to remove the 'smallsize' check");
+        if !path.to_str().unwrap().contains("smallsize") {
+            continue;
+        }
+        if !path.to_str().unwrap().contains("2024") {
+            continue;
+        }
+
+        let content = tokio::fs::read_to_string(&path).await?;
+        let tdp: TDP = serde_json::from_str(&content)?;
+        tdps.push(tdp);
+    }
+
+    info!("Parsed {} tdps", tdps.len());
+
+    Ok(tdps)
+}
+
+// TODO very annoying that this is async just because tdp_to_chunks is async
+pub async fn load_all_chunks_from_tdps(
+    tdps: &[TDP],
+) -> Result<Vec<Chunk>, Box<dyn std::error::Error>> {
+    let mut chunks = vec![];
+    for tdp in tdps {
+        chunks.append(&mut tdp_to_chunks(&tdp, None).await);
+    }
+
+    info!("Created {} chunks", chunks.len());
+
+    Ok(chunks)
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use data_access::embed::EmbedClient;
 use data_structures::{intermediate::Chunk, paper::TDP};
-use tracing::{info, instrument};
+use tracing::{debug, instrument};
 
 use super::create_sentence_chunks;
 
@@ -9,7 +9,7 @@ pub async fn tdp_to_chunks(tdp: &TDP, embed_client: Option<&dyn EmbedClient>) ->
     let mut chunks = Vec::<Chunk>::new();
 
     for (i_paragraph, paragraph) in tdp.structure.paragraphs.iter().enumerate() {
-        info!("Processing paragraph: {}", paragraph.title.raw);
+        debug!("Processing paragraph: {}", paragraph.title.raw);
         let raw_chunks = create_sentence_chunks(paragraph.sentences.clone(), 500, 100);
 
         let texts = raw_chunks
@@ -20,7 +20,7 @@ pub async fn tdp_to_chunks(tdp: &TDP, embed_client: Option<&dyn EmbedClient>) ->
         let texts_ref = texts.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
 
         let embeddings: Vec<Option<Vec<f32>>> = if let Some(embed_client) = embed_client {
-            info!("Embedding {} texts", texts.len());
+            debug!("Embedding {} texts", texts.len());
             embed_client
                 .embed_strings(texts_ref)
                 .await
@@ -29,7 +29,7 @@ pub async fn tdp_to_chunks(tdp: &TDP, embed_client: Option<&dyn EmbedClient>) ->
                 .map(|embedding| Some(embedding))
                 .collect()
         } else {
-            info!("No embed client provided, skipping embedding");
+            debug!("No embed client provided, skipping embedding");
             vec![None; texts.len()]
         };
 

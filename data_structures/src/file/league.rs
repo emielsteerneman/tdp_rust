@@ -34,6 +34,18 @@ impl League {
     }
 }
 
+impl Default for League {
+    fn default() -> Self {
+        Self {
+            league_major: "soccer".to_string(),
+            league_minor: "smallsize".to_string(),
+            league_sub: None,
+            name: "soccer_smallsize".to_string(),
+            name_pretty: "Soccer SmallSize".to_string(),
+        }
+    }
+}
+
 impl TryFrom<&str> for League {
     type Error = LeagueParseError;
 
