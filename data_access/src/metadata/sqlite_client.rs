@@ -5,6 +5,7 @@ use std::pin::Pin;
 use data_structures::IDF;
 use rusqlite::{Connection, params};
 use serde::Deserialize;
+use tracing::info;
 
 use crate::metadata::{MetadataClient, MetadataClientError};
 
@@ -112,6 +113,7 @@ impl MetadataClient for SqliteClient {
                     .prepare("SELECT word, idx, idf FROM idf_index WHERE run = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
+                info!("Retrieving IDF from sqlite database..");
                 let rows = stmt
                     .query_map(params![run], |row| {
                         Ok((
@@ -128,6 +130,8 @@ impl MetadataClient for SqliteClient {
                         row.map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     map.insert(word, (idx, idf));
                 }
+
+                info!("Retrieved IDF with {} rows", map.len());
 
                 Ok(map)
             })
