@@ -1,6 +1,6 @@
 use data_structures::{intermediate::Chunk, paper::TDP};
 use scirs2_text::{BasicNormalizer, BasicTextCleaner, preprocess::TextPreprocessor};
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::tdp_to_chunks;
 
