@@ -20,11 +20,17 @@ pub enum MetadataClientError {
 pub trait MetadataClient {
     fn store_idf<'a>(
         &'a self,
-        map: HashMap<String, f32>,
+        map: HashMap<String, (u32, f32)>,
     ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>>;
 
     fn load_idf<'a>(
         &'a self,
         run: String,
-    ) -> Pin<Box<dyn Future<Output = Result<HashMap<String, f32>, MetadataClientError>> + Send + 'a>>;
+    ) -> Pin<
+        Box<
+            dyn Future<Output = Result<HashMap<String, (u32, f32)>, MetadataClientError>>
+                + Send
+                + 'a,
+        >,
+    >;
 }

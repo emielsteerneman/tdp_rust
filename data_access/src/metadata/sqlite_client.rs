@@ -33,7 +33,8 @@ impl SqliteClient {
             "CREATE TABLE IF NOT EXISTS idf_index (
                 word TEXT NOT NULL,
                 run TEXT NOT NULL,
-                idf_value REAL NOT NULL,
+                idx INTEGER NOT NULL,
+                idf REAL NOT NULL,
                 UNIQUE(word, run)
             )",
             [],
@@ -48,7 +49,7 @@ impl SqliteClient {
 impl MetadataClient for SqliteClient {
     fn store_idf<'a>(
         &'a self,
-        map: HashMap<String, f32>,
+        map: HashMap<String, (u32, f32)>,
     ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
         let filename = self.config.filename.clone();
         let run = self.config.run.clone();
@@ -68,11 +69,13 @@ impl MetadataClient for SqliteClient {
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     let mut stmt = tx
-                        .prepare("INSERT INTO idf_index (word, run, idf_value) VALUES (?1, ?2, ?3)")
+                        .prepare(
+                            "INSERT INTO idf_index (word, run, idx, idf) VALUES (?1, ?2, ?3, ?4)",
+                        )
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
-                    for (word, idf) in map.iter() {
-                        stmt.execute(params![word, run, idf])
+                    for (word, (idx, idf)) in map.iter() {
+                        stmt.execute(params![word, run, idx, idf])
                             .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     }
                 }
@@ -90,8 +93,13 @@ impl MetadataClient for SqliteClient {
     fn load_idf<'a>(
         &'a self,
         run: String,
-    ) -> Pin<Box<dyn Future<Output = Result<HashMap<String, f32>, MetadataClientError>> + Send + 'a>>
-    {
+    ) -> Pin<
+        Box<
+            dyn Future<Output = Result<HashMap<String, (u32, f32)>, MetadataClientError>>
+                + Send
+                + 'a,
+        >,
+    > {
         let filename = self.config.filename.clone();
 
         Box::pin(async move {
@@ -100,20 +108,24 @@ impl MetadataClient for SqliteClient {
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let mut stmt = conn
-                    .prepare("SELECT word, idf_value FROM idf_index WHERE run = ?1")
+                    .prepare("SELECT word, idx, idf FROM idf_index WHERE run = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
                     .query_map(params![run], |row| {
-                        Ok((row.get::<_, String>(0)?, row.get::<_, f32>(1)?))
+                        Ok((
+                            row.get::<_, String>(0)?,
+                            row.get::<_, u32>(1)?,
+                            row.get::<_, f32>(2)?,
+                        ))
                     })
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let mut map = HashMap::new();
                 for row in rows {
-                    let (word, idf) =
+                    let (word, idx, idf) =
                         row.map_err(|e| MetadataClientError::Internal(e.to_string()))?;
-                    map.insert(word, idf);
+                    map.insert(word, (idx, idf));
                 }
 
                 Ok(map)
@@ -151,8 +163,8 @@ mod tests {
 
         // 1. Store map for run_1
         let mut map_1 = HashMap::new();
-        map_1.insert("apple".to_string(), 1.0);
-        map_1.insert("banana".to_string(), 2.0);
+        map_1.insert("apple".to_string(), (1, 1.0));
+        map_1.insert("banana".to_string(), (2, 2.0));
 
         client_1
             .store_idf(map_1.clone())
@@ -177,7 +189,7 @@ mod tests {
         let client_2 = SqliteClient::new(config_2);
 
         let mut map_2 = HashMap::new();
-        map_2.insert("cherry".to_string(), 3.0);
+        map_2.insert("cherry".to_string(), (3, 3.0));
 
         client_2
             .store_idf(map_2.clone())
@@ -205,8 +217,8 @@ mod tests {
 
         // 5. Overwrite run_1
         let mut map_1_new = HashMap::new();
-        map_1_new.insert("apple".to_string(), 1.5); // Updated value
-        map_1_new.insert("date".to_string(), 4.0); // New value
+        map_1_new.insert("apple".to_string(), (1, 1.5)); // Updated value
+        map_1_new.insert("date".to_string(), (4, 4.0)); // New value
         // "banana" is removed
 
         client_1
@@ -232,5 +244,26 @@ mod tests {
 
         // 7. Cleanup
         fs::remove_file(&db_filename).expect("Failed to delete database file");
+    }
+
+    #[tokio::test]
+    async fn test_read_existing_db() -> Result<(), Box<dyn std::error::Error>> {
+        let db_filename = "../my_sqlite.db";
+
+        // Check if file exists
+        match std::fs::exists(db_filename) {
+            Ok(true) => {}
+            _ => return Err("Database file does not exist".into()),
+        };
+
+        let conn = Connection::open(&db_filename)
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM idf_index", [], |row| row.get(0))
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+        println!("Number of entries in {db_filename} : {count}");
+        Ok(())
     }
 }
