@@ -7,8 +7,8 @@ use qdrant_client::{
     qdrant::{
         CollectionExistsRequest, CountPointsBuilder, CreateCollectionBuilder, Distance,
         GetCollectionInfoResponse, GetPointsBuilder, NamedVectors, PointId, PointStruct,
-        QueryPointsBuilder, RetrievedPoint, ScrollPointsBuilder, SparseVectorConfig,
-        SparseVectorParamsBuilder, UpsertPointsBuilder, Value, VectorParamsBuilder,
+        QueryPointsBuilder, RetrievedPoint, ScrollPointsBuilder, SparseVector, SparseVectorConfig,
+        SparseVectorParamsBuilder, UpsertPointsBuilder, Value, Vector, VectorParamsBuilder,
         VectorParamsMap, Vectors, VectorsConfig, point_id, vector_output, vectors, vectors_config,
         vectors_output::VectorsOptions,
     },
@@ -243,10 +243,15 @@ impl VectorClient for QdrantClient {
                             Self::EMBEDDING_NAME_DENSE.to_string(),
                             chunk.dense_embedding.into(),
                         ),
-                        (
-                            Self::EMBEDDING_NAME_SPARSE.to_string(),
-                            chunk.sparse_embedding.into(),
-                        ),
+                        (Self::EMBEDDING_NAME_SPARSE.to_string(), {
+                            let mut pairs: Vec<_> =
+                                chunk.sparse_embedding.clone().into_iter().collect();
+                            // TODO Figure out if this sort_by_key is actually needed.
+                            // It's not needed for HashMap equality, but maybe Qdrant needs it?
+                            pairs.sort_by_key(|(k, _)| *k);
+                            let (indices, values): (Vec<_>, Vec<_>) = pairs.into_iter().unzip();
+                            Vector::from(SparseVector { indices, values })
+                        }),
                     ]),
                 })),
             }),
@@ -521,6 +526,12 @@ mod tests {
     use testcontainers::{GenericImage, runners::AsyncRunner};
     use tokio::time::sleep;
 
+    fn normalize(vec: Vec<f32>) -> Vec<f32> {
+        let len_squared: f32 = vec.iter().map(|f| f * f).sum();
+        let len = len_squared.sqrt();
+        vec.into_iter().map(|f| f / len).collect()
+    }
+
     #[tokio::test]
     async fn test_create_client() -> Result<(), Box<dyn std::error::Error>> {
         let client = QdrantClient::new(QdrantConfig {
@@ -577,10 +588,13 @@ mod tests {
 
         let client = client.unwrap();
 
+        let dense_embedding = normalize(vec![1.0, 3.0, 2.0]);
+        let sparse_embedding = HashMap::from([(1, 1.0), (3, 3.0), (2, 2.0)]);
+
         // Create chunk and store in database
         let chunk = Chunk {
-            dense_embedding: vec![0.0; 3],
-            sparse_embedding: HashMap::from([(1, 1.0), (2, 2.0)]),
+            dense_embedding: dense_embedding.clone(),
+            sparse_embedding: sparse_embedding.clone(),
             league_year_team_idx: "test_league__1998__test_team__0".to_string(),
             league: League::try_from("test_league").unwrap(),
             year: 1998,
@@ -604,6 +618,8 @@ mod tests {
             chunk.league_year_team_idx,
             retrieved_chunk.league_year_team_idx
         );
+        assert_eq!(dense_embedding, retrieved_chunk.dense_embedding);
+        assert_eq!(sparse_embedding, retrieved_chunk.sparse_embedding);
 
         Ok(())
     }

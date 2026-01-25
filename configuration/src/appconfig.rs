@@ -26,7 +26,7 @@ impl AppConfig {
         let mut builder =
             ConfigLoader::builder().add_source(File::from(path.as_ref()).format(FileFormat::Toml));
 
-        // Initial build to extract the global run variable
+        // Initial build to extract the data_acces.run variable
         let temp_config = builder
             .clone()
             .build()
