@@ -17,12 +17,12 @@ pub async fn tdp_to_chunks(tdp: &TDP, embed_client: Option<&dyn EmbedClient>) ->
             .map(|chunk| chunk.text.clone())
             .collect::<Vec<String>>();
 
-        let texts_ref = texts.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+        // let texts_ref = texts.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
 
         let embeddings: Vec<Option<Vec<f32>>> = if let Some(embed_client) = embed_client {
             debug!("Embedding {} texts", texts.len());
             embed_client
-                .embed_strings(texts_ref)
+                .embed_strings(texts)
                 .await
                 .unwrap()
                 .into_iter()

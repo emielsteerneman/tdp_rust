@@ -46,9 +46,9 @@ pub async fn load_all_tdp_jsons() -> Result<Vec<TDP>, Box<dyn std::error::Error>
         if !path.to_str().unwrap().contains("smallsize") {
             continue;
         }
-        if !path.to_str().unwrap().contains("2024") {
-            continue;
-        }
+        // if !path.to_str().unwrap().contains("2024") {
+        //     continue;
+        // }
 
         let content = tokio::fs::read_to_string(&path).await?;
         let tdp: TDP = serde_json::from_str(&content)?;

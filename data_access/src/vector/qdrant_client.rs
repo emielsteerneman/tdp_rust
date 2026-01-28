@@ -5,12 +5,12 @@ use point_id::PointIdOptions::Uuid as PointUuid;
 use qdrant_client::{
     Qdrant, QdrantError,
     qdrant::{
-        CollectionExistsRequest, CountPointsBuilder, CreateCollectionBuilder, Distance,
+        CollectionExistsRequest, CountPointsBuilder, CreateCollectionBuilder, Distance, Fusion,
         GetCollectionInfoResponse, GetPointsBuilder, NamedVectors, PointId, PointStruct,
-        QueryPointsBuilder, RetrievedPoint, ScrollPointsBuilder, SparseVector, SparseVectorConfig,
-        SparseVectorParamsBuilder, UpsertPointsBuilder, Value, Vector, VectorParamsBuilder,
-        VectorParamsMap, Vectors, VectorsConfig, point_id, vector_output, vectors, vectors_config,
-        vectors_output::VectorsOptions,
+        PrefetchQueryBuilder, Query, QueryPointsBuilder, RetrievedPoint, ScrollPointsBuilder,
+        SparseVector, SparseVectorConfig, SparseVectorParamsBuilder, UpsertPointsBuilder, Value,
+        Vector, VectorParamsBuilder, VectorParamsMap, Vectors, VectorsConfig, point_id,
+        vector_output, vectors, vectors_config, vectors_output::VectorsOptions,
     },
 };
 use serde::Deserialize;
@@ -328,40 +328,58 @@ impl VectorClient for QdrantClient {
         Ok(point.clone().into_chunk()?)
     }
 
-    async fn search_chunks_by_embedding(
+    async fn search_chunks(
         &self,
-        embedding: Vec<f32>,
+        dense: Option<Vec<f32>>,
+        sparse: Option<HashMap<u32, f32>>,
         limit: u64,
-    ) -> Result<Vec<Chunk>, VectorClientError> {
-        self.validate_embedding_size(embedding.len())?;
+    ) -> Result<Vec<(Chunk, f32)>, VectorClientError> {
+        if let Some(ref d) = dense {
+            self.validate_embedding_size(d.len())?;
+        }
 
-        let query = QueryPointsBuilder::new(Self::COLLECTION_NAME_CHUNK)
-            .query(embedding)
-            .using(Self::EMBEDDING_NAME_DENSE)
+        let mut query_builder = QueryPointsBuilder::new(Self::COLLECTION_NAME_CHUNK)
             .limit(limit)
             .with_payload(true);
 
-        let response = self.client.query(query).await?;
+        match (dense, sparse) {
+            (Some(dense_vector), Some(sparse_vector)) => {
+                let sparse_vector: Vec<(u32, f32)> = sparse_vector.into_iter().collect();
 
-        // println!("response: {response:?}");
+                query_builder = query_builder.add_prefetch(
+                    PrefetchQueryBuilder::default()
+                        .query(Query::new_nearest(sparse_vector.as_slice()))
+                        .using(Self::EMBEDDING_NAME_SPARSE)
+                        .limit(limit),
+                );
 
-        for point in &response.result {
-            println!("\n");
-            println!("score: {}", point.score);
-            println!(
-                "lyti: {}",
-                from_payload_get_string(&point.payload, "league_year_team_idx").unwrap()
-            );
-            println!(
-                "text: {}",
-                from_payload_get_string(&point.payload, "text").unwrap()
-            );
-        }
+                query_builder = query_builder.add_prefetch(
+                    PrefetchQueryBuilder::default()
+                        .query(Query::new_nearest(dense_vector))
+                        .using(Self::EMBEDDING_NAME_DENSE)
+                        .limit(limit),
+                );
+
+                query_builder = query_builder.query(Query::new_fusion(Fusion::Rrf));
+            }
+            (Some(d), None) => {
+                query_builder = query_builder.query(d).using(Self::EMBEDDING_NAME_DENSE);
+            }
+            (None, Some(s)) => {
+                let sparse_vector: Vec<(u32, f32)> = s.into_iter().collect();
+                query_builder = query_builder
+                    .query(sparse_vector)
+                    .using(Self::EMBEDDING_NAME_SPARSE);
+            }
+            (None, None) => return Err(VectorClientError::Empty),
+        };
+
+        let response = self.client.query(query_builder).await?;
 
         response
             .result
             .into_iter()
-            .map(|point| point.payload.into_chunk())
+            .map(|point| point.payload.into_chunk().map(|c| (c, point.score)))
             .collect()
     }
 }

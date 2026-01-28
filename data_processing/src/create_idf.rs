@@ -60,6 +60,15 @@ pub fn create_idf(texts: &[&str], min_counts: &[u32; 3]) -> IDF {
     let mut id_factory: u32 = 0;
     let mut idf_map: HashMap<String, (u32, f32)> = HashMap::new();
 
+    // ===================================================
+    let mut total_doc_count = HashMap::<String, u32>::new();
+    for i in 0..3 {
+        for (word, doc_count) in doc_counts[i].iter() {
+            *total_doc_count.entry(word.clone()).or_insert(0) += doc_count;
+        }
+    }
+    // ===================================================
+
     for i in 0..3 {
         for (word, doc_count) in doc_counts[i].drain() {
             let id = id_factory;
@@ -71,6 +80,26 @@ pub fn create_idf(texts: &[&str], min_counts: &[u32; 3]) -> IDF {
             idf_map.insert(word, (id, weighted_idf));
         }
     }
+
+    // ==========================================
+    let mut items = idf_map.clone().into_iter().collect::<Vec<_>>();
+    let n_items = items.len();
+    // Stupid lame weird sort needed because f32 does not implement Ord (f32 can be NaN)
+    items.sort_by(|(_, (_, idf_a)), (_, (_, idf_b))| {
+        idf_b
+            .partial_cmp(&idf_a)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    for (word, (_, idf)) in items.into_iter().take(10000) {
+        println!(
+            "{word:<40}: {idf:.4} : {}",
+            total_doc_count.get(&word).unwrap()
+        );
+    }
+    println!("Total amount of words: {n_items}");
+    println!("path planning: {:?} -> {:?}", total_doc_count.get("path planning"), idf_map.get("path planning"));
+    // ==========================================
 
     idf_map
 }

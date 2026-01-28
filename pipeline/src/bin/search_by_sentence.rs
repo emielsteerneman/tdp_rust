@@ -15,7 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let embedding = embed_client.embed_string(query).await?;
 
     vector_client
-        .search_chunks_by_embedding(embedding, 3)
+        .search_chunks(Some(embedding), None, 3)
         .await?;
 
     Ok(())
