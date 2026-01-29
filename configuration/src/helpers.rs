@@ -6,9 +6,9 @@ use data_access::{
 };
 use tracing::info;
 
-pub fn load_any_embed_client(config: &AppConfig) -> Box<dyn EmbedClient> {
+pub fn load_any_embed_client(config: &AppConfig) -> Box<dyn EmbedClient + Send + Sync> {
     // Initialize embed client based on config
-    let embed_client: Box<dyn EmbedClient> =
+    let embed_client: Box<dyn EmbedClient + Send + Sync> =
         if let Some(openai_cfg) = &config.data_access.embed.openai {
             info!(
                 "Using OpenAI Embeddings with model: {}",
@@ -27,9 +27,9 @@ pub fn load_any_embed_client(config: &AppConfig) -> Box<dyn EmbedClient> {
 
 pub async fn load_any_vector_client(
     config: &AppConfig,
-) -> Result<Box<dyn VectorClient>, Box<dyn std::error::Error>> {
+) -> anyhow::Result<Box<dyn VectorClient + Send + Sync>> {
     // Initialize vector client based on config
-    let vector_client: Box<dyn VectorClient> =
+    let vector_client: Box<dyn VectorClient + Send + Sync> =
         if let Some(qdrant_cfg) = &config.data_access.vector.qdrant {
             info!("Using Qdrant");
             let client = QdrantClient::new(qdrant_cfg.clone()).await?;
@@ -41,9 +41,9 @@ pub async fn load_any_vector_client(
     Ok(vector_client)
 }
 
-pub fn load_any_metadata_client(config: &AppConfig) -> Box<dyn MetadataClient> {
+pub fn load_any_metadata_client(config: &AppConfig) -> Box<dyn MetadataClient + Send + Sync> {
     // Initialize metadata client based on config
-    let metadata_client: Box<dyn MetadataClient> =
+    let metadata_client: Box<dyn MetadataClient + Send + Sync> =
         if let Some(sqlite_cfg) = &config.data_access.metadata.sqlite {
             info!("Using SQLite Metadata with file: {}", sqlite_cfg.filename);
             Box::new(SqliteClient::new(sqlite_cfg.clone()))

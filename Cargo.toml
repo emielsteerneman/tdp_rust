@@ -1,13 +1,13 @@
 [workspace]
 resolver = "3"
-members = [ 
+members = [
     "configuration",
     "data_access",
     "data_processing",
     "data_structures",
+    "mcp",
     "pipeline",
 ]
-
 
 [workspace.dependencies]
 tracing = "0.1.43"
@@ -17,7 +17,6 @@ tracing-subscriber = "0.3.22"
 name = "tdp_rust"   # meta crate name
 version = "0.1.0"
 edition = "2021"
-
 
 [dependencies]
 configuration = { path = "configuration" }
