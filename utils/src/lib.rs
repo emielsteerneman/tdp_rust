@@ -2,64 +2,56 @@ use std::collections::HashMap;
 
 use data_processing::utils::process_text_to_words;
 
-fn similarity(a: &str, b: &str) -> i32 {
-    let abc = "abcdefghijklmnopqrstuvwxyz";
-    let count_a: Vec<u32> = abc
-        .chars()
-        .map(|c| a.chars().filter(|x| *x == c).count() as u32)
-        .collect();
-    let count_b: Vec<u32> = abc
-        .chars()
-        .map(|c| b.chars().filter(|x| *x == c).count() as u32)
-        .collect();
-
-    let mut score = 0i32;
-    for (ca, cb) in count_a.into_iter().zip(count_b.into_iter()) {
-        if ca != 0 && cb != 0 {
-            score += if ca == cb { 1 } else { -1 };
-        }
-    }
-    score
-}
+use strsim::jaro_winkler;
 
 pub fn match_names(teams: Vec<String>, input: String) -> Vec<String> {
-    let (n1, n2, n3) = process_text_to_words(&input);
-    let inputs = n1.into_iter().chain(n2).chain(n3).collect::<Vec<_>>();
+    let (n1, n2, n3) = process_text_to_words(&input.to_lowercase());
+    let query_fragments = n1.into_iter().chain(n2).chain(n3).collect::<Vec<_>>();
 
-    let mut scores = HashMap::<String, i32>::new();
-
-    for input in &inputs {
-        for team in &teams {
-            let score = similarity(team, input);
-            println!("   {team:20} | {input:20} | {score}");
-            scores
-                .entry(team.clone())
-                .and_modify(|v| *v = score.max(*v))
-                .or_insert(score);
-        }
-    }
+    let mut scores = HashMap::<String, f64>::new();
 
     for team in &teams {
-        match scores.get(team) {
-            Some(score) => println!("{team:40} {score}"),
-            None => println!("{team:40} /"),
+        // Process team name into fragments to handle multi-word teams and punctuation
+        let team_lower = team.to_lowercase();
+        let (t_n1, t_n2, t_n3) = process_text_to_words(&team_lower);
+
+        let mut team_fragments = t_n1.into_iter().chain(t_n2).chain(t_n3).collect::<Vec<_>>();
+
+        // Add "stripped" version of the team name (only alphanumeric)
+        // This helps match "erforce" to "Er-Force"
+        let stripped_team: String = team_lower.chars().filter(|c| c.is_alphanumeric()).collect();
+        if !stripped_team.is_empty() {
+            team_fragments.push(stripped_team);
         }
+
+        // Find best match between any query fragment and any team fragment
+        let mut max_score = 0.0;
+
+        for q_frag in &query_fragments {
+            for t_frag in &team_fragments {
+                let score = jaro_winkler(t_frag, q_frag);
+                if score > max_score {
+                    max_score = score;
+                }
+            }
+        }
+
+        scores.insert(team.clone(), max_score);
     }
 
-    vec![]
+    let mut result: Vec<_> = scores.into_iter().collect();
+    // Sort descending
+    result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-    // scores.sort();
-    // scores.reverse();
+    for (team, score) in &result {
+        println!("{team:40} {score:.4}");
+    }
 
-    // for (score, team) in scores.iter() {
-    //     println!("{score} : {team}");
-    // }
-
-    // scores
-    //     .into_iter()
-    //     .filter(|(s, _)| 0 < *s)
-    //     .map(|(_, t)| t)
-    //     .collect()
+    result
+        .into_iter()
+        .filter(|(_, score)| *score > 0.9)
+        .map(|(t, _)| t)
+        .collect()
 }
 
 #[cfg(test)]
@@ -85,22 +77,10 @@ mod tests {
         let teams = vec![
             "Er-Force".to_string(),
             "RFC Cambridge".to_string(),
-            "Delft Mercurians m".to_string(),
+            "Delft Mercurians".to_string(),
             "Warthog Robotics".to_string(),
         ];
-        let query = "battery capacity er-force";
+        let query = "battery capacity erforce and tigers mannheim";
         match_names(teams, query.to_string());
-    }
-
-    #[test]
-    fn test_similarity() {
-        let score = similarity("abc", "def");
-        assert_eq!(score, 0);
-
-        let score = similarity("aab", "abb");
-        assert_eq!(score, -2);
-
-        let score = similarity("ab", "ab");
-        assert_eq!(score, 2);
     }
 }

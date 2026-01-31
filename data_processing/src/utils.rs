@@ -33,7 +33,7 @@ pub fn process_text_to_words(text: &str) -> (Vec<String>, Vec<String>, Vec<Strin
 
 pub async fn load_all_tdp_jsons() -> Result<Vec<TDP>, Box<dyn std::error::Error>> {
     let mut tdps = Vec::new();
-    let folder_path = "/home/emiel/projects/tdps_json";
+    let folder_path = "/home/emiel/Desktop/projects/tdps_json";
     let files = std::fs::read_dir(folder_path)?;
 
     for entry in files {

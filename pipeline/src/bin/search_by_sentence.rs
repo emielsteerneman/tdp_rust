@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     println!("{}", team);
     // }
 
-    let query = "battery capacity er force";
+    let query = "battery capacity er force tigers";
     let dense = embed_client.embed_string(query).await?;
     let sparse = embed_sparse(&query, &idf_map);
 

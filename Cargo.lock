@@ -5985,6 +5985,7 @@ name = "utils"
 version = "0.1.0"
 dependencies = [
  "data_processing",
+ "strsim",
 ]
 
 [[package]]
