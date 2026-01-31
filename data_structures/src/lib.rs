@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 pub mod file;
+pub mod filter;
 pub mod intermediate;
 pub mod knowledge;
 pub mod mock;

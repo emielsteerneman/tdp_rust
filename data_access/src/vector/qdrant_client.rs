@@ -1,12 +1,16 @@
 use crate::vector::{VectorClient, VectorClientError};
 use async_trait::async_trait;
-use data_structures::intermediate::Chunk;
+use data_structures::{
+    file::{League, TeamName},
+    filter::Filter,
+    intermediate::Chunk,
+};
 use point_id::PointIdOptions::Uuid as PointUuid;
 use qdrant_client::{
     Qdrant, QdrantError,
     qdrant::{
-        CollectionExistsRequest, CountPointsBuilder, CreateCollectionBuilder, Distance, Fusion,
-        GetCollectionInfoResponse, GetPointsBuilder, NamedVectors, PointId, PointStruct,
+        CollectionExistsRequest, Condition, CountPointsBuilder, CreateCollectionBuilder, Distance,
+        Fusion, GetCollectionInfoResponse, GetPointsBuilder, NamedVectors, PointId, PointStruct,
         PrefetchQueryBuilder, Query, QueryPointsBuilder, RetrievedPoint, ScrollPointsBuilder,
         SparseVector, SparseVectorConfig, SparseVectorParamsBuilder, UpsertPointsBuilder, Value,
         Vector, VectorParamsBuilder, VectorParamsMap, Vectors, VectorsConfig, point_id,
@@ -14,7 +18,6 @@ use qdrant_client::{
     },
 };
 use serde::Deserialize;
-use serde_json;
 use std::collections::HashMap;
 use tracing::{info, instrument};
 use uuid::Uuid;
@@ -49,6 +52,11 @@ impl QdrantClient {
     const COLLECTION_NAME_CHUNK: &'static str = "chunk";
     const EMBEDDING_NAME_DENSE: &'static str = "dense";
     const EMBEDDING_NAME_SPARSE: &'static str = "sparse";
+
+    const KEY_LEAGUE: &'static str = "league";
+    const KEY_YEAR: &'static str = "year";
+    const KEY_TEAM: &'static str = "team";
+    const KEY_LYTI: &'static str = "lyti";
 
     pub async fn new(config: QdrantConfig) -> Result<Self, VectorClientError> {
         info!(
@@ -211,17 +219,13 @@ impl VectorClient for QdrantClient {
         let point_id: PointId = id.to_string().into();
 
         let mut payload: HashMap<String, Value> = HashMap::new();
-        payload.insert(
-            "league_year_team_idx".to_string(),
-            chunk.league_year_team_idx.into(),
-        );
-        let league_str = serde_json::to_string(&chunk.league)
-            .map_err(|e| VectorClientError::Internal(e.to_string()))?;
-        payload.insert("league".to_string(), league_str.into());
-        payload.insert("year".to_string(), (chunk.year as i64).into());
-        let team_str = serde_json::to_string(&chunk.team)
-            .map_err(|e| VectorClientError::Internal(e.to_string()))?;
-        payload.insert("team".to_string(), team_str.into());
+
+        // League Year Team
+        payload.insert(Self::KEY_LEAGUE.into(), chunk.league.name_pretty.into());
+        payload.insert(Self::KEY_YEAR.into(), (chunk.year as i64).into());
+        payload.insert(Self::KEY_TEAM.into(), chunk.team.name_pretty.into());
+        payload.insert(Self::KEY_LYTI.into(), chunk.league_year_team_idx.into());
+        // Structure
         payload.insert(
             "paragraph_sequence_id".to_string(),
             (chunk.paragraph_sequence_id as i64).into(),
@@ -232,6 +236,7 @@ impl VectorClient for QdrantClient {
         );
         payload.insert("idx_begin".to_string(), (chunk.idx_begin as i64).into());
         payload.insert("idx_end".to_string(), (chunk.idx_end as i64).into());
+        // Text
         payload.insert("text".to_string(), chunk.text.into());
 
         let point = PointStruct {
@@ -333,6 +338,7 @@ impl VectorClient for QdrantClient {
         dense: Option<Vec<f32>>,
         sparse: Option<HashMap<u32, f32>>,
         limit: u64,
+        filter: Option<Filter>,
     ) -> Result<Vec<(Chunk, f32)>, VectorClientError> {
         if let Some(ref d) = dense {
             self.validate_embedding_size(d.len())?;
@@ -341,6 +347,51 @@ impl VectorClient for QdrantClient {
         let mut query_builder = QueryPointsBuilder::new(Self::COLLECTION_NAME_CHUNK)
             .limit(limit)
             .with_payload(true);
+
+        if let Some(f) = filter {
+            let mut conditions = Vec::new();
+
+            if let Some(leagues) = f.leagues {
+                if !leagues.is_empty() {
+                    conditions.push(Condition::matches(
+                        Self::KEY_LEAGUE,
+                        leagues.into_iter().collect::<Vec<String>>(),
+                    ));
+                }
+            }
+
+            if let Some(years) = f.years {
+                if !years.is_empty() {
+                    conditions.push(Condition::matches(
+                        Self::KEY_YEAR,
+                        years.into_iter().map(|y| y as i64).collect::<Vec<i64>>(),
+                    ));
+                }
+            }
+
+            if let Some(teams) = f.teams {
+                if !teams.is_empty() {
+                    conditions.push(Condition::matches(
+                        Self::KEY_TEAM,
+                        teams.into_iter().collect::<Vec<String>>(),
+                    ));
+                }
+            }
+
+            if let Some(indexes) = f.league_year_team_indexes {
+                if !indexes.is_empty() {
+                    conditions.push(Condition::matches(
+                        Self::KEY_LYTI,
+                        indexes.into_iter().collect::<Vec<String>>(),
+                    ));
+                }
+            }
+
+            if !conditions.is_empty() {
+                query_builder =
+                    query_builder.filter(qdrant_client::qdrant::Filter::must(conditions));
+            }
+        }
 
         match (dense, sparse) {
             (Some(dense_vector), Some(sparse_vector)) => {
@@ -411,27 +462,25 @@ impl IntoChunk for RetrievedPoint {
 
 impl IntoChunk for HashMap<String, Value> {
     fn into_chunk(self) -> Result<Chunk, VectorClientError> {
-        let league_year_team_idx = from_payload_get_string(&self, "league_year_team_idx")
-            .ok_or_else(|| VectorClientError::FieldMissing("league_year_team_idx".to_string()))?;
+        // League Year Team Index
+        let league_str = from_payload_get_string(&self, QdrantClient::KEY_LEAGUE)
+            .ok_or_else(|| VectorClientError::FieldMissing(QdrantClient::KEY_LEAGUE.to_string()))?;
+        let league: League = league_str.as_str().try_into().map_err(|e| {
+            VectorClientError::Internal(format!("Failed to deserialize League: {}", e))
+        })?;
 
-        let league_str = from_payload_get_string(&self, "league")
-            .ok_or_else(|| VectorClientError::FieldMissing("league".to_string()))?;
-        let league: data_structures::file::League =
-            serde_json::from_str(&league_str).map_err(|e| {
-                VectorClientError::Internal(format!("Failed to deserialize League: {}", e))
-            })?;
-
-        let year = from_payload_get_i64(&self, "year")
+        let year = from_payload_get_i64(&self, QdrantClient::KEY_YEAR)
             .map(|i| i as u32)
-            .ok_or_else(|| VectorClientError::FieldMissing("year".to_string()))?;
+            .ok_or_else(|| VectorClientError::FieldMissing(QdrantClient::KEY_YEAR.to_string()))?;
 
-        let team_str = from_payload_get_string(&self, "team")
-            .ok_or_else(|| VectorClientError::FieldMissing("team".to_string()))?;
-        let team: data_structures::file::TeamName =
-            serde_json::from_str(&team_str).map_err(|e| {
-                VectorClientError::Internal(format!("Failed to deserialize TeamName: {}", e))
-            })?;
+        let team_str = from_payload_get_string(&self, QdrantClient::KEY_TEAM)
+            .ok_or_else(|| VectorClientError::FieldMissing(QdrantClient::KEY_TEAM.to_string()))?;
+        let team = TeamName::new(&team_str);
 
+        let league_year_team_idx = from_payload_get_string(&self, QdrantClient::KEY_LYTI)
+            .ok_or_else(|| VectorClientError::FieldMissing(QdrantClient::KEY_LYTI.to_string()))?;
+
+        // Structure
         let paragraph_sequence_id = from_payload_get_i64(&self, "paragraph_sequence_id")
             .map(|i| i as u32)
             .ok_or_else(|| VectorClientError::FieldMissing("paragraph_sequence_id".to_string()))?;
@@ -448,6 +497,7 @@ impl IntoChunk for HashMap<String, Value> {
             .map(|i| i as u32)
             .ok_or_else(|| VectorClientError::FieldMissing("idx_end".to_string()))?;
 
+        // Text
         let text = from_payload_get_string(&self, "text")
             .ok_or_else(|| VectorClientError::FieldMissing("text".to_string()))?;
 
@@ -538,6 +588,7 @@ mod tests {
 
     use crate::vector::{QdrantClient, QdrantConfig, VectorClient};
     use data_structures::file::{League, TeamName};
+    use data_structures::filter::Filter;
     use data_structures::intermediate::Chunk;
     use testcontainers::ImageExt;
     use testcontainers::core::IntoContainerPort;
@@ -638,6 +689,167 @@ mod tests {
         );
         assert_eq!(dense_embedding, retrieved_chunk.dense_embedding);
         assert_eq!(sparse_embedding, retrieved_chunk.sparse_embedding);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_store_and_retrieve_with_filter() -> Result<(), anyhow::Error> {
+        let _image = GenericImage::new("qdrant/qdrant", "v1.16")
+            .with_exposed_port(6333.tcp())
+            .with_exposed_port(6334.tcp())
+            .with_mapped_port(7333, 6333.tcp())
+            .with_mapped_port(7334, 6334.tcp())
+            .start()
+            .await
+            .expect("Failed to start Qdrant");
+
+        sleep(Duration::from_secs(2)).await;
+
+        let client = QdrantClient::new(QdrantConfig {
+            url: "http://localhost:7334".to_string(),
+            embedding_size: 3,
+            run: "test_run".to_string(),
+        })
+        .await;
+
+        assert!(client.is_ok());
+
+        let client = client.unwrap();
+
+        let dense_embedding = normalize(vec![1.0, 3.0, 2.0]);
+        let sparse_embedding = HashMap::from([(1, 1.0), (3, 3.0), (2, 2.0)]);
+
+        // Create chunk and store in database
+        let chunk_1 = Chunk {
+            dense_embedding: dense_embedding.clone(),
+            sparse_embedding: sparse_embedding.clone(),
+            league_year_team_idx: "test_league_1__1998__test_team_1__0".to_string(),
+            league: League::try_from("test_league_1").unwrap(),
+            year: 1998,
+            team: TeamName::new("test_team_1"),
+            paragraph_sequence_id: 0,
+            chunk_sequence_id: 0,
+            idx_begin: 0,
+            idx_end: 0,
+            text: "test_text_1".to_string(),
+        };
+
+        // Create chunk and store in database
+        let chunk_2_1 = Chunk {
+            dense_embedding: dense_embedding.clone(),
+            sparse_embedding: sparse_embedding.clone(),
+            league_year_team_idx: "test_league_2__2008__test_team_2__0".to_string(),
+            league: League::try_from("test_league_2").unwrap(),
+            year: 2008,
+            team: TeamName::new("test_team_2"),
+            paragraph_sequence_id: 0,
+            chunk_sequence_id: 0,
+            idx_begin: 0,
+            idx_end: 0,
+            text: "test_text_2".to_string(),
+        };
+
+        let chunk_2_2 = Chunk {
+            dense_embedding: dense_embedding.clone(),
+            sparse_embedding: sparse_embedding.clone(),
+            league_year_team_idx: "test_league_2__2008__test_team_2__1".to_string(),
+            league: League::try_from("test_league_2").unwrap(),
+            year: 2008,
+            team: TeamName::new("test_team_2"),
+            paragraph_sequence_id: 0,
+            chunk_sequence_id: 0,
+            idx_begin: 0,
+            idx_end: 0,
+            text: "test_text_2".to_string(),
+        };
+
+        let id_1 = chunk_1.to_uuid();
+        let id_2_1 = chunk_2_1.to_uuid();
+        let id_2_2 = chunk_2_2.to_uuid();
+
+        client.store_chunk(chunk_1.clone()).await?;
+        client.store_chunk(chunk_2_1.clone()).await?;
+        client.store_chunk(chunk_2_2.clone()).await?;
+
+        client.analytics().await?;
+
+        // Test retrieval by ID
+        let retrieved_chunk = client.get_chunk_by_id(id_1).await?;
+        assert_eq!(
+            chunk_1.league_year_team_idx,
+            retrieved_chunk.league_year_team_idx
+        );
+        let retrieved_chunk = client.get_chunk_by_id(id_2_1).await?;
+        assert_eq!(
+            chunk_2_1.league_year_team_idx,
+            retrieved_chunk.league_year_team_idx
+        );
+        let retrieved_chunk = client.get_chunk_by_id(id_2_2).await?;
+        assert_eq!(
+            chunk_2_2.league_year_team_idx,
+            retrieved_chunk.league_year_team_idx
+        );
+
+        // Test retrieval by filter
+        let get = async |filter: Filter| {
+            client
+                .search_chunks(
+                    Some(dense_embedding.clone()),
+                    Some(sparse_embedding.clone()),
+                    5,
+                    Some(filter),
+                )
+                .await
+        };
+
+        //// TEST 1
+        // Test League filter
+        let mut filter = Filter::default();
+        filter.add_league(chunk_1.league);
+        let chunks = get(filter).await?;
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].0.to_uuid(), id_1);
+
+        // Test Year filter
+        let mut filter = Filter::default();
+        filter.add_year(chunk_1.year);
+        let chunks = get(filter).await?;
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].0.to_uuid(), id_1);
+
+        // Test Team filter
+        let mut filter = Filter::default();
+        filter.add_team(chunk_1.team);
+        let chunks = get(filter).await?;
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].0.to_uuid(), id_1);
+
+        // Test LeagueYearTeamIndex filter
+        let mut filter = Filter::default();
+        filter.add_league_year_team_index(chunk_1.league_year_team_idx);
+        let chunks = get(filter).await?;
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].0.to_uuid(), id_1);
+
+        //// TEST 2. 2_1 and 2_2 should both be retrieved (Except for lyti)
+        // Test League filter
+        let mut filter = Filter::default();
+        filter.add_league(chunk_2_1.league);
+        let chunks = get(filter).await?;
+        assert_eq!(chunks.len(), 2);
+
+        // Test Year filter
+        let mut filter = Filter::default();
+        filter.add_year(chunk_2_1.year);
+        let chunks = get(filter).await?;
+        assert_eq!(chunks.len(), 2);
+
+        // Test Team filter
+        let mut filter = Filter::default();
+        filter.add_team(chunk_2_1.team);
+        let chunks = get(filter).await?;
+        assert_eq!(chunks.len(), 2);
 
         Ok(())
     }

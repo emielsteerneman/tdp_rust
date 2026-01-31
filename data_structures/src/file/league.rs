@@ -1,6 +1,7 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct League {
     pub league_major: String,
     pub league_minor: String,
@@ -13,13 +14,24 @@ pub struct League {
 pub enum LeagueParseError {
     #[error("expected 2 or 3 fields separated by '_', got {0}")]
     BadFieldCount(usize),
+    #[error("expected either ' ' or '_' as separator")]
+    BadSeparator(),
 }
 
 impl League {
     pub fn new(league_major: String, league_minor: String, league_sub: Option<String>) -> Self {
         let name = match &league_sub {
-            Some(sub) => format!("{}_{}_{}", league_major, league_minor, sub),
-            None => format!("{}_{}", league_major, league_minor),
+            Some(sub) => format!(
+                "{}_{}_{}",
+                league_major.to_lowercase(),
+                league_minor.to_lowercase(),
+                sub.to_lowercase()
+            ),
+            None => format!(
+                "{}_{}",
+                league_major.to_lowercase(),
+                league_minor.to_lowercase()
+            ),
         };
 
         let name_pretty = name_to_name_pretty(name.clone());
@@ -50,7 +62,15 @@ impl TryFrom<&str> for League {
     type Error = LeagueParseError;
 
     fn try_from(value: &str) -> Result<Self, LeagueParseError> {
-        let parts: Vec<&str> = value.split('_').collect();
+        let separator = if value.contains(" ") {
+            Ok(" ")
+        } else if value.contains("_") {
+            Ok("_")
+        } else {
+            Err(LeagueParseError::BadSeparator())
+        }?;
+
+        let parts = value.split(separator).collect::<Vec<_>>();
         match parts.as_slice() {
             [major, minor] => Ok(Self::new((*major).to_string(), (*minor).to_string(), None)),
             [major, minor, sub] => Ok(Self::new(
@@ -108,4 +128,30 @@ fn capitalize_words(s: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::file::League;
+
+    #[test]
+    fn test_from_string() -> Result<(), Box<dyn std::error::Error>> {
+        let league: League = "Test League".try_into()?;
+        assert_eq!(league.name, "test_league");
+        assert_eq!(league.name_pretty, "Test League");
+
+        let league: League = "test_league".try_into()?;
+        assert_eq!(league.name, "test_league");
+        assert_eq!(league.name_pretty, "Test League");
+
+        let league: League = "Test League Sub".try_into()?;
+        assert_eq!(league.name, "test_league_sub");
+        assert_eq!(league.name_pretty, "Test League Sub");
+
+        let league: League = "test_league_sub".try_into()?;
+        assert_eq!(league.name, "test_league_sub");
+        assert_eq!(league.name_pretty, "Test League Sub");
+
+        Ok(())
+    }
 }

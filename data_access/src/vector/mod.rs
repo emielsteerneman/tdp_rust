@@ -1,6 +1,7 @@
 mod qdrant_client;
 
 use async_trait::async_trait;
+use data_structures::filter::Filter;
 use data_structures::intermediate::Chunk;
 pub use qdrant_client::{QdrantClient, QdrantConfig};
 use std::collections::HashMap;
@@ -30,6 +31,7 @@ pub trait VectorClient {
         dense: Option<Vec<f32>>,
         sparse: Option<HashMap<u32, f32>>,
         limit: u64,
+        filter: Option<Filter>,
     ) -> Result<Vec<(Chunk, f32)>, VectorClientError>;
 }
 

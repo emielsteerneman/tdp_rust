@@ -1,6 +1,7 @@
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct TeamName {
     pub name: String,
     pub name_pretty: String,
@@ -8,7 +9,7 @@ pub struct TeamName {
 
 impl TeamName {
     pub fn new(name: &str) -> Self {
-        let name = name.to_string();
+        let name = name.to_string().replace(" ", "_");
         let name_pretty = name.replace("_", " ");
 
         TeamName { name, name_pretty }
