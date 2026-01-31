@@ -1,8 +1,0 @@
-[package]
-name = "utils"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-data_processing = { version = "0.1.0", path = "../data_processing" }
-strsim = "0.11.1"
