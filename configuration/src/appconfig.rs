@@ -1,5 +1,6 @@
 use config::{Config as ConfigLoader, File, FileFormat};
 use data_access::config::DataAccessConfig;
+use data_processing::config::DataProcessingConfig;
 use serde::Deserialize;
 use std::{fs::canonicalize, path::Path};
 use tracing::info;
@@ -7,6 +8,7 @@ use tracing::info;
 #[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {
     pub data_access: DataAccessConfig,
+    pub data_processing: DataProcessingConfig,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -64,6 +66,39 @@ mod tests {
     use super::*;
     use std::io::Write;
     use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_simple_config() -> Result<(), Box<dyn std::error::Error>> {
+        let mut file = NamedTempFile::new()?;
+        writeln!(
+            file,
+            r#"
+[data_access]
+run = "test_run"
+
+[data_access.embed.openai]
+model_name = "text-embedding-3-small"
+api_key = "sk-..."
+
+[data_access.vector]
+[data_access.metadata]
+
+[data_processing]
+tdps_json_root = "some_root"
+"#
+        )?;
+
+        let config = AppConfig::load_from_file(file.path())?;
+
+        assert_eq!(config.data_access.run, "test_run");
+        assert_eq!(
+            config.data_access.embed.openai.as_ref().unwrap().model_name,
+            "text-embedding-3-small"
+        );
+        assert_eq!(config.data_processing.tdps_json_root, "some_root");
+
+        Ok(())
+    }
 
     #[test]
     fn test_config_spreading() -> Result<(), Box<dyn std::error::Error>> {

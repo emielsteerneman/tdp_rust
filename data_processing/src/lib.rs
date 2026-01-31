@@ -9,4 +9,6 @@ pub use create_sentence_chunks::create_sentence_chunks;
 pub use raw_chunk::RawChunk;
 pub use tdp_to_chunks::tdp_to_chunks;
 
+pub mod config;
+pub mod search;
 pub mod utils;
