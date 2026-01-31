@@ -2,6 +2,7 @@ use data_processing::{
     create_idf,
     utils::{load_all_chunks_from_tdps, load_all_tdp_jsons},
 };
+use data_structures::filter::Filter;
 use std::error::Error;
 
 #[tokio::main]
@@ -11,7 +12,10 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     let _stdout_subscriber = tracing_subscriber::fmt::init();
     let config = configuration::AppConfig::load_from_file("config.toml").unwrap();
 
-    let tdps = load_all_tdp_jsons().await?;
+    let mut filter = Filter::default();
+    filter.add_league("soccer_smallsize".try_into()?);
+
+    let tdps = load_all_tdp_jsons(&config.data_processing.tdps_json_root, Some(filter)).await?;
     let chunks = load_all_chunks_from_tdps(&tdps).await?;
     let texts: Vec<&str> = chunks.iter().map(|c| c.text.as_str()).collect();
     let idf_map = create_idf(&texts, &[1, 5, 10]);

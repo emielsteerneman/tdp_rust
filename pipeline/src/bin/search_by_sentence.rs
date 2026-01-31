@@ -1,8 +1,7 @@
 use std::collections::HashSet;
 
-use data_processing::utils::embed_sparse;
+use data_processing::utils::{embed_sparse, match_names};
 use tracing::info;
-use utils::match_names;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -39,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let team_matches = match_names(teams.clone(), query.to_string());
 
     let chunks = vector_client
-        .search_chunks(Some(dense), Some(sparse), 5)
+        .search_chunks(Some(dense), Some(sparse), 5, None)
         .await?;
 
     for (i, (chunk, score)) in chunks.iter().enumerate() {
