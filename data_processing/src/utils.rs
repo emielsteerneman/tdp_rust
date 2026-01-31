@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use data_structures::{IDF, intermediate::Chunk, paper::TDP};
+use data_structures::{IDF, file::TDPName, filter::Filter, intermediate::Chunk, paper::TDP};
 use scirs2_text::{BasicNormalizer, BasicTextCleaner, preprocess::TextPreprocessor};
 use strsim::jaro_winkler;
 use tracing::info;
@@ -32,9 +32,11 @@ pub fn process_text_to_words(text: &str) -> (Vec<String>, Vec<String>, Vec<Strin
     (words, ngram2, ngram3)
 }
 
-pub async fn load_all_tdp_jsons(folder_path: &str) -> Result<Vec<TDP>, Box<dyn std::error::Error>> {
+pub async fn load_all_tdp_jsons(
+    folder_path: &str,
+    filter: Option<Filter>,
+) -> Result<Vec<TDP>, Box<dyn std::error::Error>> {
     let mut tdps = Vec::new();
-    // let folder_path = "/home/emiel/projects/tdps_json";
     let files = std::fs::read_dir(folder_path)?;
 
     for entry in files {
@@ -42,6 +44,21 @@ pub async fn load_all_tdp_jsons(folder_path: &str) -> Result<Vec<TDP>, Box<dyn s
 
         if path.extension().and_then(|s| s.to_str()) != Some("json") {
             continue;
+        }
+
+        if let Some(f) = &filter {
+            let tdp_name: TDPName = match path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .and_then(|s| s.try_into().ok())
+            {
+                Some(v) => v,
+                None => continue,
+            };
+
+            if !f.matches_tdp_name(&tdp_name) {
+                continue;
+            }
         }
 
         // Check if "smallsize" in the path

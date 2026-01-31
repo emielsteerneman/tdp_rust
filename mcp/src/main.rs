@@ -44,12 +44,34 @@ async fn main() -> anyhow::Result<()> {
 
     println!("IDF loaded.");
 
-    let state = AppState::new(
-        Arc::from(embed_client),
+    let tdps = metadata_client.load_tdps(vec![]).await?;
+    use std::collections::HashSet;
+    let mut teams: Vec<String> = tdps
+        .iter()
+        .map(|tdp| tdp.team_name.name_pretty.clone())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
+    teams.sort();
+
+use data_processing::search::Searcher;
+
+    let mut leagues: Vec<String> = tdps
+        .iter()
+        .map(|tdp| tdp.league.name_pretty.clone())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
+    leagues.sort();
+
+    let searcher = Searcher::new(
         Arc::from(vector_client),
-        Arc::from(metadata_client),
-        idf_map,
+        Arc::new(idf_map),
+        teams,
+        leagues,
     );
+
+    let state = AppState::new(Arc::new(searcher));
 
     let server = AppServer::new(state);
 
