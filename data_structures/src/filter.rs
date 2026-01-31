@@ -71,12 +71,12 @@ impl Filter {
 
     pub fn matches_tdp_name(&self, tdp_name: &TDPName) -> bool {
         if let Some(teams) = &self.teams {
-            if !teams.contains(&tdp_name.team_name.name) {
+            if !teams.contains(&tdp_name.team_name.name_pretty) {
                 return false;
             }
         }
         if let Some(leagues) = &self.leagues {
-            if !leagues.contains(&tdp_name.league.name) {
+            if !leagues.contains(&tdp_name.league.name_pretty) {
                 return false;
             }
         }
