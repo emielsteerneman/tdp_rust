@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use super::Paragraph;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct TDPStructure {
     pub paragraphs: Vec<Paragraph>,
     // references

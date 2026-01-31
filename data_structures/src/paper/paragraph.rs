@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use super::Text;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Paragraph {
     pub title: Text,
     pub sentences: Vec<Text>,

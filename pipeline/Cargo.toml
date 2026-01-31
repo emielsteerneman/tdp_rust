@@ -16,3 +16,4 @@ serde_json = "1.0"
 tokio = "1.48.0"
 uuid = { version = "1", features = ["v5"] }
 thiserror = "2.0"
+utils = { version = "0.1.0", path = "../utils" }

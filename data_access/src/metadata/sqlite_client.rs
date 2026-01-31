@@ -23,12 +23,13 @@ impl SqliteClient {
     pub fn new(config: SqliteConfig) -> Self {
         let client = Self { config };
 
-        client.ensure_database();
+        client.ensure_database_idf();
+        client.ensure_database_tdp();
 
         client
     }
 
-    fn ensure_database(&self) {
+    fn ensure_database_idf(&self) {
         let conn = Connection::open(&self.config.filename).expect("Failed to open SQLite database");
 
         conn.execute(
@@ -41,10 +42,39 @@ impl SqliteClient {
             )",
             [],
         )
-        .expect("Failed to create idf_index table");
+        .expect("Failed to create table idf_index");
 
         conn.execute("CREATE INDEX IF NOT EXISTS idx_run ON idf_index (run)", [])
-            .expect("Failed to create index on run");
+            .expect("Failed to create index on idf_index (run)");
+    }
+
+    fn ensure_database_tdp(&self) {
+        let conn = Connection::open(&self.config.filename).expect("Failed to open SQLite database");
+
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS tdp (
+                run TEXT NOT NULL,
+                league VARCHAR(50) NOT NULL,
+                year INTEGER NOT NULL,
+                team VARCHAR(100) NOT NULL,
+                idx INTEGER NOT NULL,
+                lyti VARCHAR(100) NOT NULL PRIMARY KEY
+            )",
+            [],
+        )
+        .expect("Failed to create table tdp");
+
+        conn.execute("CREATE INDEX IF NOT EXISTS tdp_run ON tdp (run)", [])
+            .expect("Failed to create index on tdp (run)");
+
+        conn.execute("CREATE INDEX IF NOT EXISTS tdp_league ON tdp (league)", [])
+            .expect("Failed to create index on tdp (league)");
+
+        conn.execute("CREATE INDEX IF NOT EXISTS tdp_year ON tdp (year)", [])
+            .expect("Failed to create index on tdp (year)");
+
+        conn.execute("CREATE INDEX IF NOT EXISTS tdp_team ON tdp (team)", [])
+            .expect("Failed to create index on tdp (team)");
     }
 }
 
@@ -94,7 +124,6 @@ impl MetadataClient for SqliteClient {
 
     fn load_idf<'a>(
         &'a self,
-        run: String,
     ) -> Pin<
         Box<
             dyn Future<Output = Result<HashMap<String, (u32, f32)>, MetadataClientError>>
@@ -103,6 +132,7 @@ impl MetadataClient for SqliteClient {
         >,
     > {
         let filename = self.config.filename.clone();
+        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
@@ -134,6 +164,96 @@ impl MetadataClient for SqliteClient {
                 info!("Retrieved IDF with {} rows", map.len());
 
                 Ok(map)
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
+    fn store_tdps<'a>(
+        &'a self,
+        tdps: Vec<data_structures::paper::TDP>,
+    ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
+        let filename = self.config.filename.clone();
+        let run = self.config.run.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let mut conn = Connection::open(&filename)
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let tx = conn
+                    .transaction()
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                {
+                    // Clear existing entries for this run_id to ensure overwrite
+                    tx.execute("DELETE FROM tdp WHERE run = ?1", params![run])
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                    let mut stmt = tx
+                        .prepare("INSERT INTO tdp (run, league, year, team, idx, lyti) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                    for tdp in tdps.into_iter() {
+                        let lyti = tdp.name.get_filename();
+                        let league = tdp.name.league.name_pretty;
+                        let year = tdp.name.year;
+                        let team = tdp.name.team_name.name_pretty;
+                        let idx = tdp.name.index;
+                        stmt.execute(params![run, league, year, team, idx, lyti])
+                            .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    }
+                }
+
+                tx.commit()
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                Ok(())
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
+    fn load_tdps<'a>(
+        &'a self,
+        _tdps: Vec<data_structures::paper::TDP>,
+    ) -> Pin<
+        Box<
+            dyn Future<Output = Result<Vec<data_structures::file::TDPName>, MetadataClientError>>
+                + Send
+                + 'a,
+        >,
+    > {
+        let filename = self.config.filename.clone();
+        let run = self.config.run.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = Connection::open(&filename)
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let mut stmt = conn
+                    .prepare("SELECT lyti FROM tdp WHERE run = ?1")
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let rows = stmt
+                    .query_map(params![run], |row| {
+                        let lyti: String = row.get(0)?;
+                        Ok(lyti)
+                    })
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let mut results = Vec::new();
+                for row in rows {
+                    let lyti = row.map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    let tdp_name = data_structures::file::TDPName::try_from(lyti.as_str())
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    results.push(tdp_name);
+                }
+
+                Ok(results)
             })
             .await
             .map_err(|e| MetadataClientError::Internal(e.to_string()))?
@@ -177,10 +297,7 @@ mod tests {
             .expect("Failed to store map 1");
 
         // 2. Load map for run_1
-        let loaded_map_1 = client_1
-            .load_idf(run_1.to_string())
-            .await
-            .expect("Failed to load map 1");
+        let loaded_map_1 = client_1.load_idf().await.expect("Failed to load map 1");
         assert_eq!(
             map_1, loaded_map_1,
             "Loaded map 1 should match stored map 1"
@@ -202,19 +319,13 @@ mod tests {
             .expect("Failed to store map 2");
 
         // 4. Load map for run_2 and verify run_1 is untouched
-        let loaded_map_2 = client_2
-            .load_idf(run_2.to_string())
-            .await
-            .expect("Failed to load map 2");
+        let loaded_map_2 = client_2.load_idf().await.expect("Failed to load map 2");
         assert_eq!(
             map_2, loaded_map_2,
             "Loaded map 2 should match stored map 2"
         );
 
-        let loaded_map_1_again = client_1
-            .load_idf(run_1.to_string())
-            .await
-            .expect("Failed to reload map 1");
+        let loaded_map_1_again = client_1.load_idf().await.expect("Failed to reload map 1");
         assert_eq!(
             map_1, loaded_map_1_again,
             "Map 1 should persist after storing map 2"
@@ -233,7 +344,7 @@ mod tests {
 
         // 6. Verify overwrite
         let loaded_map_1_new = client_1
-            .load_idf(run_1.to_string())
+            .load_idf()
             .await
             .expect("Failed to load overwritten map 1");
         assert_eq!(
@@ -261,14 +372,21 @@ mod tests {
             _ => return Err("Database file does not exist".into()),
         };
 
-        let conn = Connection::open(&db_filename)
-            .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+        let config = SqliteConfig {
+            filename: db_filename.to_string(),
+            run: "my_run".to_string(),
+        };
+        let client = SqliteClient::new(config);
 
-        let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM idf_index", [], |row| row.get(0))
-            .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+        let idfs = client.load_idf().await?;
+        println!("Number of entries in {db_filename} (IDF): {}", idfs.len());
 
-        println!("Number of entries in {db_filename} : {count}");
+        let tdps = client.load_tdps(vec![]).await?;
+        println!("Number of TDPs: {}", tdps.len());
+        for tdp in tdps.iter().take(5) {
+            println!("  {}", tdp.get_filename());
+        }
+
         Ok(())
     }
 }

@@ -6,7 +6,7 @@ members = ["chat",
     "data_processing",
     "data_structures",
     "mcp",
-    "pipeline",
+    "pipeline", "utils",
 ]
 
 [workspace.dependencies]
@@ -26,6 +26,7 @@ fastembed = "5.2.0"
 ndarray = "0.17.2"
 ndarray-stats = "0.7.0"
 tokio = { version = "1.48.0", features = ["rt-multi-thread", "macros", "test-util", "time"] }
+utils = { version = "0.1.0", path = "utils" }
 
 [dev-dependencies]
 serde = { version = "1.0.228", features = ["derive"] }

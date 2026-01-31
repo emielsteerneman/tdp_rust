@@ -40,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("Qdrant config is missing"))?;
 
-    let idf_map = metadata_client.load_idf(qdrant_config.run.clone()).await?;
+    let idf_map = metadata_client.load_idf().await?;
 
     println!("IDF loaded.");
 

@@ -1,4 +1,6 @@
-use data_structures::{intermediate::Chunk, paper::TDP};
+use std::collections::HashMap;
+
+use data_structures::{IDF, intermediate::Chunk, paper::TDP};
 use scirs2_text::{BasicNormalizer, BasicTextCleaner, preprocess::TextPreprocessor};
 use tracing::info;
 
@@ -72,6 +74,21 @@ pub async fn load_all_chunks_from_tdps(
     info!("Created {} chunks", chunks.len());
 
     Ok(chunks)
+}
+
+pub fn embed_sparse(text: &str, idf_map: &IDF) -> HashMap<u32, f32> {
+    let mut map = HashMap::new();
+
+    let (ngram1, ngram2, ngram3) = process_text_to_words(text);
+    let iter = ngram1.iter().chain(ngram2.iter()).chain(ngram3.iter());
+
+    for word in iter {
+        if let Some((id, idf)) = idf_map.get(word) {
+            *map.entry(*id).or_insert(0.0) += idf;
+        }
+    }
+
+    map
 }
 
 #[cfg(test)]

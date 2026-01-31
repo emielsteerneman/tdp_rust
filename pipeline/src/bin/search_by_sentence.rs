@@ -1,4 +1,8 @@
+use std::collections::HashSet;
+
+use data_processing::utils::embed_sparse;
 use tracing::info;
+use utils::match_names;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -10,13 +14,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let embed_client = configuration::helpers::load_any_embed_client(&config);
     let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
+    let metadata_client = configuration::helpers::load_any_metadata_client(&config);
 
-    let query = "battery capacity";
-    let embedding = embed_client.embed_string(query).await?;
+    let idf_map = metadata_client.load_idf().await?;
 
-    vector_client
-        .search_chunks(Some(embedding), None, 3)
+    let tdps = metadata_client.load_tdps(vec![]).await?;
+    let mut teams = tdps
+        .into_iter()
+        .map(|tdp| tdp.team_name.name_pretty)
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    teams.sort();
+
+    // for team in teams {
+    //     println!("{}", team);
+    // }
+
+    let query = "battery capacity er force";
+    let dense = embed_client.embed_string(query).await?;
+    let sparse = embed_sparse(&query, &idf_map);
+
+    let team_matches = match_names(teams.clone(), query.to_string());
+
+    let chunks = vector_client
+        .search_chunks(Some(dense), Some(sparse), 5)
         .await?;
 
+    for (i, (chunk, score)) in chunks.iter().enumerate() {
+        println!(
+            "[{i:2}] {score:.4} - {} - {} - {}",
+            chunk.league.name_pretty, chunk.team.name_pretty, chunk.year
+        );
+        println!("{}", chunk.text);
+    }
+
+    if !team_matches.is_empty() {
+        println!("\nDo you want to filter on one of these team?");
+        for m in team_matches {
+            println!("* {m}");
+        }
+    }
     Ok(())
 }

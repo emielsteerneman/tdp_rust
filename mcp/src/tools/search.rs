@@ -12,7 +12,7 @@ pub struct SearchArgs {
 }
 
 pub async fn search(state: &AppState, args: SearchArgs) -> anyhow::Result<String> {
-    let limit = args.limit.unwrap_or(5);
+    let limit = args.limit.unwrap_or(15);
     let query = args.query.trim();
     if query.is_empty() {
         return Ok("Empty query provided.".to_string());

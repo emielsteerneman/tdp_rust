@@ -25,6 +25,8 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut chunks = load_all_chunks_from_tdps(&tdps).await?;
     // let mut chunks = chunks.into_iter().take(350).collect::<Vec<_>>();
 
+    metadata_client.store_tdps(tdps.clone()).await?;
+
     /* Step 2 : Create and store IDF */
     info!("Creating IDF");
     let texts: Vec<&str> = chunks.iter().map(|c| c.text.as_str()).collect();
@@ -44,8 +46,8 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     /* Step 5 : Start REPL */
-    info!("Starting REPL");
-    start_repl(&config, &*embed_client, &*vector_client, &*metadata_client).await?;
+    // info!("Starting REPL");
+    // start_repl(&config, &*embed_client, &*vector_client, &*metadata_client).await?;
 
     Ok(())
 }
@@ -59,18 +61,7 @@ pub async fn start_repl(
     println!("\n--- Search REPL ---");
     println!("Type your query and press Enter. Type 'exit' to quit.");
 
-    let idf_map = metadata_client
-        .load_idf(
-            config
-                .data_access
-                .vector
-                .qdrant
-                .as_ref()
-                .unwrap()
-                .run
-                .clone(),
-        )
-        .await?;
+    let idf_map = metadata_client.load_idf().await?;
 
     // print_idf_statistics(&idf_map);
 
