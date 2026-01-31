@@ -60,14 +60,14 @@ pub fn create_idf(texts: &[&str], min_counts: &[u32; 3]) -> IDF {
     let mut id_factory: u32 = 0;
     let mut idf_map: HashMap<String, (u32, f32)> = HashMap::new();
 
-    // ===================================================
+    /* ===================================================
     let mut total_doc_count = HashMap::<String, u32>::new();
     for i in 0..3 {
         for (word, doc_count) in doc_counts[i].iter() {
             *total_doc_count.entry(word.clone()).or_insert(0) += doc_count;
         }
     }
-    // ===================================================
+    // =================================================== */
 
     for i in 0..3 {
         for (word, doc_count) in doc_counts[i].drain() {
@@ -81,7 +81,7 @@ pub fn create_idf(texts: &[&str], min_counts: &[u32; 3]) -> IDF {
         }
     }
 
-    // ==========================================
+    /* ==========================================
     let mut items = idf_map.clone().into_iter().collect::<Vec<_>>();
     let n_items = items.len();
     // Stupid lame weird sort needed because f32 does not implement Ord (f32 can be NaN)
@@ -98,8 +98,12 @@ pub fn create_idf(texts: &[&str], min_counts: &[u32; 3]) -> IDF {
         );
     }
     println!("Total amount of words: {n_items}");
-    println!("path planning: {:?} -> {:?}", total_doc_count.get("path planning"), idf_map.get("path planning"));
-    // ==========================================
+    println!(
+        "path planning: {:?} -> {:?}",
+        total_doc_count.get("path planning"),
+        idf_map.get("path planning")
+    );
+    // ========================================== */
 
     idf_map
 }
