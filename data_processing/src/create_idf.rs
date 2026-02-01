@@ -58,7 +58,7 @@ pub fn create_idf(texts: &[&str], min_counts: &[u32; 3]) -> IDF {
     // Step 3: Assign unique integer IDs and compute weighted IDF
     info!("Step 3: Assigning unique integer IDs and computing weighted IDF");
     let mut id_factory: u32 = 0;
-    let mut idf_map: HashMap<String, (u32, f32)> = HashMap::new();
+    let mut idf_map = IDF::new();
 
     /* ===================================================
     let mut total_doc_count = HashMap::<String, u32>::new();

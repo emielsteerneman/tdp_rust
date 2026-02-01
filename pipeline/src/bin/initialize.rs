@@ -15,12 +15,13 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _stdout_subscriber = tracing_subscriber::fmt::init();
     let config = configuration::AppConfig::load_from_file("config.toml").unwrap();
 
-    let _embed_client = configuration::helpers::load_any_embed_client(&config);
+    let embed_client = configuration::helpers::load_any_embed_client(&config);
     let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
 
     let mut filter = Filter::default();
     filter.add_league("soccer_smallsize".try_into()?);
+    filter.add_league("soccer_midsize".try_into()?);
 
     /* Step 1 : Load TDPs and Chunks */
     info!("Loading TDPs and Chunks");
@@ -34,14 +35,13 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Creating IDF");
     let texts: Vec<&str> = chunks.iter().map(|c| c.text.as_str()).collect();
     let idf_map = create_idf(&texts, &[1, 5, 10]);
-    // print_idf_statistics(&idf_map);
     // TODO do I really need to clone idf_map here?
     metadata_client.store_idf(idf_map.clone()).await?;
 
     /* Step 3 : Create embeddings */
     info!("Creating embeddings");
-    //embed_chunks(&mut chunks, Some(&*embed_client), &idf_map).await?;
-    embed_chunks(&mut chunks, None, &idf_map).await?;
+    embed_chunks(&mut chunks, Some(&*embed_client), &idf_map).await?;
+    // embed_chunks(&mut chunks, None, &idf_map).await?;
 
     /* Step 4 : Store chunks */
     info!("Storing chunks");
@@ -95,7 +95,7 @@ pub fn embed_sparse(text: &str, idf_map: &IDF) -> HashMap<u32, f32> {
 }
 
 pub fn print_idf_statistics(idf_map: &IDF) {
-    let mut items = idf_map.clone().into_iter().collect::<Vec<_>>();
+    let mut items = idf_map.0.clone().into_iter().collect::<Vec<_>>();
     let n_items = items.len();
     // Stupid lame weird sort needed because f32 does not implement Ord (f32 can be NaN)
     items.sort_by(|(_, (_, idf_a)), (_, (_, idf_b))| {
@@ -113,12 +113,12 @@ pub fn print_idf_statistics(idf_map: &IDF) {
 #[cfg(test)]
 mod tests {
     use crate::embed_sparse;
-    use data_structures::intermediate::Chunk;
+    use data_structures::{IDF, intermediate::Chunk};
     use std::collections::HashMap;
 
     #[test]
     fn test_sparse_embedding() {
-        let idf_map = HashMap::from([
+        let idf_map = IDF::from([
             ("hello".to_string(), (0, 1.0)),
             ("world".to_string(), (1, 2.0)),
             ("hello world".to_string(), (2, 3.0)),

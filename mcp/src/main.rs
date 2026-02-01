@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
         .collect();
     teams.sort();
 
-use data_processing::search::Searcher;
+    use data_processing::search::Searcher;
 
     let mut leagues: Vec<String> = tdps
         .iter()
@@ -64,12 +64,7 @@ use data_processing::search::Searcher;
         .collect();
     leagues.sort();
 
-    let searcher = Searcher::new(
-        Arc::from(vector_client),
-        Arc::new(idf_map),
-        teams,
-        leagues,
-    );
+    let searcher = Searcher::new(Arc::from(vector_client), Arc::new(idf_map), teams, leagues);
 
     let state = AppState::new(Arc::new(searcher));
 

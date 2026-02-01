@@ -21,7 +21,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     let idf_map = create_idf(&texts, &[1, 5, 10]);
 
     // Printing some cute statistics
-    let mut items = idf_map.clone().into_iter().collect::<Vec<_>>();
+    let mut items = idf_map.0.clone().into_iter().collect::<Vec<_>>();
     let n_items = items.len();
     // Stupid lame weird sort needed because f32 does not implement Ord (f32 can be NaN)
     items.sort_by(|(_, (_, idf_a)), (_, (_, idf_b))| {

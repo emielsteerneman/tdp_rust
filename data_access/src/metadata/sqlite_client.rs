@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 
@@ -124,13 +123,7 @@ impl MetadataClient for SqliteClient {
 
     fn load_idf<'a>(
         &'a self,
-    ) -> Pin<
-        Box<
-            dyn Future<Output = Result<HashMap<String, (u32, f32)>, MetadataClientError>>
-                + Send
-                + 'a,
-        >,
-    > {
+    ) -> Pin<Box<dyn Future<Output = Result<IDF, MetadataClientError>> + Send + 'a>> {
         let filename = self.config.filename.clone();
         let run = self.config.run.clone();
 
@@ -154,7 +147,7 @@ impl MetadataClient for SqliteClient {
                     })
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
-                let mut map = HashMap::new();
+                let mut map = IDF::new();
                 for row in rows {
                     let (word, idx, idf) =
                         row.map_err(|e| MetadataClientError::Internal(e.to_string()))?;
@@ -287,7 +280,7 @@ mod tests {
         let client_1 = SqliteClient::new(config_1);
 
         // 1. Store map for run_1
-        let mut map_1 = HashMap::new();
+        let mut map_1 = IDF::new();
         map_1.insert("apple".to_string(), (1, 1.0));
         map_1.insert("banana".to_string(), (2, 2.0));
 
@@ -310,7 +303,7 @@ mod tests {
         };
         let client_2 = SqliteClient::new(config_2);
 
-        let mut map_2 = HashMap::new();
+        let mut map_2 = IDF::new();
         map_2.insert("cherry".to_string(), (3, 3.0));
 
         client_2
@@ -332,7 +325,7 @@ mod tests {
         );
 
         // 5. Overwrite run_1
-        let mut map_1_new = HashMap::new();
+        let mut map_1_new = IDF::new();
         map_1_new.insert("apple".to_string(), (1, 1.5)); // Updated value
         map_1_new.insert("date".to_string(), (4, 4.0)); // New value
         // "banana" is removed
