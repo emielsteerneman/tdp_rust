@@ -1,11 +1,23 @@
-use std::sync::Arc;
-use data_access::vector::VectorClient;
-use data_access::embed::{EmbedClient, embed_sparse};
-use data_structures::{IDF, intermediate::{ScoredChunk, SearchResult, SearchSuggestions}, filter::Filter};
 use crate::utils::match_names;
+use data_access::embed::EmbedClient;
+use data_access::vector::VectorClient;
+use data_structures::{
+    IDF,
+    filter::Filter,
+    intermediate::{ScoredChunk, SearchResult, SearchSuggestions},
+};
+use serde::Deserialize;
+use std::sync::Arc;
+
+#[derive(Debug, Deserialize)]
+pub enum SearchType {
+    DENSE,
+    SPARSE,
+    HYBRID,
+}
 
 pub struct Searcher {
-    pub embed_client: Option<Arc<dyn EmbedClient + Send + Sync>>,
+    pub embed_client: Arc<dyn EmbedClient + Send + Sync>,
     pub vector_client: Arc<dyn VectorClient + Send + Sync>,
     pub idf_map: Arc<IDF>,
     pub teams: Vec<String>,
@@ -14,7 +26,7 @@ pub struct Searcher {
 
 impl Searcher {
     pub fn new(
-        embed_client: Option<Arc<dyn EmbedClient + Send + Sync>>,
+        embed_client: Arc<dyn EmbedClient + Send + Sync>,
         vector_client: Arc<dyn VectorClient + Send + Sync>,
         idf_map: Arc<IDF>,
         teams: Vec<String>,
@@ -29,33 +41,39 @@ impl Searcher {
         }
     }
 
-    pub async fn search(&self, query: String, limit: Option<u64>, filter: Option<Filter>) -> anyhow::Result<SearchResult> {
+    pub async fn search(
+        &self,
+        query: String,
+        limit: Option<u64>,
+        filter: Option<Filter>,
+        search_type: SearchType,
+    ) -> anyhow::Result<SearchResult> {
         let limit = limit.unwrap_or(15);
         let query_trim = query.trim();
         if query_trim.is_empty() {
-             return Ok(SearchResult {
-                 query: query,
-                 filter,
-                 chunks: vec![],
-                 suggestions: SearchSuggestions::default(),
-             });
+            return Ok(SearchResult {
+                query: query,
+                filter,
+                chunks: vec![],
+                suggestions: SearchSuggestions::default(),
+            });
         }
 
-        let dense = if let Some(client) = &self.embed_client {
-            Some(client.embed_string(query_trim).await?)
+        let dense = if matches!(search_type, SearchType::DENSE | SearchType::HYBRID) {
+            Some(self.embed_client.embed_string(query_trim).await?)
         } else {
             None
         };
 
-        let sparse = if let Some(client) = &self.embed_client {
-            client.embed_sparse(query_trim, &self.idf_map)
+        let sparse = if matches!(search_type, SearchType::SPARSE | SearchType::HYBRID) {
+            Some(self.embed_client.embed_sparse(query_trim, &self.idf_map))
         } else {
-            embed_sparse(query_trim, &self.idf_map)
+            None
         };
 
         let results = self
             .vector_client
-            .search_chunks(dense, Some(sparse), limit, filter.clone())
+            .search_chunks(dense, sparse, limit, filter.clone())
             .await?;
 
         let team_suggestions = match_names(self.teams.clone(), query_trim.to_string());

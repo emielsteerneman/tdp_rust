@@ -58,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
     leagues.sort();
 
     let searcher = Searcher::new(
-        Some(Arc::from(embed_client)),
+        Arc::from(embed_client),
         Arc::from(vector_client),
         Arc::new(idf_map),
         teams,

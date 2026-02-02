@@ -24,7 +24,7 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     /* Step 1 : Load TDPs and Chunks */
     info!("Loading TDPs and Chunks");
     let tdps = load_all_tdp_jsons(&config.data_processing.tdps_json_root, Some(filter)).await?;
-    let mut chunks = load_all_chunks_from_tdps(&tdps).await?;
+    let mut chunks = load_all_chunks_from_tdps(&tdps)?;
     info!("Loaded {} tdps and {} chunks", tdps.len(), chunks.len());
 
     metadata_client.store_tdps(tdps.clone()).await?;

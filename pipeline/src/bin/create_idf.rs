@@ -16,7 +16,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     filter.add_league("soccer_smallsize".try_into()?);
 
     let tdps = load_all_tdp_jsons(&config.data_processing.tdps_json_root, Some(filter)).await?;
-    let chunks = load_all_chunks_from_tdps(&tdps).await?;
+    let chunks = load_all_chunks_from_tdps(&tdps)?;
     let texts: Vec<&str> = chunks.iter().map(|c| c.text.as_str()).collect();
     let idf_map = create_idf(&texts, &[1, 5, 10]);
 

@@ -5,9 +5,9 @@ use data_structures::{
     text_utils::process_text_to_words,
 };
 use strsim::jaro_winkler;
-use tracing::info;
+use tracing::{debug, info};
 
-use crate::tdp_to_chunks;
+use crate::create_sentence_chunks;
 
 pub async fn load_all_tdp_jsons(
     folder_path: &str,
@@ -54,13 +54,29 @@ pub async fn load_all_tdp_jsons(
     Ok(tdps)
 }
 
+pub fn tdp_to_chunks(tdp: &TDP) -> Vec<Chunk> {
+    let mut chunks = Vec::<Chunk>::new();
+
+    for (i_paragraph, paragraph) in tdp.structure.paragraphs.iter().enumerate() {
+        debug!("Processing paragraph: {}", paragraph.title.raw);
+        let raw_chunks = create_sentence_chunks(paragraph.sentences.clone(), 500, 100);
+
+        let paragraph_chunks = raw_chunks
+            .into_iter()
+            .map(|raw_chunk| raw_chunk.into_chunk(None, None, tdp.name.clone(), i_paragraph))
+            .collect::<Vec<Chunk>>();
+
+        chunks.extend(paragraph_chunks);
+    }
+
+    chunks
+}
+
 // TODO very annoying that this is async just because tdp_to_chunks is async
-pub async fn load_all_chunks_from_tdps(
-    tdps: &[TDP],
-) -> Result<Vec<Chunk>, Box<dyn std::error::Error>> {
+pub fn load_all_chunks_from_tdps(tdps: &[TDP]) -> Result<Vec<Chunk>, Box<dyn std::error::Error>> {
     let mut chunks = vec![];
     for tdp in tdps {
-        chunks.append(&mut tdp_to_chunks(&tdp, None).await);
+        chunks.append(&mut tdp_to_chunks(&tdp));
     }
 
     info!("Created {} chunks", chunks.len());
