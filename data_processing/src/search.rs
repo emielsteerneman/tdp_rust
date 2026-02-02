@@ -7,6 +7,7 @@ use data_structures::{
     intermediate::{ScoredChunk, SearchResult, SearchSuggestions},
 };
 use std::sync::Arc;
+use tracing::{info, instrument};
 
 use crate::text::match_terms;
 
@@ -42,14 +43,16 @@ impl Searcher {
         filter: Option<Filter>,
         search_type: EmbedType,
     ) -> anyhow::Result<SearchResult> {
+        info!("\nSearch n={limit:?} type={search_type:?} filter={filter:?}");
+        info!("Query : {query}");
+
         let limit = limit.unwrap_or(15);
         let query_trim = query.trim();
         if query_trim.is_empty() {
             return Ok(SearchResult {
                 query: query,
                 filter,
-                chunks: vec![],
-                suggestions: SearchSuggestions::default(),
+                ..Default::default()
             });
         }
 

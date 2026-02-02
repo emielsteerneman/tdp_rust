@@ -1,10 +1,10 @@
-use serde::Serialize;
-use schemars::JsonSchema;
 use crate::file::{League, TeamName};
 use crate::filter::Filter;
 use crate::intermediate::Chunk;
+use schemars::JsonSchema;
+use serde::Serialize;
 
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Default, Clone, Serialize, JsonSchema)]
 pub struct SearchResult {
     pub query: String,
     pub filter: Option<Filter>,

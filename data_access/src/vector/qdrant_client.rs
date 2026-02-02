@@ -353,6 +353,7 @@ impl VectorClient for QdrantClient {
 
             if let Some(leagues) = f.leagues {
                 if !leagues.is_empty() {
+                    info!("Adding league filter {:?}", leagues);
                     conditions.push(Condition::matches(
                         Self::KEY_LEAGUE,
                         leagues.into_iter().collect::<Vec<String>>(),
@@ -362,6 +363,7 @@ impl VectorClient for QdrantClient {
 
             if let Some(years) = f.years {
                 if !years.is_empty() {
+                    info!("Adding year filter {:?}", years);
                     conditions.push(Condition::matches(
                         Self::KEY_YEAR,
                         years.into_iter().map(|y| y as i64).collect::<Vec<i64>>(),
@@ -371,6 +373,7 @@ impl VectorClient for QdrantClient {
 
             if let Some(teams) = f.teams {
                 if !teams.is_empty() {
+                    info!("Adding team filter {:?}", teams);
                     conditions.push(Condition::matches(
                         Self::KEY_TEAM,
                         teams.into_iter().collect::<Vec<String>>(),
@@ -380,6 +383,7 @@ impl VectorClient for QdrantClient {
 
             if let Some(indexes) = f.league_year_team_indexes {
                 if !indexes.is_empty() {
+                    info!("Adding lity filter {:?}", indexes);
                     conditions.push(Condition::matches(
                         Self::KEY_LYTI,
                         indexes.into_iter().collect::<Vec<String>>(),
@@ -399,15 +403,15 @@ impl VectorClient for QdrantClient {
 
                 query_builder = query_builder.add_prefetch(
                     PrefetchQueryBuilder::default()
-                        .query(Query::new_nearest(sparse_vector.as_slice()))
-                        .using(Self::EMBEDDING_NAME_SPARSE)
+                        .query(Query::new_nearest(dense_vector))
+                        .using(Self::EMBEDDING_NAME_DENSE)
                         .limit(limit),
                 );
 
                 query_builder = query_builder.add_prefetch(
                     PrefetchQueryBuilder::default()
-                        .query(Query::new_nearest(dense_vector))
-                        .using(Self::EMBEDDING_NAME_DENSE)
+                        .query(sparse_vector)
+                        .using(Self::EMBEDDING_NAME_SPARSE)
                         .limit(limit),
                 );
 

@@ -373,7 +373,7 @@ mod tests {
         let idfs = client.load_idf().await?;
         println!("Number of entries in {db_filename} (IDF): {}", idfs.len());
 
-        let tdps = client.load_tdps(vec![]).await?;
+        let tdps = client.load_tdps().await?;
         println!("Number of TDPs: {}", tdps.len());
         for tdp in tdps.iter().take(5) {
             println!("  {}", tdp.get_filename());
