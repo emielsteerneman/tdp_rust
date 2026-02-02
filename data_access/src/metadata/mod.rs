@@ -35,7 +35,6 @@ pub trait MetadataClient {
 
     fn load_tdps<'a>(
         &'a self,
-        tdps: Vec<TDP>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<TDPName>, MetadataClientError>> + Send + 'a>>;
 
     /* What else do I want to store here?

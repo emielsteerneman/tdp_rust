@@ -1,5 +1,7 @@
-use data_processing::text::match_terms;
+use data_processing::search::Searcher;
+use data_structures::embed_type::EmbedType;
 use std::collections::HashSet;
+use std::sync::Arc;
 use tracing::info;
 
 #[tokio::main]
@@ -14,39 +16,55 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
 
-    let idf_map = metadata_client.load_idf().await?;
+    let idf_map = Arc::new(metadata_client.load_idf().await?);
 
-    let tdps = metadata_client.load_tdps(vec![]).await?;
+    let tdps = metadata_client.load_tdps().await?;
     let mut teams = tdps
-        .into_iter()
-        .map(|tdp| tdp.team_name.name_pretty)
+        .iter()
+        .map(|tdp| tdp.team_name.name_pretty.clone())
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
 
     teams.sort();
 
-    let query = "battery capacity er force tigers";
-    let dense = embed_client.embed_string(query).await?;
-    let sparse = embed_client.embed_sparse(query, &idf_map);
+    let mut leagues = tdps
+        .into_iter()
+        .map(|tdp| tdp.league.name_pretty.clone())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
 
-    let team_matches = match_terms(teams.clone(), query.to_string());
+    leagues.sort();
 
-    let chunks = vector_client
-        .search_chunks(Some(dense), Some(sparse), 5, None)
+    let searcher = Searcher::new(embed_client, vector_client, idf_map, teams, leagues);
+
+    let query = "battery capacity tigers smallsize";
+    let results = searcher
+        .search(query.to_string(), Some(5), None, EmbedType::HYBRID)
         .await?;
 
-    for (i, (chunk, score)) in chunks.iter().enumerate() {
+    for (i, scored_chunk) in results.chunks.iter().enumerate() {
         println!(
-            "[{i:2}] {score:.4} - {} - {} - {}",
-            chunk.league.name_pretty, chunk.team.name_pretty, chunk.year
+            "[{i:2}] {:.4} - {} - {} - {}",
+            scored_chunk.score,
+            scored_chunk.chunk.league.name_pretty,
+            scored_chunk.chunk.team.name_pretty,
+            scored_chunk.chunk.year
         );
-        println!("{}", chunk.text);
+        println!("{}", scored_chunk.chunk.text);
     }
 
-    if !team_matches.is_empty() {
-        println!("\nDo you want to filter on one of these team?");
-        for m in team_matches {
+    if !results.suggestions.teams.is_empty() {
+        println!("\nDo you want to filter on one of these teams?");
+        for m in &results.suggestions.teams {
+            println!("* {m}");
+        }
+    }
+
+    if !results.suggestions.leagues.is_empty() {
+        println!("\nDo you want to filter on one of these leagues?");
+        for m in &results.suggestions.leagues {
             println!("* {m}");
         }
     }

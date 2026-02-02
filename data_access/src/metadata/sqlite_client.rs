@@ -211,7 +211,6 @@ impl MetadataClient for SqliteClient {
 
     fn load_tdps<'a>(
         &'a self,
-        _tdps: Vec<data_structures::paper::TDP>,
     ) -> Pin<
         Box<
             dyn Future<Output = Result<Vec<data_structures::file::TDPName>, MetadataClientError>>

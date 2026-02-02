@@ -37,7 +37,7 @@ async fn main() -> anyhow::Result<()> {
 
     println!("IDF loaded.");
 
-    let tdps = metadata_client.load_tdps(vec![]).await?;
+    let tdps = metadata_client.load_tdps().await?;
     use std::collections::HashSet;
     let mut teams: Vec<String> = tdps
         .iter()
