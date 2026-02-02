@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
-use data_access::embed::EmbedClient;
+use data_access::embed::{EmbedClient, embed_sparse};
 use data_processing::{
     create_idf,
-    utils::{load_all_chunks_from_tdps, load_all_tdp_jsons, process_text_to_words},
+    utils::{load_all_chunks_from_tdps, load_all_tdp_jsons},
 };
 use data_structures::{IDF, filter::Filter, intermediate::Chunk};
 use tracing::info;
@@ -77,21 +75,6 @@ pub async fn embed_chunks(
     }
 
     Ok(())
-}
-
-pub fn embed_sparse(text: &str, idf_map: &IDF) -> HashMap<u32, f32> {
-    let mut map = HashMap::new();
-
-    let (ngram1, ngram2, ngram3) = process_text_to_words(text);
-    let iter = ngram1.iter().chain(ngram2.iter()).chain(ngram3.iter());
-
-    for word in iter {
-        if let Some((id, idf)) = idf_map.get(word) {
-            *map.entry(*id).or_insert(0.0) += idf;
-        }
-    }
-
-    map
 }
 
 pub fn print_idf_statistics(idf_map: &IDF) {

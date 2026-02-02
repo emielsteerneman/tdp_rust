@@ -10,6 +10,7 @@ pub mod mock;
 pub mod paper;
 pub mod scoring;
 pub mod taxonomy;
+pub mod text_utils;
 
 #[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
 pub struct IDF(pub HashMap<String, (u32, f32)>);

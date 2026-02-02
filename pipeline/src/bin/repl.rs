@@ -1,8 +1,4 @@
-use std::collections::HashMap;
-
 use data_access::{embed::EmbedClient, metadata::MetadataClient, vector::VectorClient};
-use data_processing::utils::process_text_to_words;
-use data_structures::IDF;
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -53,7 +49,7 @@ pub async fn start_repl(
         let _dense = embed_client.embed_string(query).await?;
 
         // 2. Generate sparse embedding
-        let sparse = embed_sparse(&query, &idf_map);
+        let sparse = embed_client.embed_sparse(query, &idf_map);
         println!("Sparse: {:?}", sparse);
 
         // 3. Search
@@ -80,19 +76,4 @@ pub async fn start_repl(
     }
 
     Ok(())
-}
-
-pub fn embed_sparse(text: &str, idf_map: &IDF) -> HashMap<u32, f32> {
-    let mut map = HashMap::new();
-
-    let (ngram1, ngram2, ngram3) = process_text_to_words(text);
-    let iter = ngram1.iter().chain(ngram2.iter()).chain(ngram3.iter());
-
-    for word in iter {
-        if let Some((id, idf)) = idf_map.get(word) {
-            *map.entry(*id).or_insert(0.0) += idf;
-        }
-    }
-
-    map
 }

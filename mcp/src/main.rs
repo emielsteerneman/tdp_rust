@@ -33,13 +33,6 @@ async fn main() -> anyhow::Result<()> {
     println!("Clients initialized.");
 
     // Load IDF
-    let qdrant_config = config
-        .data_access
-        .vector
-        .qdrant
-        .as_ref()
-        .ok_or_else(|| anyhow::anyhow!("Qdrant config is missing"))?;
-
     let idf_map = metadata_client.load_idf().await?;
 
     println!("IDF loaded.");
@@ -64,7 +57,13 @@ async fn main() -> anyhow::Result<()> {
         .collect();
     leagues.sort();
 
-    let searcher = Searcher::new(Arc::from(vector_client), Arc::new(idf_map), teams, leagues);
+    let searcher = Searcher::new(
+        Some(Arc::from(embed_client)),
+        Arc::from(vector_client),
+        Arc::new(idf_map),
+        teams,
+        leagues,
+    );
 
     let state = AppState::new(Arc::new(searcher));
 

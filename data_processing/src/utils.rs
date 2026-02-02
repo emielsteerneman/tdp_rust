@@ -1,36 +1,13 @@
 use std::collections::HashMap;
 
-use data_structures::{IDF, file::TDPName, filter::Filter, intermediate::Chunk, paper::TDP};
-use scirs2_text::{BasicNormalizer, BasicTextCleaner, preprocess::TextPreprocessor};
+use data_structures::{
+    file::TDPName, filter::Filter, intermediate::Chunk, paper::TDP,
+    text_utils::process_text_to_words,
+};
 use strsim::jaro_winkler;
 use tracing::info;
 
 use crate::tdp_to_chunks;
-
-pub fn process_text_to_words(text: &str) -> (Vec<String>, Vec<String>, Vec<String>) {
-    let cleaner = TextPreprocessor::new(
-        BasicNormalizer::new(true, true),
-        BasicTextCleaner::new(true, true, true),
-    );
-
-    let cleaned = cleaner.process(text).unwrap();
-    let words = cleaned
-        .split_whitespace()
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
-
-    let ngram2 = words
-        .windows(2)
-        .map(|a_b: &[String]| format!("{} {}", a_b[0], a_b[1]))
-        .collect::<Vec<_>>();
-
-    let ngram3 = words
-        .windows(3)
-        .map(|a_b: &[String]| format!("{} {} {}", a_b[0], a_b[1], a_b[2]))
-        .collect::<Vec<_>>();
-
-    (words, ngram2, ngram3)
-}
 
 pub async fn load_all_tdp_jsons(
     folder_path: &str,
@@ -66,9 +43,6 @@ pub async fn load_all_tdp_jsons(
         if !path.to_str().unwrap().contains("smallsize") {
             continue;
         }
-        // if !path.to_str().unwrap().contains("2024") {
-        //     continue;
-        // }
 
         let content = tokio::fs::read_to_string(&path).await?;
         let tdp: TDP = serde_json::from_str(&content)?;
@@ -92,21 +66,6 @@ pub async fn load_all_chunks_from_tdps(
     info!("Created {} chunks", chunks.len());
 
     Ok(chunks)
-}
-
-pub fn embed_sparse(text: &str, idf_map: &IDF) -> HashMap<u32, f32> {
-    let mut map = HashMap::new();
-
-    let (ngram1, ngram2, ngram3) = process_text_to_words(text);
-    let iter = ngram1.iter().chain(ngram2.iter()).chain(ngram3.iter());
-
-    for word in iter {
-        if let Some((id, idf)) = idf_map.get(word) {
-            *map.entry(*id).or_insert(0.0) += idf;
-        }
-    }
-
-    map
 }
 
 pub fn match_names(teams: Vec<String>, input: String) -> Vec<String> {
@@ -148,10 +107,6 @@ pub fn match_names(teams: Vec<String>, input: String) -> Vec<String> {
     // Sort descending
     result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-    // for (team, score) in &result {
-    //     println!(ירת{team:40} {score:.4});
-    // }
-
     result
         .into_iter()
         .filter(|(_, score)| *score > 0.9)
@@ -161,7 +116,7 @@ pub fn match_names(teams: Vec<String>, input: String) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::process_text_to_words;
+    use data_structures::text_utils::process_text_to_words;
 
     #[test]
     pub fn test_clean_text() {

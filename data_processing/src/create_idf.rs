@@ -1,8 +1,7 @@
 use data_structures::IDF;
+use data_structures::text_utils::process_text_to_words;
 use std::collections::{HashMap, HashSet};
 use tracing::info;
-
-use crate::utils::process_text_to_words;
 
 fn calculate_idf(n_docs: u32, n_word: u32) -> f32 {
     // Formally, the formula for the inverse document frequency is:
@@ -31,7 +30,7 @@ pub fn create_idf(texts: &[&str], min_counts: &[u32; 3]) -> IDF {
         let (ngram1, ngram2, ngram3) = process_text_to_words(text);
 
         // We count the number of documents that contain the word, not the total word occurrences
-        let ngrams_vec = [ngram1, ngram2, ngram3];
+        let ngrams_vec: [Vec<String>; 3] = [ngram1, ngram2, ngram3];
 
         for (i, ngram) in ngrams_vec.into_iter().enumerate() {
             let unique_words: HashSet<String> = ngram.into_iter().collect();

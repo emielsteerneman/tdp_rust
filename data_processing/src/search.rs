@@ -1,13 +1,11 @@
-use crate::utils::{embed_sparse, match_names};
-use data_access::vector::VectorClient;
-use data_structures::{
-    IDF,
-    filter::Filter,
-    intermediate::{ScoredChunk, SearchResult, SearchSuggestions},
-};
 use std::sync::Arc;
+use data_access::vector::VectorClient;
+use data_access::embed::{EmbedClient, embed_sparse};
+use data_structures::{IDF, intermediate::{ScoredChunk, SearchResult, SearchSuggestions}, filter::Filter};
+use crate::utils::match_names;
 
 pub struct Searcher {
+    pub embed_client: Option<Arc<dyn EmbedClient + Send + Sync>>,
     pub vector_client: Arc<dyn VectorClient + Send + Sync>,
     pub idf_map: Arc<IDF>,
     pub teams: Vec<String>,
@@ -16,12 +14,14 @@ pub struct Searcher {
 
 impl Searcher {
     pub fn new(
+        embed_client: Option<Arc<dyn EmbedClient + Send + Sync>>,
         vector_client: Arc<dyn VectorClient + Send + Sync>,
         idf_map: Arc<IDF>,
         teams: Vec<String>,
         leagues: Vec<String>,
     ) -> Self {
         Self {
+            embed_client,
             vector_client,
             idf_map,
             teams,
@@ -29,28 +29,33 @@ impl Searcher {
         }
     }
 
-    pub async fn search(
-        &self,
-        query: String,
-        limit: Option<u64>,
-        filter: Option<Filter>,
-    ) -> anyhow::Result<SearchResult> {
+    pub async fn search(&self, query: String, limit: Option<u64>, filter: Option<Filter>) -> anyhow::Result<SearchResult> {
         let limit = limit.unwrap_or(15);
         let query_trim = query.trim();
         if query_trim.is_empty() {
-            return Ok(SearchResult {
-                query: query,
-                filter,
-                chunks: vec![],
-                suggestions: SearchSuggestions::default(),
-            });
+             return Ok(SearchResult {
+                 query: query,
+                 filter,
+                 chunks: vec![],
+                 suggestions: SearchSuggestions::default(),
+             });
         }
 
-        let sparse = embed_sparse(query_trim, &self.idf_map);
+        let dense = if let Some(client) = &self.embed_client {
+            Some(client.embed_string(query_trim).await?)
+        } else {
+            None
+        };
+
+        let sparse = if let Some(client) = &self.embed_client {
+            client.embed_sparse(query_trim, &self.idf_map)
+        } else {
+            embed_sparse(query_trim, &self.idf_map)
+        };
 
         let results = self
             .vector_client
-            .search_chunks(None, Some(sparse), limit, filter.clone())
+            .search_chunks(dense, Some(sparse), limit, filter.clone())
             .await?;
 
         let team_suggestions = match_names(self.teams.clone(), query_trim.to_string());

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use data_processing::utils::{embed_sparse, match_names};
+use data_processing::utils::match_names;
 use tracing::info;
 
 #[tokio::main]
@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let query = "battery capacity er force tigers";
     let dense = embed_client.embed_string(query).await?;
-    let sparse = embed_sparse(&query, &idf_map);
+    let sparse = embed_client.embed_sparse(query, &idf_map);
 
     let team_matches = match_names(teams.clone(), query.to_string());
 

@@ -1187,7 +1187,6 @@ dependencies = [
  "futures",
  "ndarray",
  "num-traits",
- "scirs2-text",
  "serde",
  "serde_json",
  "strsim",
@@ -1202,6 +1201,7 @@ version = "0.1.0"
 dependencies = [
  "derive_more",
  "schemars 1.2.0",
+ "scirs2-text",
  "serde",
  "serde_json",
  "thiserror 2.0.17",

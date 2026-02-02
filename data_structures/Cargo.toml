@@ -9,4 +9,5 @@ thiserror = "2.0.16"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 schemars = "1.2.0"
+scirs2-text = { version = "0.1.2", features = ["tokenization"] }
 uuid = { version = "1", features = ["v5"] }
