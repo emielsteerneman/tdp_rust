@@ -3,7 +3,7 @@ use data_processing::{
     create_idf,
     utils::{load_all_chunks_from_tdps, load_all_tdp_jsons},
 };
-use data_structures::{IDF, filter::Filter, intermediate::Chunk};
+use data_structures::{IDF, embed_type::EmbedType, filter::Filter, intermediate::Chunk};
 use tracing::info;
 
 #[tokio::main]
@@ -38,7 +38,13 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     /* Step 3 : Create embeddings */
     info!("Creating embeddings");
-    embed_chunks(&mut chunks, Some(&*embed_client), &idf_map).await?;
+    embed_chunks(
+        &mut chunks,
+        &*embed_client,
+        EmbedType::HYBRID,
+        Some(&idf_map),
+    )
+    .await?;
     // embed_chunks(&mut chunks, None, &idf_map).await?;
 
     /* Step 4 : Store chunks */
@@ -52,10 +58,11 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 pub async fn embed_chunks(
     chunks: &mut [Chunk],
-    embed_client: Option<&dyn EmbedClient>,
-    idf_map: &IDF,
+    embed_client: &dyn EmbedClient,
+    embed_type: EmbedType,
+    idf_map: Option<&IDF>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(embed_client) = embed_client {
+    if matches!(embed_type, EmbedType::DENSE | EmbedType::HYBRID) {
         let texts = chunks
             .iter()
             .map(|chunk| chunk.text.clone())
@@ -67,11 +74,15 @@ pub async fn embed_chunks(
         }
     }
 
-    for chunk in chunks {
-        let sparse = embed_sparse(&chunk.text, idf_map);
-        chunk.sparse_embedding = sparse;
+    if matches!(embed_type, EmbedType::SPARSE | EmbedType::HYBRID)
+        && let Some(idf_map) = idf_map
+    {
+        for chunk in chunks {
+            let sparse = embed_sparse(&chunk.text, idf_map);
+            chunk.sparse_embedding = sparse;
 
-        chunk.dense_embedding = vec![0.0; 1536];
+            chunk.dense_embedding = vec![0.0; 1536];
+        }
     }
 
     Ok(())

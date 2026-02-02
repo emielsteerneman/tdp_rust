@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use derive_more::{Deref, DerefMut};
 
+pub mod embed_type;
 pub mod file;
 pub mod filter;
 pub mod intermediate;

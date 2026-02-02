@@ -3,18 +3,11 @@ use data_access::embed::EmbedClient;
 use data_access::vector::VectorClient;
 use data_structures::{
     IDF,
+    embed_type::EmbedType,
     filter::Filter,
     intermediate::{ScoredChunk, SearchResult, SearchSuggestions},
 };
-use serde::Deserialize;
 use std::sync::Arc;
-
-#[derive(Debug, Deserialize)]
-pub enum SearchType {
-    DENSE,
-    SPARSE,
-    HYBRID,
-}
 
 pub struct Searcher {
     pub embed_client: Arc<dyn EmbedClient + Send + Sync>,
@@ -46,7 +39,7 @@ impl Searcher {
         query: String,
         limit: Option<u64>,
         filter: Option<Filter>,
-        search_type: SearchType,
+        search_type: EmbedType,
     ) -> anyhow::Result<SearchResult> {
         let limit = limit.unwrap_or(15);
         let query_trim = query.trim();
@@ -59,13 +52,13 @@ impl Searcher {
             });
         }
 
-        let dense = if matches!(search_type, SearchType::DENSE | SearchType::HYBRID) {
+        let dense = if matches!(search_type, EmbedType::DENSE | EmbedType::HYBRID) {
             Some(self.embed_client.embed_string(query_trim).await?)
         } else {
             None
         };
 
-        let sparse = if matches!(search_type, SearchType::SPARSE | SearchType::HYBRID) {
+        let sparse = if matches!(search_type, EmbedType::SPARSE | EmbedType::HYBRID) {
             Some(self.embed_client.embed_sparse(query_trim, &self.idf_map))
         } else {
             None

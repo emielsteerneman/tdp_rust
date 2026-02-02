@@ -1,6 +1,5 @@
 use crate::state::AppState;
-use data_processing::search::SearchType;
-use data_structures::filter::Filter;
+use data_structures::{embed_type::EmbedType, filter::Filter};
 use rmcp::schemars::JsonSchema;
 use serde::Deserialize;
 
@@ -9,7 +8,7 @@ pub struct SearchArgs {
     pub query: String,
     pub limit: Option<u64>,
     pub filter: Option<Filter>,
-    pub search_type: McpSearchType,
+    pub search_type: EmbedType,
 }
 
 pub async fn search(state: &AppState, args: SearchArgs) -> anyhow::Result<String> {
@@ -19,31 +18,4 @@ pub async fn search(state: &AppState, args: SearchArgs) -> anyhow::Result<String
         .await?;
 
     Ok(serde_json::to_string_pretty(&search_result)?)
-}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-pub enum McpSearchType {
-    DENSE,
-    SPARSE,
-    HYBRID,
-}
-
-impl From<SearchType> for McpSearchType {
-    fn from(value: SearchType) -> Self {
-        match value {
-            SearchType::DENSE => McpSearchType::DENSE,
-            SearchType::SPARSE => McpSearchType::HYBRID,
-            SearchType::HYBRID => McpSearchType::SPARSE,
-        }
-    }
-}
-
-impl Into<SearchType> for McpSearchType {
-    fn into(self) -> SearchType {
-        match self {
-            McpSearchType::DENSE => SearchType::DENSE,
-            McpSearchType::SPARSE => SearchType::SPARSE,
-            McpSearchType::HYBRID => SearchType::HYBRID,
-        }
-    }
 }
