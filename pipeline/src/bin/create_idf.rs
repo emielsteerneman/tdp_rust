@@ -1,6 +1,6 @@
 use data_processing::{
-    create_idf,
-    utils::{load_all_chunks_from_tdps, load_all_tdp_jsons},
+    chunk::utils::{load_all_chunks_from_tdps, load_all_tdp_jsons},
+    text::create_idf,
 };
 use data_structures::filter::Filter;
 use std::error::Error;

@@ -109,7 +109,7 @@ pub fn create_idf(texts: &[&str], min_counts: &[u32; 3]) -> IDF {
 
 #[cfg(test)]
 mod tests {
-    use crate::create_idf;
+    use crate::text::create_idf;
 
     #[test]
     fn test_create_idf() -> Result<(), Box<dyn std::error::Error>> {

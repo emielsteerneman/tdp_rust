@@ -1,9 +1,9 @@
-use data_access::embed::{EmbedClient, embed_sparse};
 use data_processing::{
-    create_idf,
-    utils::{load_all_chunks_from_tdps, load_all_tdp_jsons},
+    chunk::utils::{load_all_chunks_from_tdps, load_all_tdp_jsons},
+    embed::embed_chunks,
+    text::create_idf,
 };
-use data_structures::{IDF, embed_type::EmbedType, filter::Filter, intermediate::Chunk};
+use data_structures::{IDF, embed_type::EmbedType, filter::Filter};
 use tracing::info;
 
 #[tokio::main]
@@ -56,38 +56,6 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub async fn embed_chunks(
-    chunks: &mut [Chunk],
-    embed_client: &dyn EmbedClient,
-    embed_type: EmbedType,
-    idf_map: Option<&IDF>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    if matches!(embed_type, EmbedType::DENSE | EmbedType::HYBRID) {
-        let texts = chunks
-            .iter()
-            .map(|chunk| chunk.text.clone())
-            .collect::<Vec<String>>();
-        let dense_embeddings = embed_client.embed_strings(texts).await?;
-
-        for (chunk, embedding) in chunks.iter_mut().zip(dense_embeddings.into_iter()) {
-            chunk.dense_embedding = embedding;
-        }
-    }
-
-    if matches!(embed_type, EmbedType::SPARSE | EmbedType::HYBRID)
-        && let Some(idf_map) = idf_map
-    {
-        for chunk in chunks {
-            let sparse = embed_sparse(&chunk.text, idf_map);
-            chunk.sparse_embedding = sparse;
-
-            chunk.dense_embedding = vec![0.0; 1536];
-        }
-    }
-
-    Ok(())
-}
-
 pub fn print_idf_statistics(idf_map: &IDF) {
     let mut items = idf_map.0.clone().into_iter().collect::<Vec<_>>();
     let n_items = items.len();
@@ -106,7 +74,7 @@ pub fn print_idf_statistics(idf_map: &IDF) {
 
 #[cfg(test)]
 mod tests {
-    use crate::embed_sparse;
+    use data_access::embed::embed_sparse;
     use data_structures::{IDF, intermediate::Chunk};
     use std::collections::HashMap;
 

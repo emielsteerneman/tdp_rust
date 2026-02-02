@@ -1,4 +1,3 @@
-use crate::utils::match_names;
 use data_access::embed::EmbedClient;
 use data_access::vector::VectorClient;
 use data_structures::{
@@ -8,6 +7,8 @@ use data_structures::{
     intermediate::{ScoredChunk, SearchResult, SearchSuggestions},
 };
 use std::sync::Arc;
+
+use crate::text::match_terms;
 
 pub struct Searcher {
     pub embed_client: Arc<dyn EmbedClient + Send + Sync>,
@@ -69,8 +70,8 @@ impl Searcher {
             .search_chunks(dense, sparse, limit, filter.clone())
             .await?;
 
-        let team_suggestions = match_names(self.teams.clone(), query_trim.to_string());
-        let league_suggestions = match_names(self.leagues.clone(), query_trim.to_string());
+        let team_suggestions = match_terms(self.teams.clone(), query_trim.to_string());
+        let league_suggestions = match_terms(self.leagues.clone(), query_trim.to_string());
 
         Ok(SearchResult {
             query: query,

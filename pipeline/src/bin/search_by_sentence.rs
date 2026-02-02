@@ -1,6 +1,5 @@
+use data_processing::text::match_terms;
 use std::collections::HashSet;
-
-use data_processing::utils::match_names;
 use tracing::info;
 
 #[tokio::main]
@@ -27,15 +26,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     teams.sort();
 
-    // for team in teams {
-    //     println!("{}", team);
-    // }
-
     let query = "battery capacity er force tigers";
     let dense = embed_client.embed_string(query).await?;
     let sparse = embed_client.embed_sparse(query, &idf_map);
 
-    let team_matches = match_names(teams.clone(), query.to_string());
+    let team_matches = match_terms(teams.clone(), query.to_string());
 
     let chunks = vector_client
         .search_chunks(Some(dense), Some(sparse), 5, None)
