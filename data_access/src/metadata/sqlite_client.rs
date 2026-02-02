@@ -441,7 +441,11 @@ mod tests {
         );
 
         // 7. Cleanup
+        drop(client_1);
+        drop(client_2);
         fs::remove_file(&db_filename).expect("Failed to delete database file");
+        let _ = fs::remove_file(format!("{}-wal", db_filename));
+        let _ = fs::remove_file(format!("{}-shm", db_filename));
     }
 
     #[tokio::test]
@@ -541,6 +545,9 @@ mod tests {
         assert!(league_names.contains(&"Soccer MidSize".to_string()));
 
         // Cleanup
+        drop(client);
         fs::remove_file(&db_filename).expect("Failed to delete database file");
+        let _ = fs::remove_file(format!("{}-wal", db_filename));
+        let _ = fs::remove_file(format!("{}-shm", db_filename));
     }
 }
