@@ -1,7 +1,11 @@
 use std::pin::Pin;
 
 mod sqlite_client;
-use data_structures::{IDF, file::TDPName, paper::TDP};
+use data_structures::{
+    IDF,
+    file::{League, TDPName, TeamName},
+    paper::TDP,
+};
 pub use sqlite_client::{SqliteClient, SqliteConfig};
 
 #[derive(thiserror::Error, Debug)]
@@ -36,6 +40,14 @@ pub trait MetadataClient {
     fn load_tdps<'a>(
         &'a self,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<TDPName>, MetadataClientError>> + Send + 'a>>;
+
+    fn load_teams<'a>(
+        &'a self,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<TeamName>, MetadataClientError>> + Send + 'a>>;
+
+    fn load_leagues<'a>(
+        &'a self,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<League>, MetadataClientError>> + Send + 'a>>;
 
     /* What else do I want to store here?
         The basic League Year Team
