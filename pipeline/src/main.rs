@@ -1,66 +1,7 @@
-use configuration::AppConfig;
-use data_access::embed::{self, EmbedClient, FastembedClient};
-use data_processing::tdp_to_chunks;
-use data_structures::{intermediate::Chunk, paper::TDP};
-use serde_json;
-use tracing::{Level, info};
-use tracing_subscriber::FmtSubscriber;
-
-// struct SentenceEntry {
-//     paragraph_title: String,
-//     text: String,
-// }
+use data_structures::intermediate::Chunk;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // a builder for `FmtSubscriber`.
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::TRACE)
-        .with_target(true)
-        .without_time()
-        // completes the builder.
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-
-    // Load configuration
-    let config = AppConfig::load_from_file("config.toml")?;
-    info!("Configuration loaded successfully");
-
-    // Initialize embed client based on config
-    let embed_client: Box<dyn EmbedClient> =
-        if let Some(openai_cfg) = &config.data_access.embed.openai {
-            info!(
-                "Using OpenAI Embeddings with model: {}",
-                openai_cfg.model_name
-            );
-            Box::new(embed::OpenAIClient::new(openai_cfg))
-        } else if let Some(fastembed_cfg) = &config.data_access.embed.fastembed {
-            info!("Using FastEmbed with model: {}", fastembed_cfg.model_name);
-            Box::new(FastembedClient::new(fastembed_cfg)?)
-        } else {
-            panic!("No embedding configuration found in config.toml");
-        };
-
-    let files =
-        std::fs::read_dir("/home/emiel/projects/tdps_json").expect("Failed to read directory");
-
-    info!("Info message!!!");
-
-    for file in files {
-        let file = file.expect("Failed to read file entry");
-        let path = file.path();
-        info!("Reading file {path:?}");
-        let content = std::fs::read_to_string(&path).expect("Failed to read file content");
-        let tdp: TDP = serde_json::from_str(&content).expect("Failed to parse JSON");
-
-        // The original code passed &tdp, but tdp_to_chunks signature might need checking.
-        // Assuming it's correct.
-        let _chunks = tdp_to_chunks(&tdp, Some(embed_client.as_ref())).await;
-
-        // embed_client usage would go here if uncommented/implemented
-    }
-
     Ok(())
 }
 
