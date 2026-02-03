@@ -8,9 +8,15 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct Filter {
+    #[schemars(description = "An optional list of team names on which to filter results")]
     pub teams: Option<HashSet<String>>,
+    #[schemars(description = "An optional list of leagues on which to filter results")]
     pub leagues: Option<HashSet<String>>,
+    #[schemars(description = "An optional list of years on which to filter results")]
     pub years: Option<HashSet<u32>>,
+    #[schemars(
+        description = "An optional list of league_year_team_index on which to filter results"
+    )]
     pub league_year_team_indexes: Option<HashSet<String>>,
 }
 
