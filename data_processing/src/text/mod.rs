@@ -1,5 +1,5 @@
 mod create_idf;
-mod match_names;
+mod match_terms;
 
 pub use create_idf::create_idf;
-pub use match_names::match_terms;
+pub use match_terms::match_terms;

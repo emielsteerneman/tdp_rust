@@ -7,7 +7,7 @@ use data_structures::{
     intermediate::{ScoredChunk, SearchResult, SearchSuggestions},
 };
 use std::sync::Arc;
-use tracing::{info, instrument};
+use tracing::info;
 
 use crate::text::match_terms;
 
