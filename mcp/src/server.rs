@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use crate::tools::{list_teams, search};
+use crate::tools::{list_leagues, list_teams, search};
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
@@ -38,6 +38,17 @@ impl AppServer {
     ) -> Result<CallToolResult, McpError> {
         match list_teams::list_teams(self.state.metadata_client.clone(), args).await {
             Ok(teams) => match serde_json::to_string_pretty(&teams) {
+                Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
+                Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+            },
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(description = "Retrieve a list of all leagues")]
+    pub async fn list_leagues(&self) -> Result<CallToolResult, McpError> {
+        match list_leagues::list_leagues(self.state.metadata_client.clone()).await {
+            Ok(leagues) => match serde_json::to_string_pretty(&leagues) {
                 Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
                 Err(e) => Err(McpError::internal_error(e.to_string(), None)),
             },
