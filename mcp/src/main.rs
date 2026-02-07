@@ -58,14 +58,14 @@ async fn main() -> anyhow::Result<()> {
     leagues.sort();
 
     let searcher = Searcher::new(
-        Arc::from(embed_client),
-        Arc::from(vector_client),
+        embed_client.clone(),
+        vector_client.clone(),
         Arc::new(idf_map),
         teams,
         leagues,
     );
 
-    let state = AppState::new(Arc::new(searcher));
+    let state = AppState::new(metadata_client.clone(), Arc::new(searcher));
 
     let server = AppServer::new(state);
 

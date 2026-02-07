@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use data_structures::text_utils::process_text_to_words;
 use strsim::jaro_winkler;
 
-pub fn match_terms(teams: Vec<String>, input: String) -> Vec<String> {
+pub fn match_terms(teams: Vec<String>, input: String, threshold: Option<f32>) -> Vec<String> {
+    let threshold = threshold.unwrap_or(0.8) as f64;
+
     let (n1, n2, n3) = process_text_to_words(&input.to_lowercase());
     let query_fragments = n1.into_iter().chain(n2).chain(n3).collect::<Vec<_>>();
 
@@ -44,7 +46,7 @@ pub fn match_terms(teams: Vec<String>, input: String) -> Vec<String> {
 
     result
         .into_iter()
-        .filter(|(_, score)| *score > 0.9)
+        .filter(|(_, score)| *score > threshold)
         .map(|(t, _)| t)
         .collect()
 }

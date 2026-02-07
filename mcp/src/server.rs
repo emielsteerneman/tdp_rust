@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use crate::tools::search;
+use crate::tools::{list_teams, search};
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
@@ -27,6 +27,20 @@ impl AppServer {
     ) -> Result<CallToolResult, McpError> {
         match search::search(&self.state, args).await {
             Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(description = "Retrieve a list of existing teams, with an optional hint to match on")]
+    pub async fn list_teams(
+        &self,
+        Parameters(args): Parameters<list_teams::ListTeamsArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match list_teams::list_teams(self.state.metadata_client.clone(), args).await {
+            Ok(teams) => match serde_json::to_string_pretty(&teams) {
+                Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
+                Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+            },
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }

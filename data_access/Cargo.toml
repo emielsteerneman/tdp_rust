@@ -21,3 +21,5 @@ serde_json = "1.0.145"
 uuid = { version = "1.19.0", features = ["v5"] }
 testcontainers = { version = "0.26.3", features = ["host-port-exposure"] }
 rusqlite = { version = "0.38.0", features = ["bundled"] }
+mockall = "0.14.0"
+mockall_derive = "0.14.0"

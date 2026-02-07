@@ -64,4 +64,12 @@ mod tests {
         assert_eq!(tdp_name.team_name.name_pretty, "Carologistics");
         assert_eq!(tdp_name.index, 0);
     }
+
+    #[test]
+    pub fn test_from_pretty() {
+        let name_pretty = "RoboTeam Twente";
+        let team_name = super::TeamName::from_pretty(name_pretty);
+        assert_eq!(team_name.name, "RoboTeam_Twente");
+        assert_eq!(team_name.name_pretty, "RoboTeam Twente");
+    }
 }

@@ -73,8 +73,9 @@ impl Searcher {
             .search_chunks(dense, sparse, limit, filter.clone())
             .await?;
 
-        let team_suggestions = match_terms(self.teams.clone(), query_trim.to_string());
-        let league_suggestions = match_terms(self.leagues.clone(), query_trim.to_string());
+        let team_suggestions = match_terms(self.teams.clone(), query_trim.to_string(), Some(0.8));
+        let league_suggestions =
+            match_terms(self.leagues.clone(), query_trim.to_string(), Some(0.8));
 
         Ok(SearchResult {
             query: query,

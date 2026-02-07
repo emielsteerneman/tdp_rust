@@ -1,11 +1,11 @@
 use std::pin::Pin;
-
 mod sqlite_client;
 use data_structures::{
     IDF,
     file::{League, TDPName, TeamName},
     paper::TDP,
 };
+use mockall::automock;
 pub use sqlite_client::{SqliteClient, SqliteConfig};
 
 #[derive(thiserror::Error, Debug)]
@@ -21,8 +21,8 @@ pub enum MetadataClientError {
     #[error("Invalid vector dimension: {0}")]
     InvalidVectorDimension(String),
 }
-
-pub trait MetadataClient {
+#[automock]
+pub trait MetadataClient: Send + Sync {
     fn store_idf<'a>(
         &'a self,
         idf: IDF,
