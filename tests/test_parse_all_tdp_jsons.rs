@@ -4,8 +4,9 @@ use data_structures::paper::TDP;
 
 #[tokio::test]
 async fn test_load_all_tdp_jsons() -> Result<(), Box<dyn Error>> {
-    let folder_path = "/home/emiel/projects/tdps_json";
-    let files = std::fs::read_dir(folder_path)?;
+    let config = configuration::AppConfig::load_from_file("config.toml")
+        .expect("Could not find config.toml");
+    let files = std::fs::read_dir(&config.data_processing.tdps_json_root)?;
 
     let mut count = 0;
     // parse each file into a TDPStructure
