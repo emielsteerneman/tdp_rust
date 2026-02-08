@@ -66,7 +66,6 @@ pub fn tdp_to_chunks(tdp: &TDP) -> Vec<Chunk> {
     chunks
 }
 
-// TODO very annoying that this is async just because tdp_to_chunks is async
 pub fn load_all_chunks_from_tdps(tdps: &[TDP]) -> Result<Vec<Chunk>, Box<dyn std::error::Error>> {
     let mut chunks = vec![];
     for tdp in tdps {
