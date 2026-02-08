@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::file::{League, LeagueParseError, TeamName};
 
@@ -18,7 +18,7 @@ pub enum TDPParseError {
     NoFileStem,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TDPName {
     pub league: League,
     pub team_name: TeamName,

@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Deserialize, JsonSchema)]
 pub struct TeamName {
     pub name: String,
     pub name_pretty: String,
@@ -34,19 +34,28 @@ impl Default for TeamName {
 
 impl Into<String> for TeamName {
     fn into(self) -> String {
-        self.name
+        self.name_pretty
     }
 }
 
 impl Into<String> for &TeamName {
     fn into(self) -> String {
-        self.name.clone()
+        self.name_pretty.clone()
+    }
+}
+
+impl Serialize for TeamName {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.name_pretty)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::file::TDPName;
+    use crate::file::{TDPName, TeamName};
 
     #[test]
     pub fn test_deserialize() {
@@ -71,5 +80,14 @@ mod tests {
         let team_name = super::TeamName::from_pretty(name_pretty);
         assert_eq!(team_name.name, "RoboTeam_Twente");
         assert_eq!(team_name.name_pretty, "RoboTeam Twente");
+    }
+
+    #[test]
+    pub fn test_serialize() -> Result<(), Box<dyn std::error::Error>> {
+        let team_name = TeamName::default();
+        let json = serde_json::to_string_pretty(&team_name)?;
+        println!("{}", json);
+
+        Ok(())
     }
 }
