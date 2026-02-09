@@ -28,11 +28,8 @@ impl TDPStructure {
             let hashes = "#".repeat(level);
             markdown.push_str(&format!("{} {}\n\n", hashes, paragraph.title.raw));
 
-            let sentences: Vec<String> = paragraph
-                .sentences
-                .iter()
-                .map(|s| s.raw.clone())
-                .collect();
+            let sentences: Vec<String> =
+                paragraph.sentences.iter().map(|s| s.raw.clone()).collect();
             markdown.push_str(&sentences.join(" "));
             markdown.push_str("\n\n");
         }

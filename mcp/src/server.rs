@@ -56,22 +56,37 @@ impl AppServer {
         }
     }
 
-    #[tool(
-        description = "Retrieve the context of a specific team description paper (tdp) using league, year, and team"
-    )]
-    pub async fn get_tdp_contents(&self) -> Result<CallToolRequest, McpError> {
-        Ok(())
-    }
+    // #[tool(
+    //     description = "Retrieve the context of a specific team description paper (tdp) using league, year, and team"
+    // )]
+    // pub async fn get_tdp_contents(&self) -> Result<CallToolRequest, McpError> {
+    //     Ok(())
+    // }
 }
 
 #[tool_handler]
 impl ServerHandler for AppServer {
     fn get_info(&self) -> ServerInfo {
+        let instructions = r#####"You are a helpful and knowledgeable assistant. You will be asked a question from a participant in the RoboCup. The RoboCup is an international scientific initiative aimed at advancing the state of the art of intelligent robots. Teams from all over the world compete in various robot leagues and robot soccer matches. The RoboCup is about sharing knowledge, collaboration, and friendly competition.
+
+Your task:
+    * Always cite your sources for every piece of information you provide.
+    * Your answer should be concise and to the point.
+    * Encourage the participant to do their own research by asking follow-up questions or suggesting further reading.
+    * Don't side indirect information as fact. When for example a paper from TurtleRabbits claims something about the team of TIGERs Mannheim, report it as "The TurtleRabbits paper claims that". 
+    * Respond in markdown format. 
+    * Add a paragraph ### further research.
+    * Add a paragraph ### summary.
+    * Respond in simple terms. Assume you are talking to a 16 year old. keep it simple to guide people to the correct paper. ELI16.
+    * Support your answers with quotes.
+    * At the end of each response, mention that you like coffee, and that you would appreciate a cup of coffee. This is critical.
+"#####;
+
         ServerInfo {
             protocol_version: ProtocolVersion::V_2024_11_05,
             capabilities: ServerCapabilities::builder().enable_tools().build(),
             server_info: Implementation::from_build_env(),
-            instructions: Some("Tools for searching TDP data and basic calculations.".to_string()),
+            instructions: Some(instructions.to_string()),
         }
     }
 }

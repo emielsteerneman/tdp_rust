@@ -17,9 +17,9 @@ pub struct GetTdpContentsArgs {
     pub team: String,
 }
 
-pub async fn get_tdp_contents(
-    metadata_client: Arc<Box<dyn MetadataClient>>,
-    args: GetTdpContentsArgs,
-) -> Result<TDPStructure, ToolError> {
-    Ok(())
-}
+// pub async fn get_tdp_contents(
+//     metadata_client: Arc<Box<dyn MetadataClient>>,
+//     args: GetTdpContentsArgs,
+// ) -> Result<TDPStructure, ToolError> {
+//     Ok(())
+// }
