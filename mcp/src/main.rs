@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 mod server;
 mod state;
-mod tools;
 
 use server::AppServer;
 use state::AppState;

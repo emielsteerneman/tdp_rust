@@ -1,10 +1,10 @@
-use crate::state::AppState;
+use data_processing::search::Searcher;
 use data_structures::{
     embed_type::EmbedType,
     file::{League, LeagueParseError, TeamName},
     filter::Filter,
 };
-use rmcp::schemars::JsonSchema;
+use schemars::JsonSchema;
 use serde::Deserialize;
 
 #[derive(thiserror::Error, Debug)]
@@ -80,9 +80,8 @@ impl SearchArgs {
     }
 }
 
-pub async fn search(state: &AppState, args: SearchArgs) -> anyhow::Result<String> {
-    let search_result = state
-        .searcher
+pub async fn search(searcher: &Searcher, args: SearchArgs) -> anyhow::Result<String> {
+    let search_result = searcher
         .search(
             args.query.clone(),
             args.limit,

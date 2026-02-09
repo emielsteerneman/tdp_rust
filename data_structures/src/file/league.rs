@@ -6,7 +6,6 @@ pub struct League {
     pub league_major: String,
     pub league_minor: String,
     pub league_sub: Option<String>,
-    #[serde(skip)]
     pub name: String,
     pub name_pretty: String,
 }
@@ -163,5 +162,18 @@ mod tests {
         assert_eq!(league.name_pretty, "Test League Sub");
 
         Ok(())
+    }
+
+    #[test]
+    pub fn test_deserialize() {
+        let json = r#"{"league_major": "industrial", "league_minor": "logistics", "league_sub": null, "name": "industrial_logistics", "name_pretty": "Industrial Logistics"}"#;
+
+        let league: League = serde_json::from_str(json).unwrap();
+
+        println!("{}", league.name);
+        println!("{}", league.name_pretty);
+
+        assert_eq!(league.name, "industrial_logistics");
+        assert_eq!(league.name_pretty, "Industrial Logistics");
     }
 }

@@ -3,15 +3,15 @@ use std::sync::Arc;
 use data_access::metadata::MetadataClient;
 use data_structures::file::League;
 
-use crate::tools::ToolError;
+use crate::error::ApiError;
 
 pub async fn list_leagues(
     metadata_client: Arc<dyn MetadataClient>,
-) -> Result<Vec<League>, ToolError> {
+) -> Result<Vec<League>, ApiError> {
     let leagues = metadata_client
         .load_leagues()
         .await
-        .map_err(|err| ToolError::Internal(err.to_string()))?;
+        .map_err(|err| ApiError::Internal(err.to_string()))?;
 
     Ok(leagues)
 }

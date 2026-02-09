@@ -88,8 +88,10 @@ mod tests {
         let filename = "soccer_smallsize__2019__RoboTeam_Twente__1.pdf";
         let tdp_name: TDPName = filename.try_into().unwrap();
 
+        assert_eq!(tdp_name.league.name, "soccer_smallsize");
         assert_eq!(tdp_name.league.name_pretty, "Soccer SmallSize");
         assert_eq!(tdp_name.year, 2019);
+        assert_eq!(tdp_name.team_name.name, "RoboTeam_Twente");
         assert_eq!(tdp_name.team_name.name_pretty, "RoboTeam Twente");
         assert_eq!(tdp_name.index, 1);
     }
@@ -100,13 +102,17 @@ mod tests {
 
         let tdp_name: TDPName = serde_json::from_str(json).unwrap();
 
+        println!("{}", tdp_name.league.name);
         println!("{}", tdp_name.league.name_pretty);
         println!("{}", tdp_name.year);
         println!("{}", tdp_name.team_name.name);
+        println!("{}", tdp_name.team_name.name_pretty);
         println!("{}", tdp_name.index);
 
+        assert_eq!(tdp_name.league.name, "industrial_logistics");
         assert_eq!(tdp_name.league.name_pretty, "Industrial Logistics");
         assert_eq!(tdp_name.year, 2019);
+        assert_eq!(tdp_name.team_name.name, "Carologistics");
         assert_eq!(tdp_name.team_name.name_pretty, "Carologistics");
         assert_eq!(tdp_name.index, 0);
     }

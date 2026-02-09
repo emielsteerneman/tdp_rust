@@ -207,8 +207,9 @@ impl MetadataClient for SqliteClient {
                         let year = tdp.name.year;
                         let team = tdp.name.team_name.name_pretty;
                         let idx = tdp.name.index;
+                        info!("storing {:?}", lyti);
                         stmt.execute(params![run, league, year, team, idx, lyti, markdown])
-                            .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                            .map_err(|e| MetadataClientError::Internal(e.to_string())).expect(format!("Could not store {}", lyti).as_str());
                     }
                 }
 

@@ -6,7 +6,7 @@ use data_structures::file::TeamName;
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use crate::tools::ToolError;
+use crate::error::ApiError;
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 pub struct ListTeamsArgs {
@@ -17,11 +17,11 @@ pub struct ListTeamsArgs {
 pub async fn list_teams(
     metadata_client: Arc<dyn MetadataClient>,
     args: ListTeamsArgs,
-) -> Result<Vec<TeamName>, ToolError> {
+) -> Result<Vec<TeamName>, ApiError> {
     let mut teams = metadata_client
         .load_teams()
         .await
-        .map_err(|err| ToolError::Internal(err.to_string()))?;
+        .map_err(|err| ApiError::Internal(err.to_string()))?;
 
     if let Some(hint) = args.hint {
         let team_names = teams.iter().map(Into::into).collect();
@@ -41,7 +41,7 @@ mod tests {
     use data_structures::file::TeamName;
     use std::sync::Arc;
 
-    use crate::tools::list_teams::{ListTeamsArgs, list_teams};
+    use crate::list_teams::{ListTeamsArgs, list_teams};
 
     #[tokio::test]
     async fn test_list_teams() -> Result<(), Box<dyn std::error::Error>> {

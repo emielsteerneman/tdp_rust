@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use crate::tools::{get_tdp_contents, list_leagues, list_teams, search};
+use api::{get_tdp_contents, list_leagues, list_teams, search};
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
@@ -25,7 +25,7 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<search::SearchArgs>,
     ) -> Result<CallToolResult, McpError> {
-        match search::search(&self.state, args).await {
+        match search::search(&self.state.searcher, args).await {
             Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }

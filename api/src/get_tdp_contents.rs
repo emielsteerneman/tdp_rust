@@ -5,7 +5,7 @@ use data_structures::file::{League, TDPName, TeamName};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use crate::tools::ToolError;
+use crate::error::ApiError;
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 pub struct GetTdpContentsArgs {
@@ -22,16 +22,16 @@ pub struct GetTdpContentsArgs {
 pub async fn get_tdp_contents(
     metadata_client: Arc<dyn MetadataClient>,
     args: GetTdpContentsArgs,
-) -> Result<String, ToolError> {
+) -> Result<String, ApiError> {
     let league = League::try_from(args.league.as_str())
-        .map_err(|e| ToolError::Argument("league".to_string(), e.to_string()))?;
+        .map_err(|e| ApiError::Argument("league".to_string(), e.to_string()))?;
     let team_name = TeamName::new(&args.team);
     let tdp_name = TDPName::new(league, args.year, team_name, None);
 
     let markdown = metadata_client
         .get_tdp_markdown(tdp_name)
         .await
-        .map_err(|e| ToolError::Internal(e.to_string()))?;
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
 
     Ok(markdown)
 }

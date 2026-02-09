@@ -32,12 +32,6 @@ pub async fn load_all_tdp_jsons(
             }
         }
 
-        // Check if "smallsize" in the path
-        // warn!("Don't forget to remove the 'smallsize' check");
-        if !path.to_str().unwrap().contains("smallsize") {
-            continue;
-        }
-
         let content = tokio::fs::read_to_string(&path).await?;
         let tdp: TDP = serde_json::from_str(&content)?;
         tdps.push(tdp);
