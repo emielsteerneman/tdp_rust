@@ -18,6 +18,10 @@ pub struct TDPStructure {
     // - doi
 }
 
+impl TDPStructure {
+    pub fn to_markdown(&self) -> String {}
+}
+
 #[cfg(test)]
 mod tests {
     use crate::paper::TDPStructure;

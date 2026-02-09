@@ -55,6 +55,13 @@ impl AppServer {
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }
+
+    #[tool(
+        description = "Retrieve the context of a specific team description paper (tdp) using league, year, and team"
+    )]
+    pub async fn get_tdp_contents(&self) -> Result<CallToolRequest, McpError> {
+        Ok(())
+    }
 }
 
 #[tool_handler]
