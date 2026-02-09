@@ -19,3 +19,6 @@ data_access = { path = "../data_access" }
 data_processing = { path = "../data_processing" }
 data_structures = { path = "../data_structures" }
 thiserror = "2.0.18"
+
+[dev-dependencies]
+mockall = "0.14.0"

@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use crate::tools::{list_leagues, list_teams, search};
+use crate::tools::{get_tdp_contents, list_leagues, list_teams, search};
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
@@ -56,12 +56,18 @@ impl AppServer {
         }
     }
 
-    // #[tool(
-    //     description = "Retrieve the context of a specific team description paper (tdp) using league, year, and team"
-    // )]
-    // pub async fn get_tdp_contents(&self) -> Result<CallToolRequest, McpError> {
-    //     Ok(())
-    // }
+    #[tool(
+        description = "Retrieve the context of a specific team description paper (tdp) using league, year, and team"
+    )]
+    pub async fn get_tdp_contents(
+        &self,
+        Parameters(args): Parameters<get_tdp_contents::GetTdpContentsArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match get_tdp_contents::get_tdp_contents(self.state.metadata_client.clone(), args).await {
+            Ok(markdown) => Ok(CallToolResult::success(vec![Content::text(markdown)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
 }
 
 #[tool_handler]
