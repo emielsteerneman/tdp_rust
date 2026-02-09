@@ -49,6 +49,11 @@ pub trait MetadataClient: Send + Sync {
         &'a self,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<League>, MetadataClientError>> + Send + 'a>>;
 
+    fn get_tdp_markdown<'a>(
+        &'a self,
+        tdp_name: TDPName,
+    ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>>;
+
     /* What else do I want to store here?
         The basic League Year Team
         * Leagues. Hardcode the leagues, together with their descriptions? Or at least hardcode the description to give to the AI.

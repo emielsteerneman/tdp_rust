@@ -68,11 +68,15 @@ impl SqliteClient {
                 year INTEGER NOT NULL,
                 team VARCHAR(100) NOT NULL,
                 idx INTEGER NOT NULL,
-                lyti VARCHAR(100) NOT NULL PRIMARY KEY
+                lyti VARCHAR(100) NOT NULL PRIMARY KEY,
+                markdown TEXT
             )",
             [],
         )
         .expect("Failed to create table tdp");
+
+        // Ensure markdown column exists if table was created by older version
+        let _ = conn.execute("ALTER TABLE tdp ADD COLUMN markdown TEXT", []);
 
         conn.execute("CREATE INDEX IF NOT EXISTS tdp_run ON tdp (run)", [])
             .expect("Failed to create index on tdp (run)");
@@ -193,16 +197,17 @@ impl MetadataClient for SqliteClient {
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     let mut stmt = tx
-                        .prepare("INSERT INTO tdp (run, league, year, team, idx, lyti) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
+                        .prepare("INSERT INTO tdp (run, league, year, team, idx, lyti, markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     for tdp in tdps.into_iter() {
+                        let markdown = tdp.to_markdown();
                         let lyti = tdp.name.get_filename();
                         let league = tdp.name.league.name_pretty;
                         let year = tdp.name.year;
                         let team = tdp.name.team_name.name_pretty;
                         let idx = tdp.name.index;
-                        stmt.execute(params![run, league, year, team, idx, lyti])
+                        stmt.execute(params![run, league, year, team, idx, lyti, markdown])
                             .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     }
                 }
@@ -336,6 +341,38 @@ impl MetadataClient for SqliteClient {
                 }
 
                 Ok(results)
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
+    fn get_tdp_markdown<'a>(
+        &'a self,
+        tdp_name: data_structures::file::TDPName,
+    ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>> {
+        let conn = self.conn.clone();
+        let run = self.config.run.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = conn.lock().unwrap();
+                let lyti = tdp_name.get_filename();
+
+                let mut stmt = conn
+                    .prepare("SELECT markdown FROM tdp WHERE run = ?1 AND lyti = ?2")
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let markdown: String = stmt
+                    .query_row(params![run, lyti], |row| row.get(0))
+                    .map_err(|e| match e {
+                        rusqlite::Error::QueryReturnedNoRows => {
+                            MetadataClientError::NotFound(lyti.clone())
+                        }
+                        _ => MetadataClientError::Internal(e.to_string()),
+                    })?;
+
+                Ok(markdown)
             })
             .await
             .map_err(|e| MetadataClientError::Internal(e.to_string()))?
@@ -526,7 +563,7 @@ mod tests {
         };
 
         client
-            .store_tdps(vec![tdp1, tdp2, tdp3])
+            .store_tdps(vec![tdp1.clone(), tdp2, tdp3])
             .await
             .expect("Failed to store TDPs");
 
@@ -543,6 +580,14 @@ mod tests {
         let league_names: Vec<String> = leagues.iter().map(|l| l.name_pretty.clone()).collect();
         assert!(league_names.contains(&"Soccer SmallSize".to_string()));
         assert!(league_names.contains(&"Soccer MidSize".to_string()));
+
+        // Test get_tdp_markdown
+        let markdown = client
+            .get_tdp_markdown(tdp1.name.clone())
+            .await
+            .expect("Failed to get markdown for tdp1");
+        assert!(markdown.contains("# soccer_smallsize__2019__RoboTeam_Twente__1"));
+        assert!(markdown.contains("**RoboTeam Twente 2019 Soccer SmallSize**"));
 
         // Cleanup
         drop(client);
