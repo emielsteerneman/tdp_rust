@@ -19,7 +19,48 @@ pub struct TDPStructure {
 }
 
 impl TDPStructure {
-    pub fn to_markdown(&self) -> String {}
+    pub fn to_markdown(&self, title: &str, team_name: &str, year: u32, league: &str) -> String {
+        let mut markdown = format!("# {}\n", title);
+        markdown.push_str(&format!("**{} {} {}**\n\n", team_name, year, league));
+
+        for paragraph in &self.paragraphs {
+            let level = self.determine_level(&paragraph.title.raw);
+            let hashes = "#".repeat(level);
+            markdown.push_str(&format!("{} {}\n\n", hashes, paragraph.title.raw));
+
+            let sentences: Vec<String> = paragraph
+                .sentences
+                .iter()
+                .map(|s| s.raw.clone())
+                .collect();
+            markdown.push_str(&sentences.join(" "));
+            markdown.push_str("\n\n");
+        }
+
+        markdown.trim().to_string()
+    }
+
+    fn determine_level(&self, title: &str) -> usize {
+        let first_word = title.split_whitespace().next().unwrap_or("");
+
+        // Check if first word is a numbering (e.g., "1", "1.1", "1.1.1", "1.", "1.1.")
+        let is_numbering = first_word.chars().all(|c| c.is_ascii_digit() || c == '.');
+        let has_digit = first_word.chars().any(|c| c.is_ascii_digit());
+
+        if !is_numbering || !has_digit {
+            return 2;
+        }
+
+        // Count dots, but ignore trailing dot for level calculation
+        let clean_numbering = if first_word.ends_with('.') {
+            &first_word[..first_word.len() - 1]
+        } else {
+            first_word
+        };
+
+        let dot_count = clean_numbering.chars().filter(|&c| c == '.').count();
+        dot_count + 2
+    }
 }
 
 #[cfg(test)]
@@ -33,5 +74,23 @@ mod tests {
         let tdp_structure: TDPStructure = serde_json::from_str(json).unwrap();
 
         assert_eq!(tdp_structure.paragraphs.len(), 13);
+    }
+
+    #[test]
+    pub fn test_to_markdown() {
+        let json = r#"{"paragraphs": [
+            {"title": {"raw": "1 Introduction", "processed": "introduction"}, "sentences": [{"raw": "Sentence 1.", "processed": "s1"}, {"raw": "Sentence 2.", "processed": "s2"}]},
+            {"title": {"raw": "1.1 Sub", "processed": "sub"}, "sentences": [{"raw": "Sentence 3.", "processed": "s3"}]}
+        ]}"#;
+
+        let tdp_structure: TDPStructure = serde_json::from_str(json).unwrap();
+        let markdown = tdp_structure.to_markdown("Test Title", "Team A", 2024, "League B");
+
+        assert!(markdown.contains("# Test Title"));
+        assert!(markdown.contains("**Team A 2024 League B**"));
+        assert!(markdown.contains("## 1 Introduction"));
+        assert!(markdown.contains("Sentence 1. Sentence 2."));
+        assert!(markdown.contains("### 1.1 Sub"));
+        assert!(markdown.contains("Sentence 3."));
     }
 }
