@@ -7,3 +7,8 @@ qdrant-restart:
 
 init:
 	cargo run --release -p pipeline --bin initialize
+
+clean: qdrant-restart
+	rm my_sqlite.db
+	rm my_sqlite.db-shm
+	rm my_sqlite.db-wal
