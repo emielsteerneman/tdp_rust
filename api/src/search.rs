@@ -49,7 +49,7 @@ pub struct SearchArgs {
 }
 
 impl SearchArgs {
-    fn to_filter(&self) -> Result<Option<Filter>, SearchError> {
+    pub fn to_filter(&self) -> Result<Option<Filter>, SearchError> {
         let mut filter = Filter::default();
 
         if let Some(league_filter) = &self.league_filter {
@@ -91,6 +91,22 @@ pub async fn search(searcher: &Searcher, args: SearchArgs) -> anyhow::Result<Str
         .await?;
 
     Ok(serde_json::to_string_pretty(&search_result)?)
+}
+
+pub async fn search_structured(
+    searcher: &Searcher,
+    args: SearchArgs,
+) -> anyhow::Result<data_structures::intermediate::SearchResult> {
+    let search_result = searcher
+        .search(
+            args.query.clone(),
+            args.limit,
+            args.to_filter()?,
+            args.search_type.into(),
+        )
+        .await?;
+
+    Ok(search_result)
 }
 
 #[cfg(test)]

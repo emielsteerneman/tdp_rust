@@ -8,6 +8,7 @@ members = ["api",
     "data_structures",
     "mcp",
     "pipeline",
+    "web",
 ]
 
 [workspace.dependencies]

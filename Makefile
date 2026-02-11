@@ -12,3 +12,9 @@ clean: qdrant-restart
 	rm my_sqlite.db
 	rm my_sqlite.db-shm
 	rm my_sqlite.db-wal
+
+web:
+	cargo run -p web
+
+frontend-dev:
+	cd frontend && npm run dev
