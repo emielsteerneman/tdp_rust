@@ -17,7 +17,7 @@ clean: qdrant-restart
 web:
 	cargo run -p web
 
-frontend-dev:
+ui:
 	cd frontend && npm run dev -- --host
 
 docker:
