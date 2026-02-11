@@ -18,8 +18,11 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
 
     let mut filter = Filter::default();
-    filter.add_league("soccer_smallsize".try_into()?);
-    filter.add_league("soccer_midsize".try_into()?);
+    //filter.add_league("soccer_smallsize".try_into()?);
+    //filter.add_league("soccer_midsize".try_into()?);
+    for year in 2015..2026 {
+        filter.add_year(year);
+    }
 
     /* Step 1 : Load TDPs and Chunks */
     info!("Loading TDPs and Chunks");
