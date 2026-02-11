@@ -6,11 +6,7 @@ pub mod embed_type;
 pub mod file;
 pub mod filter;
 pub mod intermediate;
-pub mod knowledge;
-pub mod mock;
 pub mod paper;
-pub mod scoring;
-pub mod taxonomy;
 pub mod text_utils;
 
 #[derive(Clone, Debug, Deref, DerefMut, PartialEq)]

@@ -3,13 +3,13 @@
 	import SearchBar from '$lib/components/SearchBar.svelte';
 	import FilterSidebar from '$lib/components/FilterSidebar.svelte';
 	import PaperCard from '$lib/components/PaperCard.svelte';
-	import type { TDPName } from '$lib/types';
+	import type { TDPName, League, TeamName } from '$lib/types';
 
 	interface Props {
 		data: {
 			papers: TDPName[];
-			teams: Array<{ name: string; name_pretty: string }>;
-			leagues: Array<{ name: string; name_pretty: string; league_major: string; league_minor: string; league_sub: string | null }>;
+			teams: TeamName[];
+			leagues: League[];
 			years: number[];
 		};
 	}
@@ -24,17 +24,14 @@
 	// Filter papers based on selected filters
 	let filteredPapers = $derived(
 		data.papers.filter((paper) => {
-			// Filter by league
 			if (selectedLeagues.length > 0 && !selectedLeagues.includes(paper.league.name)) {
 				return false;
 			}
 
-			// Filter by year
 			if (selectedYears.length > 0 && !selectedYears.includes(paper.year)) {
 				return false;
 			}
 
-			// Filter by team
 			if (selectedTeams.length > 0 && !selectedTeams.includes(paper.team_name.name)) {
 				return false;
 			}

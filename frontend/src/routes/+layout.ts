@@ -1,13 +1,13 @@
 import type { LayoutLoad } from './$types';
 import { listPapers, listTeams, listLeagues, listYears } from '$lib/api';
 
-export const load: LayoutLoad = async () => {
+export const load: LayoutLoad = async ({ fetch }) => {
 	try {
 		const [papers, teams, leagues, years] = await Promise.all([
-			listPapers(),
-			listTeams(),
-			listLeagues(),
-			listYears()
+			listPapers(fetch),
+			listTeams(undefined, fetch),
+			listLeagues(fetch),
+			listYears(fetch)
 		]);
 
 		return {

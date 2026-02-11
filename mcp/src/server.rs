@@ -37,10 +37,13 @@ impl AppServer {
         Parameters(args): Parameters<list_teams::ListTeamsArgs>,
     ) -> Result<CallToolResult, McpError> {
         match list_teams::list_teams(self.state.metadata_client.clone(), args).await {
-            Ok(teams) => match serde_json::to_string_pretty(&teams) {
-                Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
-                Err(e) => Err(McpError::internal_error(e.to_string(), None)),
-            },
+            Ok(teams) => {
+                let names: Vec<&str> = teams.iter().map(|t| t.name_pretty.as_str()).collect();
+                match serde_json::to_string_pretty(&names) {
+                    Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
+                    Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+                }
+            }
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }
@@ -48,10 +51,13 @@ impl AppServer {
     #[tool(description = "Retrieve a list of all leagues")]
     pub async fn list_leagues(&self) -> Result<CallToolResult, McpError> {
         match list_leagues::list_leagues(self.state.metadata_client.clone()).await {
-            Ok(leagues) => match serde_json::to_string_pretty(&leagues) {
-                Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
-                Err(e) => Err(McpError::internal_error(e.to_string(), None)),
-            },
+            Ok(leagues) => {
+                let names: Vec<&str> = leagues.iter().map(|l| l.name_pretty.as_str()).collect();
+                match serde_json::to_string_pretty(&names) {
+                    Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
+                    Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+                }
+            }
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }

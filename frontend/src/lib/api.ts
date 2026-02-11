@@ -9,8 +9,10 @@ import type {
 
 const API_BASE = '/api';
 
-async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
-	const response = await fetch(`${API_BASE}${endpoint}`, {
+type FetchFn = typeof globalThis.fetch;
+
+async function fetchApi<T>(endpoint: string, fetchFn: FetchFn = fetch, options?: RequestInit): Promise<T> {
+	const response = await fetchFn(`${API_BASE}${endpoint}`, {
 		headers: {
 			'Content-Type': 'application/json',
 			...options?.headers
@@ -22,14 +24,16 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 		throw new Error(`API error: ${response.status} ${response.statusText}`);
 	}
 
-	return response.json();
+	const json = await response.json();
+	// API wraps responses in { data: ... }
+	return json.data !== undefined ? json.data : json;
 }
 
 /**
  * Search for TDP chunks
  * GET /api/search
  */
-export async function search(params: SearchParams): Promise<SearchResult> {
+export async function search(params: SearchParams, fetchFn?: FetchFn): Promise<SearchResult> {
 	const searchParams = new URLSearchParams();
 	searchParams.append('query', params.query);
 
@@ -52,15 +56,15 @@ export async function search(params: SearchParams): Promise<SearchResult> {
 		searchParams.append('search_type', params.search_type);
 	}
 
-	return fetchApi<SearchResult>(`/search?${searchParams.toString()}`);
+	return fetchApi<SearchResult>(`/search?${searchParams.toString()}`, fetchFn);
 }
 
 /**
  * List all available papers
  * GET /api/papers
  */
-export async function listPapers(): Promise<TDPName[]> {
-	return fetchApi<TDPName[]>('/papers');
+export async function listPapers(fetchFn?: FetchFn): Promise<TDPName[]> {
+	return fetchApi<TDPName[]>('/papers', fetchFn);
 }
 
 /**
@@ -74,10 +78,11 @@ export async function getPaper(
 	league: string,
 	year: number,
 	team: string,
-	index: number = 0
+	index: number = 0,
+	fetchFn?: FetchFn
 ): Promise<Paper> {
 	const id = `${league}__${year}__${team}__${index}`;
-	return fetchApi<Paper>(`/papers/${id}`);
+	return fetchApi<Paper>(`/papers/${id}`, fetchFn);
 }
 
 /**
@@ -87,41 +92,42 @@ export async function getPaper(
 export async function getPaperByParams(
 	league: string,
 	year: number,
-	team: string
+	team: string,
+	fetchFn?: FetchFn
 ): Promise<Paper> {
 	const searchParams = new URLSearchParams({
 		league,
 		year: year.toString(),
 		team
 	});
-	return fetchApi<Paper>(`/paper?${searchParams.toString()}`);
+	return fetchApi<Paper>(`/paper?${searchParams.toString()}`, fetchFn);
 }
 
 /**
  * List all teams
  * GET /api/teams
  */
-export async function listTeams(hint?: string): Promise<TeamName[]> {
+export async function listTeams(hint?: string, fetchFn?: FetchFn): Promise<TeamName[]> {
 	const searchParams = new URLSearchParams();
 	if (hint) {
 		searchParams.append('hint', hint);
 	}
 	const query = searchParams.toString();
-	return fetchApi<TeamName[]>(`/teams${query ? '?' + query : ''}`);
+	return fetchApi<TeamName[]>(`/teams${query ? '?' + query : ''}`, fetchFn);
 }
 
 /**
  * List all leagues
  * GET /api/leagues
  */
-export async function listLeagues(): Promise<League[]> {
-	return fetchApi<League[]>('/leagues');
+export async function listLeagues(fetchFn?: FetchFn): Promise<League[]> {
+	return fetchApi<League[]>('/leagues', fetchFn);
 }
 
 /**
  * List all years
  * GET /api/years
  */
-export async function listYears(): Promise<number[]> {
-	return fetchApi<number[]>('/years');
+export async function listYears(fetchFn?: FetchFn): Promise<number[]> {
+	return fetchApi<number[]>('/years', fetchFn);
 }

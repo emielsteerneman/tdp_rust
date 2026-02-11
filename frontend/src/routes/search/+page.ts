@@ -2,7 +2,7 @@ import type { PageLoad } from './$types';
 import { search } from '$lib/api';
 import type { SearchParams } from '$lib/types';
 
-export const load: PageLoad = async ({ url }) => {
+export const load: PageLoad = async ({ url, fetch }) => {
 	const query = url.searchParams.get('q') || '';
 	const league = url.searchParams.get('league') || undefined;
 	const year = url.searchParams.get('year') || undefined;
@@ -24,7 +24,7 @@ export const load: PageLoad = async ({ url }) => {
 	};
 
 	try {
-		const searchResult = await search(params);
+		const searchResult = await search(params, fetch);
 		return {
 			searchResult,
 			query,

@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
 pub struct League {
     pub league_major: String,
     pub league_minor: String,
@@ -92,15 +92,6 @@ impl Into<String> for League {
 impl Into<String> for &League {
     fn into(self) -> String {
         self.name_pretty.clone()
-    }
-}
-
-impl Serialize for League {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.name_pretty)
     }
 }
 

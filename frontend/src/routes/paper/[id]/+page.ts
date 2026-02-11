@@ -2,7 +2,7 @@ import type { PageLoad } from './$types';
 import { getPaper } from '$lib/api';
 import { error } from '@sveltejs/kit';
 
-export const load: PageLoad = async ({ params }) => {
+export const load: PageLoad = async ({ params, fetch }) => {
 	try {
 		// Parse the ID format: league__year__team__index
 		const parts = params.id.split('__');
@@ -19,7 +19,7 @@ export const load: PageLoad = async ({ params }) => {
 		}
 
 		// Fetch the paper content (markdown)
-		const content = await getPaper(league, year, team, index);
+		const content = await getPaper(league, year, team, index, fetch);
 
 		return {
 			content,
