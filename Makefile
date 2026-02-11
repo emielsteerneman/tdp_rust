@@ -1,4 +1,5 @@
 .PHONY: qdrant-restart
+.PHONY: web
 
 qdrant-restart:
 	docker stop qdrant || true
@@ -18,3 +19,12 @@ web:
 
 frontend-dev:
 	cd frontend && npm run dev
+
+docker:
+	docker compose up --build
+
+docker-logs:
+	docker compose logs -f
+
+docker-down:
+	docker compose down

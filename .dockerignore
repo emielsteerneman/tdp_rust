@@ -1,0 +1,7 @@
+target/
+frontend/node_modules/
+frontend/.svelte-kit/
+.git/
+my_sqlite.db
+my_sqlite.db-shm
+my_sqlite.db-wal

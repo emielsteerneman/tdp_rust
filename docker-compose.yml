@@ -1,0 +1,7 @@
+services:
+  app:
+    build: .
+    network_mode: host
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - ./my_sqlite.db:/app/my_sqlite.db
