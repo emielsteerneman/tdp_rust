@@ -18,7 +18,7 @@ web:
 	cargo run -p web
 
 frontend-dev:
-	cd frontend && npm run dev
+	cd frontend && npm run dev -- --host
 
 docker:
 	docker compose up --build
