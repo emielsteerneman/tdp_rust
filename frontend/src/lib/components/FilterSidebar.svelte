@@ -45,6 +45,69 @@
 	// Sort years in descending order
 	let sortedYears = $derived([...years].sort((a, b) => b - a));
 
+	// Build hierarchical league tree grouped by major > minor > sub
+	let leagueTree = $derived.by(() => {
+		const majorMap = new Map<string, Map<string, League[]>>();
+		for (const league of leagues) {
+			if (!majorMap.has(league.league_major)) {
+				majorMap.set(league.league_major, new Map());
+			}
+			const minorMap = majorMap.get(league.league_major)!;
+			if (!minorMap.has(league.league_minor)) {
+				minorMap.set(league.league_minor, []);
+			}
+			minorMap.get(league.league_minor)!.push(league);
+		}
+
+		return Array.from(majorMap.entries()).map(([major, minorMap]) => {
+			const children = Array.from(minorMap.entries()).map(([minor, leagueList]) => {
+				const hasSubs = leagueList.some(l => l.league_sub !== null);
+				const allNames = leagueList.map(l => l.name);
+				return {
+					minorLabel: minor,
+					league: !hasSubs ? leagueList[0] : null as League | null,
+					subs: hasSubs
+						? leagueList
+							.filter(l => l.league_sub !== null)
+							.map(l => ({ sub: l.league_sub!, league: l }))
+						: [],
+					allNames
+				};
+			});
+			return {
+				majorLabel: major,
+				children,
+				allNames: children.flatMap(c => c.allNames)
+			};
+		});
+	});
+
+	function toggleGroupLeagues(names: string[]) {
+		const params = new URLSearchParams($page.url.searchParams);
+		const current = params.getAll('league');
+		const allSelected = names.every(n => current.includes(n));
+
+		params.delete('league');
+		if (allSelected) {
+			// Deselect all in this group, keep the rest
+			current.filter(v => !names.includes(v)).forEach(v => params.append('league', v));
+		} else {
+			// Select all in this group, plus keep existing
+			const merged = new Set([...current, ...names]);
+			merged.forEach(v => params.append('league', v));
+		}
+
+		goto(`?${params.toString()}`, { replaceState: true, keepFocus: true });
+	}
+
+	function groupAllSelected(names: string[]): boolean {
+		return names.length > 0 && names.every(n => selectedLeagues.includes(n));
+	}
+
+	function groupSomeSelected(names: string[]): boolean {
+		return names.some(n => selectedLeagues.includes(n)) && !names.every(n => selectedLeagues.includes(n));
+	}
+
 	function toggleFilter(type: 'league' | 'year' | 'team', value: string) {
 		const params = new URLSearchParams($page.url.searchParams);
 		const currentValues = params.getAll(type);
@@ -73,6 +136,58 @@
 		mobileDrawerOpen = !mobileDrawerOpen;
 	}
 </script>
+
+{#snippet leagueTreeContent()}
+	<div class="space-y-1">
+		{#each leagueTree as group}
+			<label class="flex items-center space-x-2 cursor-pointer mt-2">
+				<input
+					type="checkbox"
+					checked={groupAllSelected(group.allNames)}
+					indeterminate={groupSomeSelected(group.allNames)}
+					onchange={() => toggleGroupLeagues(group.allNames)}
+					class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+				/>
+				<span class="text-sm font-semibold text-gray-900">{group.majorLabel}</span>
+			</label>
+			{#each group.children as child}
+				{#if child.league}
+					<label class="flex items-center space-x-2 cursor-pointer pl-4">
+						<input
+							type="checkbox"
+							checked={selectedLeagues.includes(child.league.name)}
+							onchange={() => toggleFilter('league', child.league!.name)}
+							class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+						/>
+						<span class="text-sm text-gray-700">{child.minorLabel}</span>
+					</label>
+				{:else}
+					<label class="flex items-center space-x-2 cursor-pointer pl-4 mt-1">
+						<input
+							type="checkbox"
+							checked={groupAllSelected(child.allNames)}
+							indeterminate={groupSomeSelected(child.allNames)}
+							onchange={() => toggleGroupLeagues(child.allNames)}
+							class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+						/>
+						<span class="text-sm font-medium text-gray-800">{child.minorLabel}</span>
+					</label>
+					{#each child.subs as sub}
+						<label class="flex items-center space-x-2 cursor-pointer pl-8">
+							<input
+								type="checkbox"
+								checked={selectedLeagues.includes(sub.league.name)}
+								onchange={() => toggleFilter('league', sub.league.name)}
+								class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+							/>
+							<span class="text-sm text-gray-700">{sub.sub}</span>
+						</label>
+					{/each}
+				{/if}
+			{/each}
+		{/each}
+	</div>
+{/snippet}
 
 <!-- Mobile Filter Toggle Button -->
 <button
@@ -138,19 +253,7 @@
 				</svg>
 			</button>
 			{#if leagueExpanded}
-				<div class="space-y-2">
-					{#each leagues as league}
-						<label class="flex items-center space-x-2 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={selectedLeagues.includes(league.name)}
-								onchange={() => toggleFilter('league', league.name)}
-								class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-							/>
-							<span class="text-sm text-gray-700">{league.name_pretty}</span>
-						</label>
-					{/each}
-				</div>
+				{@render leagueTreeContent()}
 			{/if}
 		</div>
 
@@ -263,19 +366,7 @@
 				</svg>
 			</button>
 			{#if leagueExpanded}
-				<div class="space-y-2">
-					{#each leagues as league}
-						<label class="flex items-center space-x-2 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={selectedLeagues.includes(league.name)}
-								onchange={() => toggleFilter('league', league.name)}
-								class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-							/>
-							<span class="text-sm text-gray-700">{league.name_pretty}</span>
-						</label>
-					{/each}
-				</div>
+				{@render leagueTreeContent()}
 			{/if}
 		</div>
 

@@ -28,3 +28,6 @@ docker-logs:
 
 docker-down:
 	docker compose down
+
+leagues:
+	@curl -s http://localhost:8081/api/leagues | python3 -m json.tool
