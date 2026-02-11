@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import SearchBar from '$lib/components/SearchBar.svelte';
 	import FilterSidebar from '$lib/components/FilterSidebar.svelte';
 	import PaperCard from '$lib/components/PaperCard.svelte';
 	import type { TDPName, League, TeamName } from '$lib/types';
@@ -101,19 +100,11 @@
 
 	<!-- Main Content -->
 	<main class="flex-1 min-w-0">
-		<!-- Hero Section -->
-		<div class="bg-gradient-to-b from-blue-50 to-white py-8 sm:py-12 px-4">
-			<div class="max-w-4xl mx-auto text-center">
-				<h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-					RoboCup TDP Browser
-				</h1>
-				<p class="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8">
-					Explore Team Description Papers from RoboCup competitions
-				</p>
-				<div class="flex justify-center">
-					<SearchBar />
-				</div>
-			</div>
+		<!-- Introduction (desktop only) -->
+		<div class="hidden md:block bg-gradient-to-b from-blue-50 to-white py-8 px-4">
+			<p class="max-w-3xl mx-auto text-gray-600 text-base leading-relaxed">
+				Opponents on the field, and colleagues next to it. Not just us, but all before us through the knowledge in their TDPs. Over 2000 and counting. Reading 2000 papers is of course impossible. Therefore, to keep our inspiration and innovation going, I made this information more accessible through this TDP Search Engine.
+			</p>
 		</div>
 
 		<!-- Papers -->
