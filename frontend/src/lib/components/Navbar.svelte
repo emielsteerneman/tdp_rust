@@ -69,18 +69,6 @@
 				>
 					Home
 				</a>
-				<a
-					href="/papers"
-					class="text-gray-700 hover:text-gray-900 font-medium transition-colors"
-				>
-					Papers
-				</a>
-				<a
-					href="/teams"
-					class="text-gray-700 hover:text-gray-900 font-medium transition-colors"
-				>
-					Teams
-				</a>
 			</div>
 		</div>
 
@@ -100,20 +88,6 @@
 					onclick={() => mobileMenuOpen = false}
 				>
 					Home
-				</a>
-				<a
-					href="/papers"
-					class="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors"
-					onclick={() => mobileMenuOpen = false}
-				>
-					Papers
-				</a>
-				<a
-					href="/teams"
-					class="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors"
-					onclick={() => mobileMenuOpen = false}
-				>
-					Teams
 				</a>
 			</div>
 		{/if}
