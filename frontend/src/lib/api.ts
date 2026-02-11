@@ -48,9 +48,7 @@ export async function search(params: SearchParams): Promise<SearchResult> {
 	if (params.lyti_filter) {
 		searchParams.append('lyti_filter', params.lyti_filter);
 	}
-	if (params.search_type) {
-		searchParams.append('search_type', params.search_type);
-	}
+	searchParams.append('search_type', params.search_type ?? 'hybrid');
 
 	return fetchApi<SearchResult>(`/search?${searchParams.toString()}`);
 }

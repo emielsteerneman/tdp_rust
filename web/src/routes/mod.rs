@@ -19,7 +19,7 @@ pub fn create_router(state: AppState) -> Router {
     Router::new()
         .route("/api/search", get(search::search_handler))
         .route("/api/papers", get(papers::list_papers_handler))
-        .route("/api/papers/:id", get(papers::get_paper_handler))
+        .route("/api/papers/{id}", get(papers::get_paper_handler))
         .route("/api/teams", get(teams::list_teams_handler))
         .route("/api/leagues", get(leagues::list_leagues_handler))
         .route("/api/years", get(years::list_years_handler))
