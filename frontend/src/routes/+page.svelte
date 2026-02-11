@@ -23,22 +23,66 @@
 
 	// Filter papers based on selected filters
 	let filteredPapers = $derived(
-		data.papers.filter((paper) => {
-			if (selectedLeagues.length > 0 && !selectedLeagues.includes(paper.league.name)) {
-				return false;
-			}
+		data.papers
+			.filter((paper) => {
+				if (selectedLeagues.length > 0 && !selectedLeagues.includes(paper.league.name)) {
+					return false;
+				}
 
-			if (selectedYears.length > 0 && !selectedYears.includes(paper.year)) {
-				return false;
-			}
+				if (selectedYears.length > 0 && !selectedYears.includes(paper.year)) {
+					return false;
+				}
 
-			if (selectedTeams.length > 0 && !selectedTeams.includes(paper.team_name.name)) {
-				return false;
-			}
+				if (selectedTeams.length > 0 && !selectedTeams.includes(paper.team_name.name)) {
+					return false;
+				}
 
-			return true;
-		})
+				return true;
+			})
+			.sort((a, b) => b.year - a.year)
 	);
+
+	// Group filtered papers by year (descending), then by league (alphabetical)
+	let groupedPapers = $derived.by(() => {
+		const yearMap = new Map<number, Map<string, TDPName[]>>();
+
+		for (const paper of filteredPapers) {
+			let leagueMap = yearMap.get(paper.year);
+			if (!leagueMap) {
+				leagueMap = new Map();
+				yearMap.set(paper.year, leagueMap);
+			}
+			let papers = leagueMap.get(paper.league.name);
+			if (!papers) {
+				papers = [];
+				leagueMap.set(paper.league.name, papers);
+			}
+			papers.push(paper);
+		}
+
+		return [...yearMap.entries()]
+			.sort(([a], [b]) => b - a)
+			.map(([year, leagueMap]) => ({
+				year,
+				leagues: [...leagueMap.entries()]
+					.sort(([a], [b]) => a.localeCompare(b))
+					.map(([, papers]) => ({
+						league: papers[0].league,
+						papers
+					}))
+			}));
+	});
+
+	function getLeagueBadgeColor(leagueName: string): string {
+		if (leagueName.includes('smallsize')) return 'bg-blue-100 text-blue-800';
+		if (leagueName.includes('middlesize')) return 'bg-green-100 text-green-800';
+		if (leagueName.includes('humanoid')) return 'bg-purple-100 text-purple-800';
+		if (leagueName.includes('standard_platform')) return 'bg-orange-100 text-orange-800';
+		if (leagueName.includes('rescue')) return 'bg-red-100 text-red-800';
+		if (leagueName.includes('athome')) return 'bg-yellow-100 text-yellow-800';
+		if (leagueName.includes('industrial')) return 'bg-gray-100 text-gray-800';
+		return 'bg-gray-100 text-gray-800';
+	}
 
 	let hasActiveFilters = $derived(
 		selectedLeagues.length > 0 || selectedYears.length > 0 || selectedTeams.length > 0
@@ -72,7 +116,7 @@
 			</div>
 		</div>
 
-		<!-- Papers Grid -->
+		<!-- Papers -->
 		<div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
 			<div class="mb-6">
 				<h2 class="text-xl sm:text-2xl font-semibold text-gray-900">
@@ -106,9 +150,29 @@
 					{/if}
 				</div>
 			{:else}
-				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-					{#each filteredPapers as paper}
-						<PaperCard {paper} />
+				<div class="space-y-8">
+					{#each groupedPapers as yearGroup}
+						<section>
+							<h3 class="text-2xl sm:text-3xl font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4">
+								{yearGroup.year}
+							</h3>
+							<div class="space-y-4">
+								{#each yearGroup.leagues as leagueGroup}
+									<div>
+										<div class="flex items-center gap-2 mb-2">
+											<span class="px-3 py-1 text-base font-semibold rounded-full {getLeagueBadgeColor(leagueGroup.league.name)}">
+												{leagueGroup.league.name_pretty}
+											</span>
+										</div>
+										<div class="flex flex-wrap gap-2">
+											{#each leagueGroup.papers as paper}
+												<PaperCard {paper} />
+											{/each}
+										</div>
+									</div>
+								{/each}
+							</div>
+						</section>
 					{/each}
 				</div>
 			{/if}
