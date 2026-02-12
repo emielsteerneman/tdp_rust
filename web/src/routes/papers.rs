@@ -8,9 +8,12 @@ use crate::state::AppState;
 pub async fn list_papers_handler(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<data_structures::file::TDPName>>>, ApiError> {
-    let papers = api::list_papers::list_papers(state.metadata_client.clone())
-        .await
-        .map_err(|e| ApiError::from(e))?;
+    let papers = api::list_papers::list_papers(
+        state.metadata_client.clone(),
+        api::paper_filter::PaperFilter::default(),
+    )
+    .await
+    .map_err(|e| ApiError::from(e))?;
 
     Ok(Json(ApiResponse::new(papers)))
 }

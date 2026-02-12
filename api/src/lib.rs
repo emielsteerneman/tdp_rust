@@ -4,4 +4,5 @@ pub mod list_leagues;
 pub mod list_papers;
 pub mod list_teams;
 pub mod list_years;
+pub mod paper_filter;
 pub mod search;

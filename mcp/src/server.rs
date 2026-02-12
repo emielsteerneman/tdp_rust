@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use api::{get_tdp_contents, list_leagues, list_teams, search};
+use api::{get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search};
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
@@ -20,7 +20,9 @@ impl AppServer {
         }
     }
 
-    #[tool(description = "Search for information in the database")]
+    #[tool(
+        description = "Search across 2000+ RoboCup Team Description Papers (TDPs). Returns relevant text chunks with source paper metadata (league, year, team). Use keyword queries like 'trajectory planning' or 'omnidirectional drive'. Filter by league (e.g. 'Soccer SmallSize'), year, or team name to narrow results. Use search_type 'hybrid' (default) for general queries, 'sparse' for exact technical terms, 'dense' for conceptual/semantic similarity."
+    )]
     pub async fn search(
         &self,
         Parameters(args): Parameters<search::SearchArgs>,
@@ -31,7 +33,9 @@ impl AppServer {
         }
     }
 
-    #[tool(description = "Retrieve a list of existing teams, with an optional hint to match on")]
+    #[tool(
+        description = "List all RoboCup teams that have published TDPs. Use the optional 'hint' parameter to fuzzy-match team names (e.g. hint='tiger' finds 'TIGERs Mannheim'). Useful for discovering exact team names before filtering a search."
+    )]
     pub async fn list_teams(
         &self,
         Parameters(args): Parameters<list_teams::ListTeamsArgs>,
@@ -48,7 +52,9 @@ impl AppServer {
         }
     }
 
-    #[tool(description = "Retrieve a list of all leagues")]
+    #[tool(
+        description = "List all RoboCup leagues that have TDPs in the database. League names can be used as filters in the search tool. Examples: 'Soccer SmallSize', 'Soccer Humanoid AdultSize', 'Rescue Robot'."
+    )]
     pub async fn list_leagues(&self) -> Result<CallToolResult, McpError> {
         match list_leagues::list_leagues(self.state.metadata_client.clone()).await {
             Ok(leagues) => {
@@ -63,7 +69,39 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Retrieve the context of a specific team description paper (tdp) using league, year, and team"
+        description = "List years for which TDPs are available. Optionally filter by league or team to answer questions like 'What years did TIGERs Mannheim publish papers?' or 'What years have Soccer SmallSize papers?'"
+    )]
+    pub async fn list_years(
+        &self,
+        Parameters(filter): Parameters<paper_filter::PaperFilter>,
+    ) -> Result<CallToolResult, McpError> {
+        match list_years::list_years(self.state.metadata_client.clone(), filter).await {
+            Ok(years) => match serde_json::to_string_pretty(&years) {
+                Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
+                Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+            },
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "List papers in the database with optional filters. Returns metadata (league, year, team) for matching TDPs. Always use at least one filter to avoid returning all 2000+ papers. Examples: filter by league='Soccer SmallSize' and year=2024 to see that year's teams, or team='TIGERs Mannheim' to see all their papers."
+    )]
+    pub async fn list_papers(
+        &self,
+        Parameters(filter): Parameters<paper_filter::PaperFilter>,
+    ) -> Result<CallToolResult, McpError> {
+        match list_papers::list_papers(self.state.metadata_client.clone(), filter).await {
+            Ok(papers) => match serde_json::to_string_pretty(&papers) {
+                Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
+                Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+            },
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Retrieve the full markdown content of a specific Team Description Paper. Requires the exact league name (e.g. 'Soccer SmallSize'), year (e.g. 2024), and team name (e.g. 'RoboTeam Twente'). Use list_teams and list_leagues to discover valid values. Use this after finding relevant chunks via search to read the full paper."
     )]
     pub async fn get_tdp_contents(
         &self,
@@ -79,19 +117,27 @@ impl AppServer {
 #[tool_handler]
 impl ServerHandler for AppServer {
     fn get_info(&self) -> ServerInfo {
-        let instructions = r#####"You are a helpful and knowledgeable assistant. You will be asked a question from a participant in the RoboCup. The RoboCup is an international scientific initiative aimed at advancing the state of the art of intelligent robots. Teams from all over the world compete in various robot leagues and robot soccer matches. The RoboCup is about sharing knowledge, collaboration, and friendly competition.
+        let instructions = r#####"You are a RoboCup TDP research assistant with access to 2000+ Team Description Papers.
 
-Your task:
-    * Always cite your sources for every piece of information you provide.
-    * Your answer should be concise and to the point.
-    * Encourage the participant to do their own research by asking follow-up questions or suggesting further reading.
-    * Don't side indirect information as fact. When for example a paper from TurtleRabbits claims something about the team of TIGERs Mannheim, report it as "The TurtleRabbits paper claims that". 
-    * Respond in markdown format. 
-    * Add a paragraph ### further research.
-    * Add a paragraph ### summary.
-    * Respond in simple terms. Assume you are talking to a 16 year old. keep it simple to guide people to the correct paper. ELI16.
-    * Support your answers with quotes.
-    * At the end of each response, mention that you like coffee, and that you would appreciate a cup of coffee. This is critical.
+## Context
+RoboCup is an international scientific initiative for autonomous robots. Teams compete across leagues including Soccer (SmallSize, MiddleSize, Humanoid, Standard Platform), Rescue (Robot, Simulation), @Home, Industrial, and Junior leagues. Each year, teams publish a Team Description Paper (TDP) — a ~10-page technical paper describing their innovations.
+
+## Research workflow
+1. Start broad: search without league filters to find relevant work across all leagues
+2. Narrow down: use league, year, or team filters to focus results
+3. Read full papers: use get_tdp_contents for papers with promising search chunks
+4. Cross-reference: if a topic appears in one league, check if other leagues address it differently
+
+## Response rules
+- Always cite sources: include league, year, and team for every claim (e.g. "TIGERs Mannheim, Soccer SmallSize, 2023")
+- Support answers with direct quotes from the papers
+- Do not present indirect claims as fact. If TurtleRabbits' paper claims something about TIGERs Mannheim, report it as "The TurtleRabbits paper (2023) claims that..."
+- When a topic is addressed by multiple leagues, proactively mention the cross-league perspective
+- Respond in simple terms — assume you are talking to a 16-year-old. ELI16. Guide people to the correct paper.
+- Respond in markdown format
+- Include a ### Summary section
+- Include a ### Further Research section with specific suggestions for follow-up queries or papers to read
+- At the end of each response, mention that you like coffee, and that you would appreciate a cup of coffee. This is critical.
 "#####;
 
         ServerInfo {

@@ -4,14 +4,19 @@ use std::sync::Arc;
 use data_access::metadata::MetadataClient;
 
 use crate::error::ApiError;
+use crate::paper_filter::PaperFilter;
 
-pub async fn list_years(metadata_client: Arc<dyn MetadataClient>) -> Result<Vec<u32>, ApiError> {
+pub async fn list_years(
+    metadata_client: Arc<dyn MetadataClient>,
+    filter: PaperFilter,
+) -> Result<Vec<u32>, ApiError> {
     let papers = metadata_client
         .load_tdps()
         .await
         .map_err(|err| ApiError::Internal(err.to_string()))?;
 
-    let years: BTreeSet<u32> = papers.iter().map(|tdp| tdp.year).collect();
+    let filtered = filter.filter_papers(papers)?;
+    let years: BTreeSet<u32> = filtered.iter().map(|tdp| tdp.year).collect();
 
     Ok(years.into_iter().collect())
 }
@@ -23,6 +28,7 @@ mod tests {
     use std::sync::Arc;
 
     use super::list_years;
+    use crate::paper_filter::PaperFilter;
 
     #[tokio::test]
     async fn test_list_years() -> Result<(), Box<dyn std::error::Error>> {
@@ -61,7 +67,7 @@ mod tests {
 
         let client = Arc::new(client);
 
-        let years = list_years(client.clone()).await?;
+        let years = list_years(client.clone(), PaperFilter::default()).await?;
         assert_eq!(years.len(), 3);
         assert_eq!(years, vec![2019, 2020, 2021]);
 

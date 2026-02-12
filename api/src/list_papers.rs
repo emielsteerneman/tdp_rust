@@ -4,16 +4,18 @@ use data_access::metadata::MetadataClient;
 use data_structures::file::TDPName;
 
 use crate::error::ApiError;
+use crate::paper_filter::PaperFilter;
 
 pub async fn list_papers(
     metadata_client: Arc<dyn MetadataClient>,
+    filter: PaperFilter,
 ) -> Result<Vec<TDPName>, ApiError> {
     let papers = metadata_client
         .load_tdps()
         .await
         .map_err(|err| ApiError::Internal(err.to_string()))?;
 
-    Ok(papers)
+    filter.filter_papers(papers)
 }
 
 #[cfg(test)]
@@ -23,6 +25,7 @@ mod tests {
     use std::sync::Arc;
 
     use super::list_papers;
+    use crate::paper_filter::PaperFilter;
 
     #[tokio::test]
     async fn test_list_papers() -> Result<(), Box<dyn std::error::Error>> {
@@ -55,7 +58,7 @@ mod tests {
 
         let client = Arc::new(client);
 
-        let papers = list_papers(client.clone()).await?;
+        let papers = list_papers(client.clone(), PaperFilter::default()).await?;
         assert_eq!(papers.len(), 3);
         assert_eq!(papers[0].team_name.name_pretty, "RoboTeam Twente");
         assert_eq!(papers[0].year, 2019);

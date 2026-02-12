@@ -17,33 +17,35 @@ pub enum SearchError {
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 pub struct SearchArgs {
-    #[schemars(description = "The query for which to search. For example 'battery capacity'.")]
+    #[schemars(
+        description = "The search query. Use short keyword phrases like 'trajectory planning', 'omnidirectional drive', or 'ball detection neural network'. Avoid full sentences."
+    )]
     pub query: String,
-    #[schemars(description = "Limit the number of results.")]
+    #[schemars(description = "Maximum number of result chunks to return. Defaults to 10 if not specified.")]
     pub limit: Option<u64>,
 
     #[schemars(
-        description = "An optional comma separated filter over the leagues. For example 'Soccer Smallsize, Soccer Humanoid Adult'"
+        description = "Optional comma-separated league filter. Use exact league names from list_leagues, e.g. 'Soccer SmallSize, Soccer Humanoid AdultSize'. Omit to search across all leagues."
     )]
     pub league_filter: Option<String>,
 
     #[schemars(
-        description = "An optional comma separated filter over the years. For example '2021, 2024, 2025'"
+        description = "Optional comma-separated year filter, e.g. '2023, 2024'. Useful for finding recent innovations or tracking a topic over time."
     )]
     pub year_filter: Option<String>,
 
     #[schemars(
-        description = "An optional comma separated filter over the teams. For example 'RoboTeam Twente, TIGERs Mannheim, Er-Force'"
+        description = "Optional comma-separated team filter. Use exact team names from list_teams, e.g. 'RoboTeam Twente, TIGERs Mannheim'. Useful when you know which team works on a topic."
     )]
     pub team_filter: Option<String>,
 
     #[schemars(
-        description = "An optional comma separated filter over the year_league_team_index (so, specific papers). For example 'rescue_simulation_infrastructure__2012__UvA_Rescue__0, rescue_robot__2019__MRL__0'"
+        description = "Optional comma-separated filter for specific papers by their league__year__team__index identifier, e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0'. Rarely needed — prefer league/year/team filters."
     )]
     pub lyti_filter: Option<String>,
 
     #[schemars(
-        description = "Indicates whether to search using dense semantic embeddings, sparse keyword embeddings, or a hybrid of both. Possible values: dense, sparse, hybrid"
+        description = "Search method: 'hybrid' (default, best for most queries — combines semantic and keyword matching), 'sparse' (keyword-only, best for exact technical terms like 'PID controller'), 'dense' (semantic-only, best for conceptual queries like 'how to make robots kick harder')."
     )]
     pub search_type: EmbedType,
 }
