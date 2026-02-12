@@ -18,7 +18,7 @@ web:
 	cargo run -p web
 
 ui:
-	cd frontend && npm run dev -- --host
+	cd frontend && npm run dev -- --host --port 8003
 
 docker:
 	docker compose up --build
