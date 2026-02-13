@@ -67,7 +67,7 @@ async fn summary(
         *by_type.entry(e.event_type.clone()).or_default() += 1;
     }
     let mut by_type_sorted: Vec<_> = by_type.into_iter().collect();
-    by_type_sorted.sort_by(|a, b| b.1.cmp(&a.1));
+    by_type_sorted.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
 
     println!("By event type:");
     for (t, count) in &by_type_sorted {
@@ -99,7 +99,7 @@ async fn summary(
     }
     if !queries.is_empty() {
         let mut queries_sorted: Vec<_> = queries.into_iter().collect();
-        queries_sorted.sort_by(|a, b| b.1.cmp(&a.1));
+        queries_sorted.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
 
         println!("Top search queries:");
         for (q, count) in queries_sorted.iter().take(10) {
