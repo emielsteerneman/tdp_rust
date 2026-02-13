@@ -1,3 +1,4 @@
+pub mod activity;
 pub mod error;
 pub mod get_tdp_contents;
 pub mod list_leagues;

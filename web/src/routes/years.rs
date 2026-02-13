@@ -11,6 +11,8 @@ pub async fn list_years_handler(
     let years = api::list_years::list_years(
         state.metadata_client.clone(),
         api::paper_filter::PaperFilter::default(),
+        state.activity_client.clone(),
+        api::activity::EventSource::Web,
     )
     .await
     .map_err(|e| ApiError::from(e))?;

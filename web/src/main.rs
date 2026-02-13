@@ -26,6 +26,7 @@ async fn main() -> anyhow::Result<()> {
     let embed_client = configuration::helpers::load_any_embed_client(&config);
     let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
+    let activity_client = configuration::helpers::load_activity_client(&config);
 
     println!("Clients initialized.");
 
@@ -62,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
         leagues,
     );
 
-    let state = AppState::new(metadata_client.clone(), Arc::new(searcher));
+    let state = AppState::new(metadata_client.clone(), Arc::new(searcher), activity_client);
 
     let router = routes::create_router(state);
 

@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use data_access::activity::ActivityClient;
 use data_processing::search::Searcher;
 use data_structures::{
     embed_type::EmbedType,
@@ -6,6 +9,8 @@ use data_structures::{
 };
 use schemars::JsonSchema;
 use serde::Deserialize;
+
+use crate::activity::{EventSource, log_activity};
 
 #[derive(thiserror::Error, Debug)]
 pub enum SearchError {
@@ -82,7 +87,13 @@ impl SearchArgs {
     }
 }
 
-pub async fn search(searcher: &Searcher, args: SearchArgs) -> anyhow::Result<String> {
+pub async fn search(
+    searcher: &Searcher,
+    args: SearchArgs,
+    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    source: EventSource,
+) -> anyhow::Result<String> {
+    let search_type_str = format!("{:?}", args.search_type);
     let search_result = searcher
         .search(
             args.query.clone(),
@@ -91,6 +102,20 @@ pub async fn search(searcher: &Searcher, args: SearchArgs) -> anyhow::Result<Str
             args.search_type.into(),
         )
         .await?;
+
+    log_activity(
+        activity_client,
+        source,
+        "search",
+        serde_json::json!({
+            "query": args.query,
+            "search_type": search_type_str,
+            "result_count": search_result.chunks.len(),
+            "league_filter": args.league_filter,
+            "year_filter": args.year_filter,
+            "team_filter": args.team_filter,
+        }),
+    );
 
     Ok(serde_json::to_string_pretty(&search_result)?)
 }
@@ -98,7 +123,10 @@ pub async fn search(searcher: &Searcher, args: SearchArgs) -> anyhow::Result<Str
 pub async fn search_structured(
     searcher: &Searcher,
     args: SearchArgs,
+    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    source: EventSource,
 ) -> anyhow::Result<data_structures::intermediate::SearchResult> {
+    let search_type_str = format!("{:?}", args.search_type);
     let search_result = searcher
         .search(
             args.query.clone(),
@@ -107,6 +135,20 @@ pub async fn search_structured(
             args.search_type.into(),
         )
         .await?;
+
+    log_activity(
+        activity_client,
+        source,
+        "search",
+        serde_json::json!({
+            "query": args.query,
+            "search_type": search_type_str,
+            "result_count": search_result.chunks.len(),
+            "league_filter": args.league_filter,
+            "year_filter": args.year_filter,
+            "team_filter": args.team_filter,
+        }),
+    );
 
     Ok(search_result)
 }

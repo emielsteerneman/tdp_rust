@@ -1,5 +1,6 @@
 use super::AppConfig;
 use data_access::{
+    activity::{ActivityClient, ActivitySqliteClient},
     embed::{EmbedClient, FastembedClient, OpenAIClient},
     metadata::{MetadataClient, SqliteClient},
     vector::{QdrantClient, VectorClient},
@@ -53,4 +54,20 @@ pub fn load_any_metadata_client(config: &AppConfig) -> Arc<dyn MetadataClient + 
         };
 
     metadata_client
+}
+
+pub fn load_activity_client(
+    config: &AppConfig,
+) -> Option<Arc<dyn ActivityClient + Send + Sync>> {
+    if let Some(activity_config) = &config.data_access.activity {
+        if let Some(sqlite_cfg) = &activity_config.sqlite {
+            info!(
+                "Using SQLite Activity with file: {}",
+                sqlite_cfg.filename
+            );
+            return Some(Arc::new(ActivitySqliteClient::new(sqlite_cfg.clone())));
+        }
+    }
+    info!("No activity client configured, activity logging disabled");
+    None
 }
