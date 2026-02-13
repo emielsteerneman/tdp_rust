@@ -4,6 +4,7 @@ mod search;
 mod teams;
 mod years;
 
+use axum::middleware;
 use axum::routing::get;
 use axum::Router;
 use tower_http::cors::{Any, CorsLayer};
@@ -23,6 +24,10 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/teams", get(teams::list_teams_handler))
         .route("/api/leagues", get(leagues::list_leagues_handler))
         .route("/api/years", get(years::list_years_handler))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            crate::middleware::activity_logging,
+        ))
         .with_state(state)
         .layer(cors)
 }

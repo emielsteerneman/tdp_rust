@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 mod dto;
 mod error;
+mod middleware;
 mod routes;
 mod state;
 

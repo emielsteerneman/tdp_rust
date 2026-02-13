@@ -16,7 +16,7 @@ COPY data_access/ data_access/
 COPY data_processing/ data_processing/
 COPY data_structures/ data_structures/
 COPY mcp/ mcp/
-COPY pipeline/ pipeline/
+COPY tools/ tools/
 COPY web/ web/
 
 RUN cargo build -p web

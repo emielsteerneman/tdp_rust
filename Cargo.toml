@@ -7,7 +7,7 @@ members = ["api",
     "data_processing",
     "data_structures",
     "mcp",
-    "pipeline",
+    "tools",
     "web",
 ]
 

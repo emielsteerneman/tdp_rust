@@ -50,3 +50,54 @@ pub fn log_activity(
         }
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use data_access::activity::MockActivityClient;
+
+    #[test]
+    fn test_event_source_as_str() {
+        assert_eq!(EventSource::Web.as_str(), "web");
+        assert_eq!(EventSource::Mcp.as_str(), "mcp");
+    }
+
+    #[tokio::test]
+    async fn test_log_activity_none_client_does_not_panic() {
+        log_activity(None, EventSource::Web, "search", serde_json::json!({"q": "test"}));
+    }
+
+    #[tokio::test]
+    async fn test_log_activity_calls_client() {
+        let mut mock = MockActivityClient::new();
+        mock.expect_log_event()
+            .withf(|source, event_type, payload| {
+                source == "web"
+                    && event_type == "search"
+                    && payload.contains("\"q\"")
+                    && payload.contains("\"test\"")
+            })
+            .times(1)
+            .returning(|_, _, _| Box::pin(async { Ok(()) }));
+
+        let client: Arc<dyn ActivityClient + Send + Sync> = Arc::new(mock);
+        log_activity(Some(client), EventSource::Web, "search", serde_json::json!({"q": "test"}));
+
+        // Give the spawned task time to run
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+
+    #[tokio::test]
+    async fn test_log_activity_mcp_source() {
+        let mut mock = MockActivityClient::new();
+        mock.expect_log_event()
+            .withf(|source, _, _| source == "mcp")
+            .times(1)
+            .returning(|_, _, _| Box::pin(async { Ok(()) }));
+
+        let client: Arc<dyn ActivityClient + Send + Sync> = Arc::new(mock);
+        log_activity(Some(client), EventSource::Mcp, "list_teams", serde_json::json!({}));
+
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+}

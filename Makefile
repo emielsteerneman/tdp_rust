@@ -7,7 +7,7 @@ qdrant-restart:
 	docker run --network=host --name qdrant -d qdrant/qdrant:v1.16
 
 init:
-	cargo run --release -p pipeline --bin initialize
+	cargo run --release -p tools --bin initialize
 
 clean: qdrant-restart
 	rm my_sqlite.db
@@ -28,6 +28,9 @@ docker-logs:
 
 docker-down:
 	docker compose down
+
+activity:
+	cargo run -p tools --bin activity -- $(ARGS)
 
 leagues:
 	@curl -s http://localhost:8081/api/leagues | python3 -m json.tool
