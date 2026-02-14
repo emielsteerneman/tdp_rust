@@ -25,8 +25,6 @@ pub async fn embed_chunks(
         for chunk in chunks {
             let sparse = embed_sparse(&chunk.text, idf_map);
             chunk.sparse_embedding = sparse;
-
-            chunk.dense_embedding = vec![0.0; 1536];
         }
     }
 

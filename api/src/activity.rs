@@ -8,6 +8,7 @@ use serde::Serialize;
 pub enum EventSource {
     Web,
     Mcp,
+    Dev,
 }
 
 impl EventSource {
@@ -15,12 +16,14 @@ impl EventSource {
         match self {
             EventSource::Web => "web",
             EventSource::Mcp => "mcp",
+            EventSource::Dev => "dev",
         }
     }
 }
 
 /// Fire-and-forget activity logging. Spawns a task, never blocks the caller.
 /// If `client` is `None`, logging is silently skipped.
+/// Events with source `Dev` are not logged at all.
 pub fn log_activity(
     client: Option<Arc<dyn ActivityClient + Send + Sync>>,
     source: EventSource,
@@ -30,6 +33,11 @@ pub fn log_activity(
     let Some(client) = client else {
         return;
     };
+
+    // Skip logging for dev source
+    if matches!(source, EventSource::Dev) {
+        return;
+    }
 
     let source_str = source.as_str().to_string();
     let event_type_str = event_type.to_string();
@@ -60,6 +68,7 @@ mod tests {
     fn test_event_source_as_str() {
         assert_eq!(EventSource::Web.as_str(), "web");
         assert_eq!(EventSource::Mcp.as_str(), "mcp");
+        assert_eq!(EventSource::Dev.as_str(), "dev");
     }
 
     #[tokio::test]
