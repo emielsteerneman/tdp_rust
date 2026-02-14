@@ -14,15 +14,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 || args[1] == "--help" || args[1] == "-h" {
-        eprintln!("Usage: {} <query> [--mode <dense|hybrid>]", args[0]);
+        eprintln!("Usage: {} <query> [--mode <dense|sparse|hybrid>]", args[0]);
         eprintln!();
         eprintln!("Arguments:");
-        eprintln!("  <query>              Search query string");
-        eprintln!("  --mode <dense|hybrid>  Search mode (default: hybrid)");
+        eprintln!("  <query>                    Search query string");
+        eprintln!("  --mode <dense|sparse|hybrid>  Search mode (default: hybrid)");
         eprintln!();
         eprintln!("Examples:");
         eprintln!("  {} \"battery capacity tigers\"", args[0]);
         eprintln!("  {} \"neural network\" --mode dense", args[0]);
+        eprintln!("  {} \"bang bang\" --mode sparse", args[0]);
         std::process::exit(1);
     }
 
@@ -34,9 +35,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(mode_str) = args.get(mode_idx + 1) {
             search_mode = match mode_str.to_lowercase().as_str() {
                 "dense" => EmbedType::DENSE,
+                "sparse" => EmbedType::SPARSE,
                 "hybrid" => EmbedType::HYBRID,
                 _ => {
-                    eprintln!("Invalid mode: {}. Use 'dense' or 'hybrid'", mode_str);
+                    eprintln!("Invalid mode: {}. Use 'dense', 'sparse', or 'hybrid'", mode_str);
                     std::process::exit(1);
                 }
             };
