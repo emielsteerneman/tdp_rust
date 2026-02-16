@@ -19,6 +19,9 @@ qdrant-restart:
 	docker rm qdrant || true
 	docker run --network=host --name qdrant -d qdrant/qdrant:v1.16
 
+qdrant-snapshot:
+	./scripts/qdrant_create_download_delete_snapshot.sh
+
 docker:
 	docker compose up --build
 
