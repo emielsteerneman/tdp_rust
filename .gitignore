@@ -7,6 +7,6 @@ config.toml
 *.db-shm
 *.db-wal
 *.snapshot
-
+_*
 frontend/node_modules
 frontend/.svelte-kit
