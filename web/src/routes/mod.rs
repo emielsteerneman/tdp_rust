@@ -8,6 +8,7 @@ use axum::middleware;
 use axum::routing::get;
 use axum::Router;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::{ServeDir, ServeFile};
 
 use crate::state::AppState;
 
@@ -17,7 +18,8 @@ pub fn create_router(state: AppState) -> Router {
         .allow_methods(Any)
         .allow_headers(Any);
 
-    Router::new()
+    // API routes
+    let api_routes = Router::new()
         .route("/api/search", get(search::search_handler))
         .route("/api/papers", get(papers::list_papers_handler))
         .route("/api/papers/{id}", get(papers::get_paper_handler))
@@ -28,6 +30,17 @@ pub fn create_router(state: AppState) -> Router {
             state.clone(),
             crate::middleware::activity_logging,
         ))
-        .with_state(state)
+        .with_state(state);
+
+    // Serve static frontend files with SPA fallback
+    // If a file exists, serve it; otherwise serve index.html for client-side routing
+    let static_files = ServeDir::new("static")
+        .not_found_service(ServeFile::new("static/index.html"));
+
+    // Combine API routes with static file serving
+    // API routes take precedence, then static files
+    Router::new()
+        .merge(api_routes)
+        .fallback_service(static_files)
         .layer(cors)
 }
