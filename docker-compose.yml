@@ -1,7 +1,66 @@
+version: '3.8'
+
+# Docker Compose automatically loads .env file from the current directory
+# Users should copy .env.example to .env and configure their API keys
 services:
-  app:
-    build: .
-    network_mode: host
+  # Qdrant vector database
+  # NOTE: Requires qdrant.snapshot in repo root for pre-loaded data
+  # Create it with: ./scripts/qdrant_create_download_delete_snapshot.sh qdrant.snapshot
+  qdrant:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: qdrant
+    container_name: tdp-qdrant
+    ports:
+      - "6333:6333"    # REST API
+      - "6334:6334"    # gRPC
     volumes:
-      - ./config.toml:/app/config.toml:ro
-      - ./my_sqlite.db:/app/my_sqlite.db
+      - qdrant_storage:/qdrant/storage
+    environment:
+      QDRANT_ALLOW_RECOVERY_MODE: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # MCP Server
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: mcp
+    container_name: tdp-mcp
+    ports:
+      - "8002:8002"
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    environment:
+      - RUST_LOG=info,rmcp=warn
+      # Override config settings via TDP_* environment variables
+      # Example: TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-proj-...
+    restart: unless-stopped
+
+  # REST API Server (Web) with frontend static files
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    container_name: tdp-web
+    ports:
+      - "8090:8081"  # Expose on 8090 for external access
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    # environment:
+      # Override config settings via TDP_* environment variables
+      # Example: TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-proj-...
+    restart: unless-stopped
+
+volumes:
+  qdrant_storage:
+    driver: local

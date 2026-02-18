@@ -28,6 +28,14 @@ impl AppConfig {
         let mut builder =
             ConfigLoader::builder().add_source(File::from(path.as_ref()).format(FileFormat::Toml));
 
+        // Add environment variable overrides (TDP_* prefix, double underscore for nesting)
+        // Example: TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-...
+        builder = builder.add_source(
+            config::Environment::with_prefix("TDP")
+                .try_parsing(true)
+                .separator("__"),
+        );
+
         // Initial build to extract the data_acces.run variable
         let temp_config = builder
             .clone()

@@ -57,6 +57,44 @@ make docker-logs  # follow logs
 make docker-down  # stop
 ```
 
+#### Setup
+
+Before building Docker images, create your configuration files:
+
+```bash
+# Create Docker config from example
+cp config.docker.toml.example config.docker.toml
+# Edit config.docker.toml and add your OpenAI API key (or leave empty and use env vars)
+
+# Create .env file for runtime overrides
+cp .env.example .env
+# Edit .env and configure your API keys
+```
+
+#### Configuration
+
+Docker images bake in `config.docker.toml` as the default config. Settings can be overridden at runtime via environment variables using the `TDP_` prefix and `__` (double underscore) as a separator for nested keys.
+
+For example, to set the OpenAI API key:
+```
+TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-proj-...
+```
+
+There are two ways to pass environment variables to the containers:
+
+1. **`env_file` directive** in `docker-compose.yml` — add `env_file: .env` to a service to inject all variables from `.env` directly into the container.
+
+2. **`environment` block with interpolation** — reference host/`.env` variables using `${VAR}` syntax in docker-compose.yml. Note: Docker Compose auto-loads `.env` only for `${...}` interpolation within the compose file itself, it does **not** automatically pass `.env` variables into containers.
+
+To get started, copy the example env file and fill in your values:
+```
+cp .env.example .env
+```
+
+#### Startup order
+
+The `mcp` and `web` services use `depends_on` with a health check on Qdrant's `/healthz` endpoint. They will not start until Qdrant is ready to accept connections. If you need to rebuild after changing `config.docker.toml`, run `docker compose up --build` since the config is copied into the image at build time.
+
 ## CLI Tools
 
 All CLI tools live in the `tools` crate and are run via `cargo run -p tools --bin <name>`.

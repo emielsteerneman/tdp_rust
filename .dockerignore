@@ -2,6 +2,10 @@ target/
 frontend/node_modules/
 frontend/.svelte-kit/
 .git/
-my_sqlite.db
+# Database files are now included in Docker images for distribution
+# my_sqlite.db
 my_sqlite.db-shm
 my_sqlite.db-wal
+.env
+.env.*
+!.env.example

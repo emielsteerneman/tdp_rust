@@ -3,6 +3,7 @@
 .gitignore
 .env
 config.toml
+config.docker.toml
 *.db
 *.db-shm
 *.db-wal

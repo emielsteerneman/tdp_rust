@@ -1,0 +1,41 @@
+# Docker configuration for TDP Rust project
+# Copy this file to config.docker.toml and fill in your values
+# This config is baked into Docker images at build time
+#
+# Users can override specific settings using environment variables:
+# - TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-...
+# - TDP_DATA_ACCESS__EMBED__OPENAI__MODEL_NAME=text-embedding-3-large
+# - TDP_DATA_PROCESSING__TDPS_JSON_ROOT=/path/to/tdps
+#
+# All environment variable keys use the TDP_ prefix and __ (double underscore) to separate nested levels
+
+[data_access]
+run = "my_run"
+
+[data_access.embed.openai]
+model_name = "text-embedding-3-small"
+api_key = ""  # Add your OpenAI API key here or override via TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY
+
+# FastEmbed as fallback (local, no API key needed)
+[data_access.embed.fastembed]
+model_name = "BGEBaseENV15Q"
+
+# Qdrant vector database
+# When using docker-compose: connects via Docker network (service name)
+# When using existing Qdrant on host: override via environment variable
+[data_access.vector.qdrant]
+url = "http://qdrant:6334"    # gRPC endpoint (use port 6334, not 6333)
+embedding_size = 1536        # Fixed with pre-filled snapshot
+
+# SQLite metadata database (mounted volume)
+[data_access.metadata.sqlite]
+filename = "/app/my_sqlite.db"
+
+# SQLite activity/logging database (mounted volume)
+[data_access.activity.sqlite]
+filename = "/app/activity.db"
+
+[data_processing]
+# Set via environment variable: TDP_DATA_PROCESSING__TDPS_JSON_ROOT=/path/to/tdps
+# Or mount a volume at runtime
+tdps_json_root = "/data/tdps"

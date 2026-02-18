@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # MCP Server
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: mcp
+    container_name: tdp-mcp-test
+    ports:
+      - "9002:8002"
+    volumes:
+      - ./my_sqlite.db:/app/my_sqlite.db
+      - ./activity.db:/app/activity.db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Connect to the existing Qdrant instance on the host
+      TDP_DATA_ACCESS__VECTOR__QDRANT__URL: "http://host.docker.internal:6333"
+      TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY: ${TDP_OPENAI_API_KEY:-}
+    restart: unless-stopped
+    depends_on:
+      - web
+
+  # REST API Server (Web)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    container_name: tdp-web-test
+    ports:
+      - "9081:8081"
+    volumes:
+      - ./my_sqlite.db:/app/my_sqlite.db
+      - ./activity.db:/app/activity.db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Connect to the existing Qdrant instance on the host
+      TDP_DATA_ACCESS__VECTOR__QDRANT__URL: "http://host.docker.internal:6333"
+      TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY: ${TDP_OPENAI_API_KEY:-}
+    restart: unless-stopped
+
+  # SvelteKit Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend
+    container_name: tdp-frontend-test
+    ports:
+      - "9080:8080"
+    environment:
+      VITE_API_URL: "http://web:8081"
+    restart: unless-stopped
+    depends_on:
+      - web
