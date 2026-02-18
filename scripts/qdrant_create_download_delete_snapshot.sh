@@ -1,5 +1,11 @@
 # https://qdrant.tech/documentation/concepts/collections/
 # https://qdrant.tech/documentation/concepts/snapshots/
+#
+# Usage: ./qdrant_create_download_delete_snapshot.sh [output_filename]
+# Example: ./qdrant_create_download_delete_snapshot.sh qdrant.snapshot
+
+# Optional output filename parameter
+OUTPUT_FILE="$1"
 
 # Check if collection 'chunk' exists
 EXISTS_OUTPUT=$(curl -X GET http://localhost:6333/collections/chunk/exists --no-progress-meter)
@@ -24,10 +30,17 @@ echo "Creating snapshot for collection 'chunk'..."
 CREATE_OUTPUT=$(curl -X POST http://localhost:6333/collections/chunk/snapshots --no-progress-meter)
 FILENAME=$(echo $CREATE_OUTPUT | jq -r '.result.name')
 
-# Download snapshot
-echo "Downloading snapshot '$FILENAME' to 'qdrant_${NCHUNKS}x${VECSIZE}.snapshot'..."
+# Determine output filename
+if [ -z "$OUTPUT_FILE" ]; then
+    OUTPUT_FILE="qdrant_${NCHUNKS}x${VECSIZE}.snapshot"
+fi
 
-CMD_DOWNLOAD=$(curl -X GET http://localhost:6333/collections/chunk/snapshots/${FILENAME} --output qdrant_${NCHUNKS}x${VECSIZE}.snapshot --no-progress-meter)
+# Download snapshot
+echo "Downloading snapshot '$FILENAME' to '$OUTPUT_FILE'..."
+
+CMD_DOWNLOAD=$(curl -X GET http://localhost:6333/collections/chunk/snapshots/${FILENAME} --output "$OUTPUT_FILE" --no-progress-meter)
+
+echo "Snapshot saved to: $OUTPUT_FILE"
 
 # Delete snapshot
 echo "Deleting snapshot '$FILENAME' from Qdrant..."
