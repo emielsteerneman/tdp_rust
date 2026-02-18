@@ -30,6 +30,8 @@ async fn main() -> anyhow::Result<()> {
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
     let activity_client = configuration::helpers::load_activity_client(&config);
 
+    metadata_client.print_analytics().await?;
+
     println!("Clients initialized.");
 
     // Load IDF

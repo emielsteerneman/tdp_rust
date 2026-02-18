@@ -43,7 +43,7 @@ impl Searcher {
         filter: Option<Filter>,
         search_type: EmbedType,
     ) -> anyhow::Result<SearchResult> {
-        info!("\nSearch n={limit:?} type={search_type:?} filter={filter:?}");
+        info!("Search n={limit:?} type={search_type:?} filter={filter:?}");
         info!("Query : {query}");
 
         let limit = limit.unwrap_or(15);

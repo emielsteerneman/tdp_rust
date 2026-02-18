@@ -54,19 +54,7 @@ pub trait MetadataClient: Send + Sync {
         tdp_name: TDPName,
     ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>>;
 
-    /* What else do I want to store here?
-        The basic League Year Team
-        * Leagues. Hardcode the leagues, together with their descriptions? Or at least hardcode the description to give to the AI.
-        * All years for which papers are available
-        * Teams, RoboTeam_Twente. Or maybe as RoboTeam Twente? Since that matches better with what is in papers. If the AI
-        search for RoboTeam_Twente it won't find anything.
-
-        Maybe number of papers, number of chunks? Papers per league?
-        Information: Group by league, year, team? Not needed for now
-
-        Maybe at some point, specific team data? Their github repos, websites, other stuff
-
-        // table team, year, league, paper. Then index on all, simply retrieve the index?
-
-    */
+    fn print_analytics<'a>(
+        &'a self,
+    ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>>;
 }

@@ -379,6 +379,44 @@ impl MetadataClient for SqliteClient {
             .map_err(|e| MetadataClientError::Internal(e.to_string()))?
         })
     }
+
+    fn print_analytics<'a>(
+        &'a self,
+    ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
+        let conn = self.conn.clone();
+        let run = self.config.run.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = conn.lock().unwrap();
+
+                let tdp_count: i64 = conn
+                    .query_row(
+                        "SELECT COUNT(*) FROM tdp WHERE run = ?1",
+                        params![run],
+                        |row| row.get(0),
+                    )
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let idf_count: i64 = conn
+                    .query_row(
+                        "SELECT COUNT(*) FROM idf_index WHERE run = ?1",
+                        params![run],
+                        |row| row.get(0),
+                    )
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                info!(
+                    "Analytics for run '{}': {} TDPs, {} IDF entries",
+                    run, tdp_count, idf_count
+                );
+
+                Ok(())
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
 }
 
 #[cfg(test)]
