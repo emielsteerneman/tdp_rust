@@ -45,6 +45,47 @@ npm run build             # -> frontend/build/
 docker-compose up
 ```
 
+## Local Setup Prerequisites
+`config.toml` is gitignored — create it in the repo root before running anything. Minimum required fields:
+```toml
+[data_access]
+run = "dev"
+
+[data_access.embed.openai]
+model_name = "text-embedding-3-small"
+api_key = "sk-..."
+
+[data_access.vector.qdrant]
+url = "http://localhost:6334"
+embedding_size = 1536          # must match the embed model's output dimension
+
+[data_access.metadata.sqlite]
+filename = "my_sqlite.db"
+
+[data_access.activity.sqlite]
+filename = "activity.db"
+
+[data_processing]
+tdps_json_root = "/path/to/tdps_json/"
+```
+
+Other prerequisites:
+- **Qdrant** must be running at the configured URL before starting `mcp` or `web` (use `docker-compose up qdrant`)
+- **TDP JSON files** must exist at `tdps_json_root` before running `initialize`
+- **Static files**: the web server expects files at `./static/` (relative to cwd), but the frontend builds to `frontend/build/`. For local dev, symlink: `ln -s frontend/build static`
+- **Embed model ↔ Qdrant size must match**: if you change the embed model, update `embedding_size` and re-run `initialize` to rebuild the Qdrant collection. Mismatches cause silent failures.
+
+## Key Terms
+- **lyti** — League Year Team Index. The canonical paper identifier used as a Qdrant payload field and in filters. Format: `soccer_smallsize__2024__RoboTeam_Twente__0`.
+- **EventSource** — passed to all `api` handlers for activity logging. Use `EventSource::Mcp` in the MCP server, `EventSource::Web` in the web server. `EventSource::Dev` silently drops all log events (useful to know when nothing appears in the activity DB during local testing).
+
+## Adding a New Tool / Endpoint
+Follow this pattern to keep both interfaces in sync:
+
+1. **Add handler** in `api/src/<name>.rs` — takes typed args + clients + `EventSource`, returns a result.
+2. **MCP**: add a `#[tool(...)]` method in `mcp/src/server.rs` that calls the api handler with `EventSource::Mcp`.
+3. **Web**: add a route file `web/src/routes/<name>.rs` calling the api handler with `EventSource::Web`, then register it in `web/src/routes/mod.rs`.
+
 ## Testing Approach
 - Unit tests: in-file `#[cfg(test)]` modules throughout
 - Mock-based tests: `mockall` with `#[automock]` on `MetadataClient` and `ActivityClient`

@@ -36,7 +36,13 @@ Rust workspace with the following crates:
    make qdrant-restart
    ```
 
-2. Configure `config.toml` with your embedding provider and paths.
+2. Create `config.toml` from the example:
+   ```
+   cp config.toml.example config.toml
+   ```
+   Fill in your OpenAI API key and the path to your TDP JSON files.
+
+   > **Note:** `embedding_size` must match the embed model's output dimension. If you change models, re-run `make init` to rebuild the Qdrant collection — mismatches cause silent failures.
 
 3. Initialize the database (parse TDPs, compute embeddings, build IDF):
    ```
@@ -48,6 +54,7 @@ Rust workspace with the following crates:
    make web   # API server on :8081
    make ui    # SvelteKit dev server on :8003
    ```
+   > **Note:** `make web` runs `cargo run -p web`, which serves the built frontend from `./static/`. If you run it directly without `make ui`, create a symlink first: `ln -s frontend/build static`.
 
 ### Docker
 
