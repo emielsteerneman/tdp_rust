@@ -75,12 +75,12 @@ async fn main() -> anyhow::Result<()> {
         Default::default(),
     );
 
-    // ── Port 8002: open MCP (no auth) ──────────────────────────────────────
+    // ── Port 50001: open MCP (no auth) ─────────────────────────────────────
     let open_router = axum::Router::new().nest_service("/mcp", mcp_service.clone());
     let open_addr: SocketAddr = "0.0.0.0:50001".parse()?;
     let open_listener = tokio::net::TcpListener::bind(open_addr).await?;
 
-    // ── Port 8003: OAuth-protected MCP ─────────────────────────────────────
+    // ── Port 50002: OAuth-protected MCP ────────────────────────────────────
     let oauth_store = oauth::OAuthStore::new();
 
     let protected_mcp = axum::Router::new()

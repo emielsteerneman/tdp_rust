@@ -10,7 +10,7 @@ mcp:
 	cargo run -p mcp
 
 ui:
-	cd frontend && npm run dev -- --host --port 8003
+	cd frontend && npm run dev -- --host --port 50000
 
 # --- Infrastructure ---
 
@@ -54,4 +54,4 @@ clean: qdrant-restart
 	rm -f my_sqlite.db my_sqlite.db-shm my_sqlite.db-wal
 
 leagues:
-	@curl -s http://localhost:8081/api/leagues | python3 -m json.tool
+	@curl -s http://localhost:50000/api/leagues | python3 -m json.tool

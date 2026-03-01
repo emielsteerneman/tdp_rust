@@ -51,8 +51,8 @@ Rust workspace with the following crates:
 
 4. Start the web server and frontend:
    ```
-   make web   # API server on :8081
-   make ui    # SvelteKit dev server on :8003
+   make web   # API server on :50000
+   make ui    # SvelteKit dev server on :50000
    ```
    > **Note:** `make web` runs `cargo run -p web`, which serves the built frontend from `./static/`. If you run it directly without `make ui`, create a symlink first: `ln -s frontend/build static`.
 
@@ -164,9 +164,9 @@ make activity ARGS="agents --since 2025-06-01"
 
 | Target | Description |
 |---|---|
-| `make web` | Start the Axum API server on :8081 |
-| `make mcp` | Start the MCP server |
-| `make ui` | Start the SvelteKit dev server on :8003 |
+| `make web` | Start the Axum API server on :50000 |
+| `make mcp` | Start the MCP servers (:50001 open, :50002 OAuth) |
+| `make ui` | Start the SvelteKit dev server on :50000 |
 
 **Tools:**
 

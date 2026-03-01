@@ -377,7 +377,7 @@ mod tests {
                     .method("POST")
                     .uri("/oauth/register")
                     .header("content-type", "application/json")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::from(
                         serde_json::json!({
                             "client_name": "Test Client",
@@ -403,7 +403,7 @@ mod tests {
                 Request::builder()
                     .method("GET")
                     .uri(&authorize_url)
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -437,7 +437,7 @@ mod tests {
                     .method("POST")
                     .uri("/oauth/token")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::from(body))
                     .unwrap(),
             )
@@ -480,7 +480,7 @@ mod tests {
             .oneshot(
                 Request::builder()
                     .uri("/.well-known/oauth-authorization-server")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -502,7 +502,7 @@ mod tests {
                     .method("POST")
                     .uri("/oauth/register")
                     .header("content-type", "application/json")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::from(
                         serde_json::json!({
                             "client_name": "My Client",
@@ -529,7 +529,7 @@ mod tests {
                     .method("POST")
                     .uri("/oauth/register")
                     .header("content-type", "application/json")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::from(
                         serde_json::json!({
                             "client_name": "Bad Client",
@@ -570,7 +570,7 @@ mod tests {
                     .method("POST")
                     .uri("/oauth/register")
                     .header("content-type", "application/json")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::from(
                         serde_json::json!({
                             "redirect_uris": [redirect_uri]
@@ -595,7 +595,7 @@ mod tests {
                     .uri(format!(
                         "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}&code_challenge={code_challenge}&code_challenge_method=S256"
                     ))
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -611,7 +611,7 @@ mod tests {
                     .method("POST")
                     .uri("/oauth/token")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::from(format!(
                         "grant_type=authorization_code&code={code}&client_id={client_id}&redirect_uri={redirect_uri}&code_verifier=wrong-verifier"
                     )))
@@ -640,7 +640,7 @@ mod tests {
                     .method("POST")
                     .uri("/oauth/register")
                     .header("content-type", "application/json")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::from(
                         serde_json::json!({ "redirect_uris": [redirect_uri] }).to_string(),
                     ))
@@ -662,7 +662,7 @@ mod tests {
                     .uri(format!(
                         "/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}&code_challenge={code_challenge}&code_challenge_method=S256"
                     ))
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -683,7 +683,7 @@ mod tests {
                     .method("POST")
                     .uri("/oauth/token")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::from(token_body.clone()))
                     .unwrap(),
             )
@@ -698,7 +698,7 @@ mod tests {
                     .method("POST")
                     .uri("/oauth/token")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .header("host", "localhost:8003")
+                    .header("host", "localhost:50002")
                     .body(Body::from(token_body))
                     .unwrap(),
             )
