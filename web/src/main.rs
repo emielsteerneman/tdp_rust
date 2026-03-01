@@ -14,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    let addr: SocketAddr = "0.0.0.0:8081".parse()?;
+    let addr: SocketAddr = "0.0.0.0:50000".parse()?;
 
     println!("🚀 Web Server initializing...");
 
@@ -70,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
 
     let router = routes::create_router(state);
 
-    println!("🌐 Web Server running on http://0.0.0.0:8081");
+    println!("🌐 Web Server running on http://0.0.0.0:50000");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
 

@@ -4,8 +4,8 @@ When debugging issues, investigate the root cause before suggesting fixes. Don't
 ## Project Overview
 RoboCup Team Description Paper (TDP) search and retrieval system. Indexes 2000+ annual technical
 papers from RoboCup teams and exposes them via a hybrid semantic+keyword search engine through:
-- MCP server (port 8002) for AI assistant integration
-- REST API + SvelteKit web frontend (port 8081)
+- MCP server (port 50001, open) and (port 50002, OAuth) for AI assistant integration
+- REST API + SvelteKit web frontend (port 50000)
 - CLI tools for corpus initialization and offline analysis
 
 ## Architecture
@@ -32,8 +32,8 @@ Key architectural rule: both `mcp` and `web` call the same `api` handlers — do
 ```bash
 # Backend
 cargo build
-cargo run -p mcp          # MCP server (reads config.toml from cwd)
-cargo run -p web          # Web server (reads config.toml from cwd)
+cargo run -p mcp          # MCP servers: open on :50001, OAuth on :50002 (reads config.toml from cwd)
+cargo run -p web          # Web server on :50000 (reads config.toml from cwd)
 cargo run --bin initialize # Corpus ingestion pipeline
 cargo test
 

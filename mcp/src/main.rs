@@ -77,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
 
     // ── Port 8002: open MCP (no auth) ──────────────────────────────────────
     let open_router = axum::Router::new().nest_service("/mcp", mcp_service.clone());
-    let open_addr: SocketAddr = "0.0.0.0:8002".parse()?;
+    let open_addr: SocketAddr = "0.0.0.0:50001".parse()?;
     let open_listener = tokio::net::TcpListener::bind(open_addr).await?;
 
     // ── Port 8003: OAuth-protected MCP ─────────────────────────────────────
@@ -91,11 +91,11 @@ async fn main() -> anyhow::Result<()> {
         ));
 
     let auth_router = oauth::oauth_router(oauth_store).merge(protected_mcp);
-    let auth_addr: SocketAddr = "0.0.0.0:8003".parse()?;
+    let auth_addr: SocketAddr = "0.0.0.0:50002".parse()?;
     let auth_listener = tokio::net::TcpListener::bind(auth_addr).await?;
 
-    println!("🔎 MCP Server (open)  running on http://0.0.0.0:8002/mcp");
-    println!("🔐 MCP Server (OAuth) running on http://0.0.0.0:8003/mcp");
+    println!("🔎 MCP Server (open)  running on http://0.0.0.0:50001/mcp");
+    println!("🔐 MCP Server (OAuth) running on http://0.0.0.0:50002/mcp");
 
     tokio::select! {
         result = axum::serve(open_listener, open_router) => result?,

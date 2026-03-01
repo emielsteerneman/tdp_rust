@@ -34,7 +34,8 @@ services:
       target: mcp
     container_name: tdp-mcp
     ports:
-      - "8002:8002"
+      - "50001:50001"    # Open MCP (no auth) — for Claude Code, ChatGPT, Le Chat
+      - "50002:50002"    # OAuth-protected MCP — for Claude.ai web
     depends_on:
       qdrant:
         condition: service_healthy
@@ -52,7 +53,7 @@ services:
       target: web
     container_name: tdp-web
     ports:
-      - "8003:8081"
+      - "50000:50000"    # Web frontend + REST API
     depends_on:
       qdrant:
         condition: service_healthy
