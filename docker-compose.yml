@@ -52,7 +52,7 @@ services:
       target: web
     container_name: tdp-web
     ports:
-      - "8090:8081"  # Expose on 8090 for external access
+      - "8003:8081"
     depends_on:
       qdrant:
         condition: service_healthy
