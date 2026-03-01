@@ -1,9 +1,11 @@
+use axum::middleware;
 use rmcp::transport::streamable_http_server::{
     StreamableHttpService, session::local::LocalSessionManager,
 };
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+mod oauth;
 mod server;
 mod state;
 
@@ -12,10 +14,7 @@ use state::AppState;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Initialize tracing
     tracing_subscriber::fmt::init();
-
-    let addr: SocketAddr = "0.0.0.0:8002".parse()?;
 
     println!("🚀 MCP Server initializing...");
 
@@ -34,7 +33,6 @@ async fn main() -> anyhow::Result<()> {
 
     println!("Clients initialized.");
 
-    // Load IDF
     let idf_map = metadata_client.load_idf().await?;
 
     println!("IDF loaded.");
@@ -68,27 +66,42 @@ async fn main() -> anyhow::Result<()> {
     );
 
     let state = AppState::new(metadata_client.clone(), Arc::new(searcher), activity_client);
-
     let server = AppServer::new(state);
 
-    println!("🔎 MCP Server running on http://0.0.0.0:8002/mcp");
-
-    let service = StreamableHttpService::new(
+    // The MCP service is Clone — both routers share the same underlying factory.
+    let mcp_service = StreamableHttpService::new(
         move || Ok(server.clone()),
         LocalSessionManager::default().into(),
         Default::default(),
     );
 
-    let router = axum::Router::new().nest_service("/mcp", service);
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    // ── Port 8002: open MCP (no auth) ──────────────────────────────────────
+    let open_router = axum::Router::new().nest_service("/mcp", mcp_service.clone());
+    let open_addr: SocketAddr = "0.0.0.0:8002".parse()?;
+    let open_listener = tokio::net::TcpListener::bind(open_addr).await?;
 
-    axum::serve(listener, router)
-        .with_graceful_shutdown(async {
-            tokio::signal::ctrl_c()
-                .await
-                .expect("failed to listen for ctrl-c");
-        })
-        .await?;
+    // ── Port 8003: OAuth-protected MCP ─────────────────────────────────────
+    let oauth_store = oauth::OAuthStore::new();
+
+    let protected_mcp = axum::Router::new()
+        .nest_service("/mcp", mcp_service)
+        .layer(middleware::from_fn_with_state(
+            oauth_store.clone(),
+            oauth::validate_token,
+        ));
+
+    let auth_router = oauth::oauth_router(oauth_store).merge(protected_mcp);
+    let auth_addr: SocketAddr = "0.0.0.0:8003".parse()?;
+    let auth_listener = tokio::net::TcpListener::bind(auth_addr).await?;
+
+    println!("🔎 MCP Server (open)  running on http://0.0.0.0:8002/mcp");
+    println!("🔐 MCP Server (OAuth) running on http://0.0.0.0:8003/mcp");
+
+    tokio::select! {
+        result = axum::serve(open_listener, open_router) => result?,
+        result = axum::serve(auth_listener, auth_router) => result?,
+        _ = tokio::signal::ctrl_c() => {},
+    }
 
     Ok(())
 }
