@@ -8,7 +8,7 @@ export default defineConfig({
 		allowedHosts: ['tdp.emielsteerneman.nl'],
 		proxy: {
 			'/api': {
-				target: 'http://localhost:8081',
+				target: 'http://localhost:50000',
 				changeOrigin: true
 			}
 		}

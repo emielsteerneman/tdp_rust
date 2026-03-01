@@ -9,8 +9,8 @@ services:
       target: mcp
     container_name: tdp-mcp-test
     ports:
-      - "59001:50001"
-      - "59002:50002"
+      - "51001:50001"
+      - "51002:50002"
     volumes:
       - ./my_sqlite.db:/app/my_sqlite.db
       - ./activity.db:/app/activity.db
@@ -32,7 +32,7 @@ services:
       target: web
     container_name: tdp-web-test
     ports:
-      - "59000:50000"
+      - "51000:50000"
     volumes:
       - ./my_sqlite.db:/app/my_sqlite.db
       - ./activity.db:/app/activity.db
@@ -52,7 +52,7 @@ services:
       target: frontend
     container_name: tdp-frontend-test
     ports:
-      - "9080:8080"
+      - "51080:8080"
     environment:
       VITE_API_URL: "http://web:50000"
     restart: unless-stopped
