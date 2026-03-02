@@ -30,9 +30,16 @@ COPY tools ./tools
 # Copy frontend
 COPY frontend ./frontend
 
-# Build Rust binaries in release mode
-RUN cargo build --release -p mcp && \
-    cargo build --release -p web
+# Build Rust binaries in release mode.
+# Cache mounts persist the cargo registry and compiled artifacts across builds
+# so only changed crates are recompiled. Binaries are copied out of the cache
+# mount (which isn't part of the image layer) to a plain path.
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/build/target \
+    cargo build --release -p mcp && \
+    cargo build --release -p web && \
+    cp target/release/mcp /mcp-bin && \
+    cp target/release/web /web-bin
 
 # Build frontend
 RUN cd frontend && npm ci && npm run build
@@ -48,14 +55,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/target/release/mcp /app/mcp
+COPY --from=builder /mcp-bin /app/mcp
 COPY config.docker.toml /app/config.toml
 COPY my_sqlite.db /app/my_sqlite.db
 COPY activity.db /app/activity.db
 
 WORKDIR /app
 
-EXPOSE 8002
+EXPOSE 50001 50002
 
 CMD ["/app/mcp"]
 
@@ -70,7 +77,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/target/release/web /app/web
+COPY --from=builder /web-bin /app/web
 COPY config.docker.toml /app/config.toml
 COPY my_sqlite.db /app/my_sqlite.db
 COPY activity.db /app/activity.db
@@ -80,7 +87,7 @@ COPY --from=builder /build/frontend/build /app/static
 
 WORKDIR /app
 
-EXPOSE 8081
+EXPOSE 50000
 
 CMD ["/app/web"]
 

@@ -159,6 +159,7 @@ async fn metadata(headers: HeaderMap) -> impl IntoResponse {
         "grant_types_supported": ["authorization_code"],
         "code_challenge_methods_supported": ["S256"],
         "token_endpoint_auth_methods_supported": ["client_secret_post", "none"],
+        "scopes_supported": ["mcp"],
     }))
 }
 
@@ -306,7 +307,14 @@ pub async fn validate_token(
 
     match token {
         Some(t) if store.validate_token(&t).await => next.run(request).await,
-        _ => StatusCode::UNAUTHORIZED.into_response(),
+        _ => (
+            StatusCode::UNAUTHORIZED,
+            [(
+                axum::http::header::WWW_AUTHENTICATE,
+                "Bearer realm=\"mcp\", error=\"invalid_token\"",
+            )],
+        )
+            .into_response(),
     }
 }
 
@@ -739,6 +747,14 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert!(
+            resp.headers()
+                .get("www-authenticate")
+                .and_then(|v| v.to_str().ok())
+                .map(|v| v.contains("Bearer"))
+                .unwrap_or(false),
+            "401 must include WWW-Authenticate: Bearer per RFC 6750"
+        );
     }
 
     #[tokio::test]
@@ -755,5 +771,13 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        assert!(
+            resp.headers()
+                .get("www-authenticate")
+                .and_then(|v| v.to_str().ok())
+                .map(|v| v.contains("Bearer"))
+                .unwrap_or(false),
+            "401 must include WWW-Authenticate: Bearer per RFC 6750"
+        );
     }
 }

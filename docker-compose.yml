@@ -40,7 +40,7 @@ services:
       qdrant:
         condition: service_healthy
     environment:
-      - RUST_LOG=info,rmcp=warn
+      - RUST_LOG=debug
       # Override config settings via TDP_* environment variables
       # Example: TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-proj-...
     restart: unless-stopped
