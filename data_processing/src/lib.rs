@@ -8,5 +8,6 @@ pub use raw_chunk::RawChunk;
 pub mod chunk;
 pub mod config;
 pub mod embed;
+pub mod markdown_parser;
 pub mod search;
 pub mod text;
