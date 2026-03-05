@@ -24,10 +24,10 @@ pub struct SearchResultChunk {
     pub league: League,
     pub year: u32,
     pub team: TeamName,
-    pub paragraph_sequence_id: u32,
-    pub chunk_sequence_id: u32,
-    pub idx_begin: u32,
-    pub idx_end: u32,
+    pub content_seq: u32,
+    pub chunk_seq: u32,
+    pub content_type: String,
+    pub title: String,
     pub text: String,
 }
 
@@ -38,10 +38,10 @@ impl From<Chunk> for SearchResultChunk {
             league: chunk.league,
             year: chunk.year,
             team: chunk.team,
-            paragraph_sequence_id: chunk.paragraph_sequence_id,
-            chunk_sequence_id: chunk.chunk_sequence_id,
-            idx_begin: chunk.idx_begin,
-            idx_end: chunk.idx_end,
+            content_seq: chunk.content_seq,
+            chunk_seq: chunk.chunk_seq,
+            content_type: chunk.content_type.as_str().to_string(),
+            title: chunk.title,
             text: chunk.text,
         }
     }

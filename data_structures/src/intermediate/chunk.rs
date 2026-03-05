@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 use uuid::Uuid;
 
+use crate::content::ContentType;
 use crate::file::{League, TeamName};
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -26,10 +27,11 @@ pub struct Chunk {
     pub year: u32,
     pub team: TeamName,
     // Reconstruct
-    pub paragraph_sequence_id: u32,
-    pub chunk_sequence_id: u32,
-    pub idx_begin: u32,
-    pub idx_end: u32,
+    pub content_seq: u32,
+    pub chunk_seq: u32,
+    pub content_type: ContentType,
+    pub title: String,
+    pub image_path: Option<String>,
     pub text: String,
 }
 
@@ -39,8 +41,8 @@ impl Chunk {
         let s = format!(
             "{}__{}__{}",
             self.league_year_team_idx.clone(),
-            self.paragraph_sequence_id,
-            self.chunk_sequence_id
+            self.content_seq,
+            self.chunk_seq
         );
 
         Uuid::new_v5(&ZERO_NAMESPACE, s.as_bytes())
@@ -51,9 +53,10 @@ impl std::fmt::Debug for Chunk {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\nChunk {{ start: {}, end: {}, text_length: {}, text: '{}' }}",
-            self.idx_begin,
-            self.idx_end,
+            "\nChunk {{ content_seq: {}, chunk_seq: {}, content_type: {}, text_length: {}, text: '{}' }}",
+            self.content_seq,
+            self.chunk_seq,
+            self.content_type.as_str(),
             self.text.len(),
             self.text
         )

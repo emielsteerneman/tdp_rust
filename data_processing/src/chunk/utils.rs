@@ -1,4 +1,6 @@
-use data_structures::{file::TDPName, filter::Filter, intermediate::Chunk, paper::TDP};
+use data_structures::{
+    content::ContentType, file::TDPName, filter::Filter, intermediate::Chunk, paper::TDP,
+};
 use tracing::{debug, info};
 
 use crate::create_sentence_chunks;
@@ -51,7 +53,17 @@ pub fn tdp_to_chunks(tdp: &TDP) -> Vec<Chunk> {
 
         let paragraph_chunks = raw_chunks
             .into_iter()
-            .map(|raw_chunk| raw_chunk.into_chunk(None, None, tdp.name.clone(), i_paragraph))
+            .map(|raw_chunk| {
+                raw_chunk.into_chunk(
+                    None,
+                    None,
+                    tdp.name.clone(),
+                    i_paragraph,
+                    ContentType::Text,
+                    paragraph.title.raw.clone(),
+                    None,
+                )
+            })
             .collect::<Vec<Chunk>>();
 
         chunks.extend(paragraph_chunks);

@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use data_structures::{file::TDPName, intermediate::Chunk, paper::Text};
+use data_structures::{
+    content::ContentType, file::TDPName, intermediate::Chunk, paper::Text,
+};
 
 #[derive(Clone, Debug)]
 pub struct RawChunk {
@@ -17,7 +19,10 @@ impl RawChunk {
         embedding: Option<Vec<f32>>,
         sparse_embedding: Option<HashMap<u32, f32>>,
         tdp_name: TDPName,
-        paragraph_sequence_id: usize,
+        content_seq: usize,
+        content_type: ContentType,
+        title: String,
+        image_path: Option<String>,
     ) -> Chunk {
         Chunk {
             dense_embedding: embedding.unwrap_or_default(),
@@ -26,10 +31,11 @@ impl RawChunk {
             league: tdp_name.league,
             year: tdp_name.year,
             team: tdp_name.team_name,
-            paragraph_sequence_id: paragraph_sequence_id as u32,
-            chunk_sequence_id: self.chunk_sequence_id,
-            idx_begin: self.idx_begin,
-            idx_end: self.idx_end,
+            content_seq: content_seq as u32,
+            chunk_seq: self.chunk_sequence_id,
+            content_type,
+            title,
+            image_path,
             text: self.text,
         }
     }

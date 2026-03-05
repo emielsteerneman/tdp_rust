@@ -1,6 +1,7 @@
 use crate::vector::{VectorClient, VectorClientError};
 use async_trait::async_trait;
 use data_structures::{
+    content::ContentType,
     file::{League, TeamName},
     filter::Filter,
     intermediate::Chunk,
@@ -227,15 +228,21 @@ impl VectorClient for QdrantClient {
         payload.insert(Self::KEY_LYTI.into(), chunk.league_year_team_idx.into());
         // Structure
         payload.insert(
-            "paragraph_sequence_id".to_string(),
-            (chunk.paragraph_sequence_id as i64).into(),
+            "content_seq".to_string(),
+            (chunk.content_seq as i64).into(),
         );
         payload.insert(
-            "chunk_sequence_id".to_string(),
-            (chunk.chunk_sequence_id as i64).into(),
+            "chunk_seq".to_string(),
+            (chunk.chunk_seq as i64).into(),
         );
-        payload.insert("idx_begin".to_string(), (chunk.idx_begin as i64).into());
-        payload.insert("idx_end".to_string(), (chunk.idx_end as i64).into());
+        payload.insert(
+            "content_type".to_string(),
+            chunk.content_type.as_str().into(),
+        );
+        payload.insert("title".to_string(), chunk.title.into());
+        if let Some(ref image_path) = chunk.image_path {
+            payload.insert("image_path".to_string(), image_path.clone().into());
+        }
         // Text
         payload.insert("text".to_string(), chunk.text.into());
 
@@ -485,21 +492,21 @@ impl IntoChunk for HashMap<String, Value> {
             .ok_or_else(|| VectorClientError::FieldMissing(QdrantClient::KEY_LYTI.to_string()))?;
 
         // Structure
-        let paragraph_sequence_id = from_payload_get_i64(&self, "paragraph_sequence_id")
+        let content_seq = from_payload_get_i64(&self, "content_seq")
             .map(|i| i as u32)
-            .ok_or_else(|| VectorClientError::FieldMissing("paragraph_sequence_id".to_string()))?;
+            .ok_or_else(|| VectorClientError::FieldMissing("content_seq".to_string()))?;
 
-        let chunk_sequence_id = from_payload_get_i64(&self, "chunk_sequence_id")
+        let chunk_seq = from_payload_get_i64(&self, "chunk_seq")
             .map(|i| i as u32)
-            .ok_or_else(|| VectorClientError::FieldMissing("chunk_sequence_id".to_string()))?;
+            .ok_or_else(|| VectorClientError::FieldMissing("chunk_seq".to_string()))?;
 
-        let idx_begin = from_payload_get_i64(&self, "idx_begin")
-            .map(|i| i as u32)
-            .ok_or_else(|| VectorClientError::FieldMissing("idx_begin".to_string()))?;
+        let content_type = from_payload_get_string(&self, "content_type")
+            .and_then(|s| ContentType::try_from(s.as_str()).ok())
+            .unwrap_or_default();
 
-        let idx_end = from_payload_get_i64(&self, "idx_end")
-            .map(|i| i as u32)
-            .ok_or_else(|| VectorClientError::FieldMissing("idx_end".to_string()))?;
+        let title = from_payload_get_string(&self, "title").unwrap_or_default();
+
+        let image_path = from_payload_get_string(&self, "image_path");
 
         // Text
         let text = from_payload_get_string(&self, "text")
@@ -512,10 +519,11 @@ impl IntoChunk for HashMap<String, Value> {
             league,
             year,
             team,
-            paragraph_sequence_id,
-            chunk_sequence_id,
-            idx_begin,
-            idx_end,
+            content_seq,
+            chunk_seq,
+            content_type,
+            title,
+            image_path,
             text,
         })
     }
@@ -672,10 +680,11 @@ mod tests {
             league: League::try_from("test_league").unwrap(),
             year: 1998,
             team: TeamName::new("test_team"),
-            paragraph_sequence_id: 0,
-            chunk_sequence_id: 0,
-            idx_begin: 0,
-            idx_end: 0,
+            content_seq: 0,
+            chunk_seq: 0,
+            content_type: ContentType::default(),
+            title: String::new(),
+            image_path: None,
             text: "test_text".to_string(),
         };
 
@@ -732,10 +741,11 @@ mod tests {
             league: League::try_from("test_league_1").unwrap(),
             year: 1998,
             team: TeamName::new("test_team_1"),
-            paragraph_sequence_id: 0,
-            chunk_sequence_id: 0,
-            idx_begin: 0,
-            idx_end: 0,
+            content_seq: 0,
+            chunk_seq: 0,
+            content_type: ContentType::default(),
+            title: String::new(),
+            image_path: None,
             text: "test_text_1".to_string(),
         };
 
@@ -747,10 +757,11 @@ mod tests {
             league: League::try_from("test_league_2").unwrap(),
             year: 2008,
             team: TeamName::new("test_team_2"),
-            paragraph_sequence_id: 0,
-            chunk_sequence_id: 0,
-            idx_begin: 0,
-            idx_end: 0,
+            content_seq: 0,
+            chunk_seq: 0,
+            content_type: ContentType::default(),
+            title: String::new(),
+            image_path: None,
             text: "test_text_2".to_string(),
         };
 
@@ -761,10 +772,11 @@ mod tests {
             league: League::try_from("test_league_2").unwrap(),
             year: 2008,
             team: TeamName::new("test_team_2"),
-            paragraph_sequence_id: 0,
-            chunk_sequence_id: 0,
-            idx_begin: 0,
-            idx_end: 0,
+            content_seq: 0,
+            chunk_seq: 0,
+            content_type: ContentType::default(),
+            title: String::new(),
+            image_path: None,
             text: "test_text_2".to_string(),
         };
 
