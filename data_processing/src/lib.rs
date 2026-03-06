@@ -7,6 +7,7 @@ pub use raw_chunk::RawChunk;
 
 pub mod chunk;
 pub mod config;
+pub mod content_chunker;
 pub mod embed;
 pub mod markdown_parser;
 pub mod search;
