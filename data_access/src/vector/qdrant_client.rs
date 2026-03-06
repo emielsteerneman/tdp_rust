@@ -599,6 +599,7 @@ mod tests {
     use std::time::Duration;
 
     use crate::vector::{QdrantClient, QdrantConfig, VectorClient};
+    use data_structures::content::ContentType;
     use data_structures::file::{League, TeamName};
     use data_structures::filter::Filter;
     use data_structures::intermediate::Chunk;

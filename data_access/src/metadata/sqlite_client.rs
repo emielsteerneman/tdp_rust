@@ -3,6 +3,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use data_structures::IDF;
+use data_structures::content::{ContentItem, ContentType, MarkdownTDP, TocEntry};
 use rusqlite::{Connection, params};
 use serde::Deserialize;
 use tracing::info;
@@ -35,6 +36,7 @@ impl SqliteClient {
 
         client.ensure_database_idf();
         client.ensure_database_tdp();
+        client.ensure_database_paper_v2();
 
         client
     }
@@ -89,6 +91,63 @@ impl SqliteClient {
 
         conn.execute("CREATE INDEX IF NOT EXISTS tdp_team ON tdp (team)", [])
             .expect("Failed to create index on tdp (team)");
+    }
+
+    fn ensure_database_paper_v2(&self) {
+        let conn = self.conn.lock().unwrap();
+
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS paper (
+                lyti TEXT PRIMARY KEY,
+                run TEXT NOT NULL,
+                league TEXT NOT NULL,
+                year INTEGER NOT NULL,
+                team TEXT NOT NULL,
+                idx INTEGER NOT NULL,
+                title TEXT,
+                abstract_text TEXT,
+                urls_json TEXT,
+                raw_markdown TEXT
+            )",
+            [],
+        )
+        .expect("Failed to create table paper");
+
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS author (
+                lyti TEXT NOT NULL,
+                name TEXT NOT NULL,
+                affiliation TEXT,
+                FOREIGN KEY (lyti) REFERENCES paper(lyti)
+            )",
+            [],
+        )
+        .expect("Failed to create table author");
+
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS toc_entry (
+                lyti TEXT NOT NULL,
+                content_seq INTEGER NOT NULL,
+                content_type TEXT NOT NULL,
+                depth INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                body TEXT,
+                image_path TEXT,
+                FOREIGN KEY (lyti) REFERENCES paper(lyti),
+                UNIQUE(lyti, content_seq)
+            )",
+            [],
+        )
+        .expect("Failed to create table toc_entry");
+
+        conn.execute("CREATE INDEX IF NOT EXISTS paper_league ON paper (league)", [])
+            .expect("Failed to create index on paper (league)");
+
+        conn.execute("CREATE INDEX IF NOT EXISTS paper_year ON paper (year)", [])
+            .expect("Failed to create index on paper (year)");
+
+        conn.execute("CREATE INDEX IF NOT EXISTS paper_team ON paper (team)", [])
+            .expect("Failed to create index on paper (team)");
     }
 }
 
@@ -417,6 +476,269 @@ impl MetadataClient for SqliteClient {
             .map_err(|e| MetadataClientError::Internal(e.to_string()))?
         })
     }
+
+    fn store_paper<'a>(
+        &'a self,
+        tdp: MarkdownTDP,
+    ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
+        let conn = self.conn.clone();
+        let run = self.config.run.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let mut conn = conn.lock().unwrap();
+                let lyti = tdp.name.get_filename();
+                let league = &tdp.name.league.name_pretty;
+                let year = tdp.name.year;
+                let team = &tdp.name.team_name.name_pretty;
+                let idx = tdp.name.index;
+                let title = &tdp.front_matter.title;
+                let abstract_text = tdp.front_matter.abstract_text.as_deref();
+                let urls_json = serde_json::to_string(&tdp.front_matter.urls)
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                let raw_markdown = &tdp.raw_markdown;
+
+                let tx = conn
+                    .transaction()
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                {
+                    // Delete existing data for this lyti (upsert)
+                    tx.execute("DELETE FROM toc_entry WHERE lyti = ?1", params![lyti])
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    tx.execute("DELETE FROM author WHERE lyti = ?1", params![lyti])
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    tx.execute("DELETE FROM paper WHERE lyti = ?1", params![lyti])
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                    // Insert paper
+                    tx.execute(
+                        "INSERT INTO paper (lyti, run, league, year, team, idx, title, abstract_text, urls_json, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+                        params![lyti, run, league, year, team, idx, title, abstract_text, urls_json, raw_markdown],
+                    )
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                    // Insert authors
+                    let mut author_stmt = tx
+                        .prepare("INSERT INTO author (lyti, name, affiliation) VALUES (?1, ?2, ?3)")
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                    for author in &tdp.front_matter.authors {
+                        author_stmt
+                            .execute(params![lyti, author.name, author.affiliation])
+                            .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    }
+                    drop(author_stmt);
+
+                    // Insert content items into toc_entry
+                    let mut toc_stmt = tx
+                        .prepare("INSERT INTO toc_entry (lyti, content_seq, content_type, depth, title, body, image_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                    for item in &tdp.content_items {
+                        toc_stmt
+                            .execute(params![
+                                lyti,
+                                item.content_seq,
+                                item.content_type.as_str(),
+                                item.depth,
+                                item.title,
+                                item.body,
+                                item.image_path
+                            ])
+                            .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    }
+                    drop(toc_stmt);
+                }
+
+                tx.commit()
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                Ok(())
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
+    fn load_toc<'a>(
+        &'a self,
+        lyti: String,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<TocEntry>, MetadataClientError>> + Send + 'a>> {
+        let conn = self.conn.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = conn.lock().unwrap();
+
+                let mut stmt = conn
+                    .prepare("SELECT content_seq, content_type, depth, title FROM toc_entry WHERE lyti = ?1 ORDER BY content_seq")
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let rows = stmt
+                    .query_map(params![lyti], |row| {
+                        let content_seq: u32 = row.get(0)?;
+                        let content_type_str: String = row.get(1)?;
+                        let depth: u8 = row.get(2)?;
+                        let title: String = row.get(3)?;
+                        Ok((content_seq, content_type_str, depth, title))
+                    })
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let mut results = Vec::new();
+                for row in rows {
+                    let (content_seq, content_type_str, depth, title) =
+                        row.map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    let content_type = ContentType::try_from(content_type_str.as_str())
+                        .map_err(|e| MetadataClientError::Internal(e))?;
+                    results.push(TocEntry {
+                        content_seq,
+                        content_type,
+                        depth,
+                        title,
+                    });
+                }
+
+                if results.is_empty() {
+                    return Err(MetadataClientError::NotFound(format!(
+                        "No toc entries found for lyti: {}",
+                        lyti
+                    )));
+                }
+
+                Ok(results)
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
+    fn load_content_item<'a>(
+        &'a self,
+        lyti: String,
+        content_seq: u32,
+    ) -> Pin<Box<dyn Future<Output = Result<ContentItem, MetadataClientError>> + Send + 'a>> {
+        let conn = self.conn.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = conn.lock().unwrap();
+
+                let mut stmt = conn
+                    .prepare("SELECT content_seq, content_type, depth, title, body, image_path FROM toc_entry WHERE lyti = ?1 AND content_seq = ?2")
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                stmt.query_row(params![lyti, content_seq], |row| {
+                    let content_seq: u32 = row.get(0)?;
+                    let content_type_str: String = row.get(1)?;
+                    let depth: u8 = row.get(2)?;
+                    let title: String = row.get(3)?;
+                    let body: String = row.get::<_, Option<String>>(4)?.unwrap_or_default();
+                    let image_path: Option<String> = row.get(5)?;
+                    Ok((content_seq, content_type_str, depth, title, body, image_path))
+                })
+                .map_err(|e| match e {
+                    rusqlite::Error::QueryReturnedNoRows => {
+                        MetadataClientError::NotFound(format!(
+                            "Content item not found for lyti: {}, content_seq: {}",
+                            lyti, content_seq
+                        ))
+                    }
+                    _ => MetadataClientError::Internal(e.to_string()),
+                })
+                .and_then(|(content_seq, content_type_str, depth, title, body, image_path)| {
+                    let content_type = ContentType::try_from(content_type_str.as_str())
+                        .map_err(|e| MetadataClientError::Internal(e))?;
+                    Ok(ContentItem {
+                        content_seq,
+                        content_type,
+                        depth,
+                        title,
+                        body,
+                        image_path,
+                    })
+                })
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
+    fn load_paper_abstract<'a>(
+        &'a self,
+        lyti: String,
+    ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>> {
+        let conn = self.conn.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = conn.lock().unwrap();
+
+                let mut stmt = conn
+                    .prepare("SELECT abstract_text FROM paper WHERE lyti = ?1")
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let abstract_text: Option<String> = stmt
+                    .query_row(params![lyti], |row| row.get(0))
+                    .map_err(|e| match e {
+                        rusqlite::Error::QueryReturnedNoRows => {
+                            MetadataClientError::NotFound(format!(
+                                "Paper not found for lyti: {}",
+                                lyti
+                            ))
+                        }
+                        _ => MetadataClientError::Internal(e.to_string()),
+                    })?;
+
+                abstract_text.ok_or_else(|| {
+                    MetadataClientError::NotFound(format!(
+                        "Abstract not found for lyti: {}",
+                        lyti
+                    ))
+                })
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
+    fn load_paper_markdown<'a>(
+        &'a self,
+        lyti: String,
+    ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>> {
+        let conn = self.conn.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = conn.lock().unwrap();
+
+                let mut stmt = conn
+                    .prepare("SELECT raw_markdown FROM paper WHERE lyti = ?1")
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let raw_markdown: Option<String> = stmt
+                    .query_row(params![lyti], |row| row.get(0))
+                    .map_err(|e| match e {
+                        rusqlite::Error::QueryReturnedNoRows => {
+                            MetadataClientError::NotFound(format!(
+                                "Paper not found for lyti: {}",
+                                lyti
+                            ))
+                        }
+                        _ => MetadataClientError::Internal(e.to_string()),
+                    })?;
+
+                raw_markdown.ok_or_else(|| {
+                    MetadataClientError::NotFound(format!(
+                        "Raw markdown not found for lyti: {}",
+                        lyti
+                    ))
+                })
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
 }
 
 #[cfg(test)]
@@ -627,6 +949,150 @@ mod tests {
             .expect("Failed to get markdown for tdp1");
         assert!(markdown.contains("# soccer_smallsize__2019__RoboTeam_Twente__1"));
         assert!(markdown.contains("**RoboTeam Twente 2019 Soccer SmallSize**"));
+
+        // Cleanup
+        drop(client);
+        fs::remove_file(&db_filename).expect("Failed to delete database file");
+        let _ = fs::remove_file(format!("{}-wal", db_filename));
+        let _ = fs::remove_file(format!("{}-shm", db_filename));
+    }
+
+    #[tokio::test]
+    async fn test_store_and_load_paper() {
+        use data_structures::content::{
+            Author, ContentItem, ContentType, FrontMatter, MarkdownTDP,
+        };
+
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let db_filename = format!("test_paper_{}.db", timestamp);
+        let run = "test_run";
+
+        let config = SqliteConfig {
+            filename: db_filename.clone(),
+            run: run.to_string(),
+        };
+        let client = SqliteClient::new(config);
+
+        let league = data_structures::file::League::try_from("soccer_smallsize").unwrap();
+        let team = data_structures::file::TeamName::new("RoboTeam Twente");
+        let name =
+            data_structures::file::TDPName::new(league.clone(), 2024, team.clone(), Some(0));
+        let lyti = name.get_filename();
+
+        let tdp = MarkdownTDP {
+            name,
+            front_matter: FrontMatter {
+                title: "Our Cool Robot".to_string(),
+                authors: vec![
+                    Author {
+                        name: "Alice".to_string(),
+                        affiliation: Some("University of Twente".to_string()),
+                    },
+                    Author {
+                        name: "Bob".to_string(),
+                        affiliation: None,
+                    },
+                ],
+                institutions: vec!["University of Twente".to_string()],
+                urls: vec!["https://example.com".to_string()],
+                abstract_text: Some("This paper describes our cool robot.".to_string()),
+            },
+            content_items: vec![
+                ContentItem {
+                    content_seq: 0,
+                    content_type: ContentType::Text,
+                    depth: 1,
+                    title: "Introduction".to_string(),
+                    body: "We built a robot.".to_string(),
+                    image_path: None,
+                },
+                ContentItem {
+                    content_seq: 1,
+                    content_type: ContentType::Image,
+                    depth: 2,
+                    title: "Robot Photo".to_string(),
+                    body: "".to_string(),
+                    image_path: Some("images/robot.png".to_string()),
+                },
+                ContentItem {
+                    content_seq: 2,
+                    content_type: ContentType::Table,
+                    depth: 2,
+                    title: "Performance Results".to_string(),
+                    body: "| Metric | Value |\n| --- | --- |\n| Speed | 1.5 m/s |".to_string(),
+                    image_path: None,
+                },
+            ],
+            references: vec!["[1] Some Reference".to_string()],
+            raw_markdown: "# Our Cool Robot\n\nFull markdown content here.".to_string(),
+        };
+
+        // Store
+        client
+            .store_paper(tdp.clone())
+            .await
+            .expect("Failed to store paper");
+
+        // Test load_toc
+        let toc = client
+            .load_toc(lyti.clone())
+            .await
+            .expect("Failed to load toc");
+        assert_eq!(toc.len(), 3);
+        assert_eq!(toc[0].content_seq, 0);
+        assert_eq!(toc[0].title, "Introduction");
+        assert_eq!(toc[0].content_type, ContentType::Text);
+        assert_eq!(toc[0].depth, 1);
+        assert_eq!(toc[1].content_seq, 1);
+        assert_eq!(toc[1].title, "Robot Photo");
+        assert_eq!(toc[1].content_type, ContentType::Image);
+        assert_eq!(toc[2].content_seq, 2);
+        assert_eq!(toc[2].title, "Performance Results");
+        assert_eq!(toc[2].content_type, ContentType::Table);
+
+        // Test load_content_item
+        let item = client
+            .load_content_item(lyti.clone(), 0)
+            .await
+            .expect("Failed to load content item");
+        assert_eq!(item.content_seq, 0);
+        assert_eq!(item.title, "Introduction");
+        assert_eq!(item.body, "We built a robot.");
+        assert!(item.image_path.is_none());
+
+        let item_img = client
+            .load_content_item(lyti.clone(), 1)
+            .await
+            .expect("Failed to load image content item");
+        assert_eq!(item_img.image_path, Some("images/robot.png".to_string()));
+
+        // Test load_content_item not found
+        let not_found = client.load_content_item(lyti.clone(), 99).await;
+        assert!(not_found.is_err());
+
+        // Test load_paper_abstract
+        let abstract_text = client
+            .load_paper_abstract(lyti.clone())
+            .await
+            .expect("Failed to load abstract");
+        assert_eq!(abstract_text, "This paper describes our cool robot.");
+
+        // Test load_paper_markdown
+        let markdown = client
+            .load_paper_markdown(lyti.clone())
+            .await
+            .expect("Failed to load markdown");
+        assert_eq!(
+            markdown,
+            "# Our Cool Robot\n\nFull markdown content here."
+        );
+
+        // Test load_toc not found
+        let toc_not_found = client.load_toc("nonexistent__lyti".to_string()).await;
+        assert!(toc_not_found.is_err());
 
         // Cleanup
         drop(client);

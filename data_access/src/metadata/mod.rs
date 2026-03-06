@@ -2,6 +2,7 @@ use std::pin::Pin;
 mod sqlite_client;
 use data_structures::{
     IDF,
+    content::{ContentItem, MarkdownTDP, TocEntry},
     file::{League, TDPName, TeamName},
     paper::TDP,
 };
@@ -57,4 +58,30 @@ pub trait MetadataClient: Send + Sync {
     fn print_analytics<'a>(
         &'a self,
     ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>>;
+
+    fn store_paper<'a>(
+        &'a self,
+        tdp: MarkdownTDP,
+    ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>>;
+
+    fn load_toc<'a>(
+        &'a self,
+        lyti: String,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<TocEntry>, MetadataClientError>> + Send + 'a>>;
+
+    fn load_content_item<'a>(
+        &'a self,
+        lyti: String,
+        content_seq: u32,
+    ) -> Pin<Box<dyn Future<Output = Result<ContentItem, MetadataClientError>> + Send + 'a>>;
+
+    fn load_paper_abstract<'a>(
+        &'a self,
+        lyti: String,
+    ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>>;
+
+    fn load_paper_markdown<'a>(
+        &'a self,
+        lyti: String,
+    ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>>;
 }
