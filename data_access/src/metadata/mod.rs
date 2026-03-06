@@ -74,8 +74,4 @@ pub trait MetadataClient: Send + Sync {
         lyti: String,
     ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>>;
 
-    fn load_paper_markdown<'a>(
-        &'a self,
-        lyti: String,
-    ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>>;
 }

@@ -35,7 +35,6 @@ impl SqliteClient {
         };
 
         client.ensure_database_idf();
-        client.ensure_database_tdp();
         client.ensure_database_paper_v2();
 
         client
@@ -58,39 +57,6 @@ impl SqliteClient {
 
         conn.execute("CREATE INDEX IF NOT EXISTS idx_run ON idf_index (run)", [])
             .expect("Failed to create index on idf_index (run)");
-    }
-
-    fn ensure_database_tdp(&self) {
-        let conn = self.conn.lock().unwrap();
-
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS tdp (
-                run TEXT NOT NULL,
-                league VARCHAR(50) NOT NULL,
-                year INTEGER NOT NULL,
-                team VARCHAR(100) NOT NULL,
-                idx INTEGER NOT NULL,
-                lyti VARCHAR(100) NOT NULL PRIMARY KEY,
-                markdown TEXT
-            )",
-            [],
-        )
-        .expect("Failed to create table tdp");
-
-        // Ensure markdown column exists if table was created by older version
-        let _ = conn.execute("ALTER TABLE tdp ADD COLUMN markdown TEXT", []);
-
-        conn.execute("CREATE INDEX IF NOT EXISTS tdp_run ON tdp (run)", [])
-            .expect("Failed to create index on tdp (run)");
-
-        conn.execute("CREATE INDEX IF NOT EXISTS tdp_league ON tdp (league)", [])
-            .expect("Failed to create index on tdp (league)");
-
-        conn.execute("CREATE INDEX IF NOT EXISTS tdp_year ON tdp (year)", [])
-            .expect("Failed to create index on tdp (year)");
-
-        conn.execute("CREATE INDEX IF NOT EXISTS tdp_team ON tdp (team)", [])
-            .expect("Failed to create index on tdp (team)");
     }
 
     fn ensure_database_paper_v2(&self) {
@@ -252,7 +218,7 @@ impl MetadataClient for SqliteClient {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT lyti FROM tdp WHERE run = ?1")
+                    .prepare("SELECT lyti FROM paper WHERE run = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
@@ -294,7 +260,7 @@ impl MetadataClient for SqliteClient {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT DISTINCT team FROM tdp WHERE run = ?1")
+                    .prepare("SELECT DISTINCT team FROM paper WHERE run = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
@@ -334,7 +300,7 @@ impl MetadataClient for SqliteClient {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT DISTINCT league FROM tdp WHERE run = ?1")
+                    .prepare("SELECT DISTINCT league FROM paper WHERE run = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
@@ -373,7 +339,7 @@ impl MetadataClient for SqliteClient {
                 let lyti = tdp_name.get_filename();
 
                 let mut stmt = conn
-                    .prepare("SELECT markdown FROM tdp WHERE run = ?1 AND lyti = ?2")
+                    .prepare("SELECT raw_markdown FROM paper WHERE run = ?1 AND lyti = ?2")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let markdown: String = stmt
@@ -404,7 +370,7 @@ impl MetadataClient for SqliteClient {
 
                 let tdp_count: i64 = conn
                     .query_row(
-                        "SELECT COUNT(*) FROM tdp WHERE run = ?1",
+                        "SELECT COUNT(*) FROM paper WHERE run = ?1",
                         params![run],
                         |row| row.get(0),
                     )
@@ -655,43 +621,6 @@ impl MetadataClient for SqliteClient {
         })
     }
 
-    fn load_paper_markdown<'a>(
-        &'a self,
-        lyti: String,
-    ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>> {
-        let conn = self.conn.clone();
-
-        Box::pin(async move {
-            tokio::task::spawn_blocking(move || {
-                let conn = conn.lock().unwrap();
-
-                let mut stmt = conn
-                    .prepare("SELECT raw_markdown FROM paper WHERE lyti = ?1")
-                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
-
-                let raw_markdown: Option<String> = stmt
-                    .query_row(params![lyti], |row| row.get(0))
-                    .map_err(|e| match e {
-                        rusqlite::Error::QueryReturnedNoRows => {
-                            MetadataClientError::NotFound(format!(
-                                "Paper not found for lyti: {}",
-                                lyti
-                            ))
-                        }
-                        _ => MetadataClientError::Internal(e.to_string()),
-                    })?;
-
-                raw_markdown.ok_or_else(|| {
-                    MetadataClientError::NotFound(format!(
-                        "Raw markdown not found for lyti: {}",
-                        lyti
-                    ))
-                })
-            })
-            .await
-            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
-        })
-    }
 }
 
 #[cfg(test)]
@@ -842,20 +771,20 @@ mod tests {
         };
         let client = SqliteClient::new(config);
 
-        // Insert rows directly into the tdp table
+        // Insert rows directly into the paper table
         {
             let conn = client.conn.lock().unwrap();
             conn.execute(
-                "INSERT INTO tdp (run, league, year, team, idx, lyti, markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![run, "Soccer SmallSize", 2019, "RoboTeam Twente", 1, "soccer_smallsize__2019__RoboTeam_Twente__1", "# Test markdown 1"],
+                "INSERT INTO paper (lyti, run, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params!["soccer_smallsize__2019__RoboTeam_Twente__1", run, "Soccer SmallSize", 2019, "RoboTeam Twente", 1, "# Test markdown 1"],
             ).unwrap();
             conn.execute(
-                "INSERT INTO tdp (run, league, year, team, idx, lyti, markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![run, "Soccer SmallSize", 2019, "Tigers Mannheim", 1, "soccer_smallsize__2019__Tigers_Mannheim__1", "# Test markdown 2"],
+                "INSERT INTO paper (lyti, run, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params!["soccer_smallsize__2019__Tigers_Mannheim__1", run, "Soccer SmallSize", 2019, "Tigers Mannheim", 1, "# Test markdown 2"],
             ).unwrap();
             conn.execute(
-                "INSERT INTO tdp (run, league, year, team, idx, lyti, markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![run, "Soccer MidSize", 2020, "RoboTeam Twente", 1, "soccer_midsize__2020__RoboTeam_Twente__1", "# Test markdown 3"],
+                "INSERT INTO paper (lyti, run, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params!["soccer_midsize__2020__RoboTeam_Twente__1", run, "Soccer MidSize", 2020, "RoboTeam Twente", 1, "# Test markdown 3"],
             ).unwrap();
         }
 
@@ -1010,16 +939,6 @@ mod tests {
             .await
             .expect("Failed to load abstract");
         assert_eq!(abstract_text, "This paper describes our cool robot.");
-
-        // Test load_paper_markdown
-        let markdown = client
-            .load_paper_markdown(lyti.clone())
-            .await
-            .expect("Failed to load markdown");
-        assert_eq!(
-            markdown,
-            "# Our Cool Robot\n\nFull markdown content here."
-        );
 
         // Test load_toc not found
         let toc_not_found = client.load_toc("nonexistent__lyti".to_string()).await;
