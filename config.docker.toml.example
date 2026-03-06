@@ -36,6 +36,6 @@ filename = "/app/my_sqlite.db"
 filename = "/app/activity.db"
 
 [data_processing]
-# Set via environment variable: TDP_DATA_PROCESSING__TDPS_JSON_ROOT=/path/to/tdps
+# Set via environment variable: TDP_DATA_PROCESSING__TDPS_MARKDOWN_ROOT=/path/to/tdps
 # Or mount a volume at runtime
-tdps_json_root = "/data/tdps"
+tdps_markdown_root = "/data/tdps"

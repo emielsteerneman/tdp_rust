@@ -33,4 +33,4 @@ filename = "my_sqlite.db"
 filename = "activity.db"
 
 [data_processing]
-tdps_json_root = "/path/to/tdps_json/"
+tdps_markdown_root = "/path/to/tdps_markdown/"

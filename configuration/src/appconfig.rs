@@ -92,7 +92,7 @@ api_key = "sk-..."
 [data_access.metadata]
 
 [data_processing]
-tdps_json_root = "some_root"
+tdps_markdown_root = "some_root"
 "#
         )?;
 
@@ -103,7 +103,7 @@ tdps_json_root = "some_root"
             config.data_access.embed.openai.as_ref().unwrap().model_name,
             "text-embedding-3-small"
         );
-        assert_eq!(config.data_processing.tdps_json_root, "some_root");
+        assert_eq!(config.data_processing.tdps_markdown_root, "some_root");
 
         Ok(())
     }
@@ -130,6 +130,9 @@ embedding_size = 1536
 
 [data_access.metadata.sqlite]
 filename = "my_sqlite.db"
+
+[data_processing]
+tdps_markdown_root = "some_root"
 "#
         )?;
 
@@ -167,6 +170,9 @@ run = "local_override"
 
 [data_access.metadata.sqlite]
 filename = "my_sqlite.db"
+
+[data_processing]
+tdps_markdown_root = "some_root"
 "#
         )?;
 

@@ -6,7 +6,7 @@ use data_structures::paper::TDP;
 async fn test_load_all_tdp_jsons() -> Result<(), Box<dyn Error>> {
     let config = configuration::AppConfig::load_from_file("config.toml")
         .expect("Could not find config.toml");
-    let files = std::fs::read_dir(&config.data_processing.tdps_json_root)?;
+    let files = std::fs::read_dir(&config.data_processing.tdps_markdown_root)?;
 
     let mut count = 0;
     // parse each file into a TDPStructure
