@@ -1,5 +1,10 @@
 pub mod activity;
 pub mod error;
+pub mod get_abstract;
+pub mod get_image;
+pub mod get_paragraph;
+pub mod get_table;
+pub mod get_table_of_contents;
 pub mod get_tdp_contents;
 pub mod list_leagues;
 pub mod list_papers;
