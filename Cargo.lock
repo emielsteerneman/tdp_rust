@@ -1232,7 +1232,6 @@ dependencies = [
  "data_structures",
  "futures",
  "ndarray",
- "num-traits",
  "serde",
  "serde_json",
  "strsim",

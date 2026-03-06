@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use crate::file::{League, TDPName, TeamName};
 use crate::intermediate::Chunk;
-use crate::paper::TDP;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -99,7 +98,4 @@ impl Filter {
         true
     }
 
-    pub fn matches_tdp(&self, tdp: &TDP) -> bool {
-        self.matches_tdp_name(&tdp.name)
-    }
 }

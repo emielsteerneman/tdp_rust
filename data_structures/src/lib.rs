@@ -7,7 +7,6 @@ pub mod embed_type;
 pub mod file;
 pub mod filter;
 pub mod intermediate;
-pub mod paper;
 pub mod text_utils;
 
 #[derive(Clone, Debug, Deref, DerefMut, PartialEq)]

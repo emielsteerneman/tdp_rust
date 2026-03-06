@@ -235,53 +235,6 @@ impl MetadataClient for SqliteClient {
         })
     }
 
-    fn store_tdps<'a>(
-        &'a self,
-        tdps: Vec<data_structures::paper::TDP>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
-        let conn = self.conn.clone();
-        let run = self.config.run.clone();
-
-        Box::pin(async move {
-            tokio::task::spawn_blocking(move || {
-                let mut conn = conn.lock().unwrap();
-
-                let tx = conn
-                    .transaction()
-                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
-
-                {
-                    // Clear existing entries for this run_id to ensure overwrite
-                    tx.execute("DELETE FROM tdp WHERE run = ?1", params![run])
-                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
-
-                    let mut stmt = tx
-                        .prepare("INSERT INTO tdp (run, league, year, team, idx, lyti, markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
-                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
-
-                    for tdp in tdps.into_iter() {
-                        let markdown = tdp.to_markdown();
-                        let lyti = tdp.name.get_filename();
-                        let league = tdp.name.league.name_pretty;
-                        let year = tdp.name.year;
-                        let team = tdp.name.team_name.name_pretty;
-                        let idx = tdp.name.index;
-                        info!("storing {:?}", lyti);
-                        stmt.execute(params![run, league, year, team, idx, lyti, markdown])
-                            .map_err(|e| MetadataClientError::Internal(e.to_string())).expect(format!("Could not store {}", lyti).as_str());
-                    }
-                }
-
-                tx.commit()
-                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
-
-                Ok(())
-            })
-            .await
-            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
-        })
-    }
-
     fn load_tdps<'a>(
         &'a self,
     ) -> Pin<
@@ -889,44 +842,22 @@ mod tests {
         };
         let client = SqliteClient::new(config);
 
-        // Prepare dummy TDPs
-        let league1 = data_structures::file::League::try_from("soccer_smallsize").unwrap();
-        let league2 = data_structures::file::League::try_from("soccer_midsize").unwrap();
-        let team1 = data_structures::file::TeamName::new("RoboTeam Twente");
-        let team2 = data_structures::file::TeamName::new("Tigers Mannheim");
-
-        let tdp1 = data_structures::paper::TDP {
-            name: data_structures::file::TDPName::new(
-                league1.clone(),
-                2019,
-                team1.clone(),
-                Some(1),
-            ),
-            structure: data_structures::paper::TDPStructure { paragraphs: vec![] },
-        };
-        let tdp2 = data_structures::paper::TDP {
-            name: data_structures::file::TDPName::new(
-                league1.clone(),
-                2019,
-                team2.clone(),
-                Some(1),
-            ),
-            structure: data_structures::paper::TDPStructure { paragraphs: vec![] },
-        };
-        let tdp3 = data_structures::paper::TDP {
-            name: data_structures::file::TDPName::new(
-                league2.clone(),
-                2020,
-                team1.clone(),
-                Some(1),
-            ),
-            structure: data_structures::paper::TDPStructure { paragraphs: vec![] },
-        };
-
-        client
-            .store_tdps(vec![tdp1.clone(), tdp2, tdp3])
-            .await
-            .expect("Failed to store TDPs");
+        // Insert rows directly into the tdp table
+        {
+            let conn = client.conn.lock().unwrap();
+            conn.execute(
+                "INSERT INTO tdp (run, league, year, team, idx, lyti, markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![run, "Soccer SmallSize", 2019, "RoboTeam Twente", 1, "soccer_smallsize__2019__RoboTeam_Twente__1", "# Test markdown 1"],
+            ).unwrap();
+            conn.execute(
+                "INSERT INTO tdp (run, league, year, team, idx, lyti, markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![run, "Soccer SmallSize", 2019, "Tigers Mannheim", 1, "soccer_smallsize__2019__Tigers_Mannheim__1", "# Test markdown 2"],
+            ).unwrap();
+            conn.execute(
+                "INSERT INTO tdp (run, league, year, team, idx, lyti, markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![run, "Soccer MidSize", 2020, "RoboTeam Twente", 1, "soccer_midsize__2020__RoboTeam_Twente__1", "# Test markdown 3"],
+            ).unwrap();
+        }
 
         // Test load_teams
         let teams = client.load_teams().await.expect("Failed to load teams");
@@ -943,12 +874,12 @@ mod tests {
         assert!(league_names.contains(&"Soccer MidSize".to_string()));
 
         // Test get_tdp_markdown
+        let tdp_name = data_structures::file::TDPName::try_from("soccer_smallsize__2019__RoboTeam_Twente__1").unwrap();
         let markdown = client
-            .get_tdp_markdown(tdp1.name.clone())
+            .get_tdp_markdown(tdp_name)
             .await
-            .expect("Failed to get markdown for tdp1");
-        assert!(markdown.contains("# soccer_smallsize__2019__RoboTeam_Twente__1"));
-        assert!(markdown.contains("**RoboTeam Twente 2019 Soccer SmallSize**"));
+            .expect("Failed to get markdown");
+        assert_eq!(markdown, "# Test markdown 1");
 
         // Cleanup
         drop(client);

@@ -1,5 +1,6 @@
 use data_processing::{
-    chunk::utils::{load_all_chunks_from_tdps, load_all_tdp_jsons},
+    content_chunker::tdp_to_chunks,
+    markdown_parser::load_all_markdown_tdps,
     text::create_idf,
 };
 use data_structures::filter::Filter;
@@ -15,8 +16,8 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
     let mut filter = Filter::default();
     filter.add_league("soccer_smallsize".try_into()?);
 
-    let tdps = load_all_tdp_jsons(&config.data_processing.tdps_markdown_root, Some(filter)).await?;
-    let chunks = load_all_chunks_from_tdps(&tdps)?;
+    let tdps = load_all_markdown_tdps(&config.data_processing.tdps_markdown_root, Some(filter))?;
+    let chunks: Vec<_> = tdps.iter().flat_map(tdp_to_chunks).collect();
     let texts: Vec<&str> = chunks.iter().map(|c| c.text.as_str()).collect();
     let idf_map = create_idf(&texts, &[1, 5, 10]);
 

@@ -4,7 +4,6 @@ use data_structures::{
     IDF,
     content::{ContentItem, MarkdownTDP, TocEntry},
     file::{League, TDPName, TeamName},
-    paper::TDP,
 };
 use mockall::automock;
 pub use sqlite_client::{SqliteClient, SqliteConfig};
@@ -32,11 +31,6 @@ pub trait MetadataClient: Send + Sync {
     fn load_idf<'a>(
         &'a self,
     ) -> Pin<Box<dyn Future<Output = Result<IDF, MetadataClientError>> + Send + 'a>>;
-
-    fn store_tdps<'a>(
-        &'a self,
-        tdps: Vec<TDP>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>>;
 
     fn load_tdps<'a>(
         &'a self,
