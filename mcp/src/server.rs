@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use api::{get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search};
+use api::{get_abstract, get_image, get_paragraph, get_table, get_table_of_contents, get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search};
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
@@ -109,6 +109,71 @@ impl AppServer {
     ) -> Result<CallToolResult, McpError> {
         match get_tdp_contents::get_tdp_contents(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
             Ok(markdown) => Ok(CallToolResult::success(vec![Content::text(markdown)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Get the table of contents for a specific paper. Returns all content items (paragraphs, tables, images) with sequence numbers, types, and titles. Use the paper's lyti identifier (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0'). Call this first to understand paper structure, then use get_paragraph/get_table/get_image to retrieve specific content."
+    )]
+    pub async fn get_table_of_contents(
+        &self,
+        Parameters(args): Parameters<get_table_of_contents::GetTableOfContentsArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match get_table_of_contents::get_table_of_contents(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Get the full text of a paragraph/section from a paper. Requires the paper lyti and content_seq number from get_table_of_contents. Returns the complete section text."
+    )]
+    pub async fn get_paragraph(
+        &self,
+        Parameters(args): Parameters<get_paragraph::GetParagraphArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match get_paragraph::get_paragraph(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Get a table from a paper. Requires the paper lyti and content_seq number from get_table_of_contents. Returns the table caption and pipe-delimited body."
+    )]
+    pub async fn get_table(
+        &self,
+        Parameters(args): Parameters<get_table::GetTableArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match get_table::get_table(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Get an image's caption and file path from a paper. Requires the paper lyti and content_seq number from get_table_of_contents."
+    )]
+    pub async fn get_image(
+        &self,
+        Parameters(args): Parameters<get_image::GetImageArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match get_image::get_image(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Get the abstract of a paper. Requires the paper lyti identifier. Returns the abstract text — useful for quick paper overview before diving into specific sections."
+    )]
+    pub async fn get_abstract(
+        &self,
+        Parameters(args): Parameters<get_abstract::GetAbstractArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match get_abstract::get_abstract(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }
