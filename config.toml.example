@@ -4,7 +4,7 @@
 # Settings can be overridden at runtime using environment variables:
 # - TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-...
 # - TDP_DATA_ACCESS__VECTOR__QDRANT__URL=http://localhost:6334
-# - TDP_DATA_PROCESSING__TDPS_JSON_ROOT=/path/to/tdps
+# - TDP_DATA_PROCESSING__TDPS_MARKDOWN_ROOT=/path/to/tdps_markdown
 #
 # All environment variable keys use the TDP_ prefix and __ (double underscore) to separate nested levels
 

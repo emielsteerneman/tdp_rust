@@ -1,0 +1,212 @@
+<mxfile>
+  <diagram name="Architecture Overview" id="arch">
+    <mxGraphModel>
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="TDP Rust — Architecture Overview" style="text;html=1;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;fillColor=none;strokeColor=none;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="160" y="10" width="680" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- External Systems layer -->
+        <mxCell id="ext_group" value="External Systems" style="swimlane;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;fontColor=#333333;container=1;collapsible=0;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="920" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="qdrant" value="Qdrant&#xa;(Vector DB)" style="shape=cylinder3;size=10;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="ext_group">
+          <mxGeometry x="30" y="35" width="110" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="openai" value="OpenAI API&#xa;(Embeddings)" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;size=12;" vertex="1" parent="ext_group">
+          <mxGeometry x="180" y="35" width="130" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="sqlite" value="SQLite&#xa;(Metadata + Activity)" style="shape=cylinder3;size=10;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="ext_group">
+          <mxGeometry x="350" y="35" width="140" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="markdown_files" value="Markdown TDP&#xa;Files (corpus)" style="shape=document;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;size=0.15;" vertex="1" parent="ext_group">
+          <mxGeometry x="530" y="33" width="120" height="57" as="geometry"/>
+        </mxCell>
+        <mxCell id="browser" value="Browser&#xa;(SvelteKit)" style="shape=mxgraph.basic.rounded_frame;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="ext_group">
+          <mxGeometry x="690" y="35" width="110" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="ai_client" value="AI Assistant&#xa;(MCP Client)" style="shape=mxgraph.basic.rounded_frame;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="ext_group">
+          <mxGeometry x="810" y="35" width="100" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Server Layer -->
+        <mxCell id="server_group" value="Server Crates (thin wrappers)" style="swimlane;startSize=28;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=13;fontColor=#333333;container=1;collapsible=0;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="190" width="920" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="web_crate" value="&lt;b&gt;web&lt;/b&gt;&#xa;Axum REST :50000&#xa;+ static files" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="server_group">
+          <mxGeometry x="160" y="35" width="200" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="mcp_crate" value="&lt;b&gt;mcp&lt;/b&gt;&#xa;rmcp server :50001 (open)&#xa;:50002 (OAuth)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="server_group">
+          <mxGeometry x="560" y="35" width="200" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- API Layer -->
+        <mxCell id="api_group" value="Shared Handlers" style="swimlane;startSize=28;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;fontColor=#333333;container=1;collapsible=0;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="920" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="api_crate" value="&lt;b&gt;api&lt;/b&gt;  —  search, list_tdps, list_teams, list_leagues,&#xa;get_tdp_markdown, get_toc, get_paragraph, get_table, get_image, get_abstract, activity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" vertex="1" parent="api_group">
+          <mxGeometry x="60" y="35" width="800" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Business Logic Layer -->
+        <mxCell id="logic_group" value="Business Logic" style="swimlane;startSize=28;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=13;fontColor=#333333;container=1;collapsible=0;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="450" width="920" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="data_processing" value="&lt;b&gt;data_processing&lt;/b&gt;&#xa;Searcher (hybrid semantic+keyword),&#xa;chunking, IDF computation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="logic_group">
+          <mxGeometry x="60" y="35" width="360" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="configuration" value="&lt;b&gt;configuration&lt;/b&gt;&#xa;TOML + TDP_* env overrides,&#xa;client factory helpers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="logic_group">
+          <mxGeometry x="500" y="35" width="360" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Data Access Layer -->
+        <mxCell id="da_group" value="Data Access (trait-based DI)" style="swimlane;startSize=28;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13;fontColor=#333333;container=1;collapsible=0;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="580" width="920" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="embed_trait" value="&lt;b&gt;EmbedClient&lt;/b&gt;&#xa;OpenAI / FastEmbed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="da_group">
+          <mxGeometry x="30" y="40" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="vector_trait" value="&lt;b&gt;VectorClient&lt;/b&gt;&#xa;Qdrant" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="da_group">
+          <mxGeometry x="240" y="40" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="metadata_trait" value="&lt;b&gt;MetadataClient&lt;/b&gt;&#xa;SQLite (paper table)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="da_group">
+          <mxGeometry x="460" y="40" width="200" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="activity_trait" value="&lt;b&gt;ActivityClient&lt;/b&gt;&#xa;SQLite (activity)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="da_group">
+          <mxGeometry x="700" y="40" width="180" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Domain Types Layer -->
+        <mxCell id="ds_group" value="Domain Types (no I/O)" style="swimlane;startSize=28;fillColor=#F0F0F0;strokeColor=#999999;fontStyle=1;fontSize=13;fontColor=#333333;container=1;collapsible=0;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="720" width="920" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="data_structures" value="&lt;b&gt;data_structures&lt;/b&gt;  —  TDPName, League, TeamName, IDF, MarkdownTDP, FrontMatter, ContentItem, ContentType, TocEntry, Chunk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F0F0;strokeColor=#999999;fontSize=11;" vertex="1" parent="ds_group">
+          <mxGeometry x="60" y="35" width="800" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- CLI Tools (side) -->
+        <mxCell id="tools_group" value="CLI Tools" style="swimlane;startSize=28;fillColor=#CCE5FF;strokeColor=#6699CC;fontStyle=1;fontSize=13;fontColor=#333333;container=1;collapsible=0;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="990" y="320" width="170" height="250" as="geometry"/>
+        </mxCell>
+        <mxCell id="tool_init" value="initialize" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#6699CC;fontSize=11;fontStyle=1;" vertex="1" parent="tools_group">
+          <mxGeometry x="20" y="35" width="130" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="tool_idf" value="create_idf" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#6699CC;fontSize=11;fontStyle=1;" vertex="1" parent="tools_group">
+          <mxGeometry x="20" y="80" width="130" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="tool_search" value="search_by_sentence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#6699CC;fontSize=11;fontStyle=1;" vertex="1" parent="tools_group">
+          <mxGeometry x="20" y="125" width="130" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="tool_activity" value="activity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#6699CC;fontSize=11;fontStyle=1;" vertex="1" parent="tools_group">
+          <mxGeometry x="20" y="170" width="130" height="35" as="geometry"/>
+        </mxCell>
+        <mxCell id="tool_repl" value="repl" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CCE5FF;strokeColor=#6699CC;fontSize=11;fontStyle=1;" vertex="1" parent="tools_group">
+          <mxGeometry x="20" y="210" width="130" height="35" as="geometry"/>
+        </mxCell>
+
+        <!-- Frontend (side) -->
+        <mxCell id="frontend_box" value="&lt;b&gt;frontend&lt;/b&gt;&#xa;SvelteKit&#xa;static site&#xa;→ frontend/build/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="990" y="190" width="170" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges: External to Servers -->
+        <mxCell id="e_browser_web" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#666666;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="browser" target="web_crate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_ai_mcp" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#666666;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="ai_client" target="mcp_crate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges: Servers to API -->
+        <mxCell id="e_web_api" value="EventSource::Web" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;fontColor=#82b366;fontSize=10;exitX=0.5;exitY=1;entryX=0.3;entryY=0;" edge="1" parent="1" source="web_crate" target="api_crate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_mcp_api" value="EventSource::Mcp" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#82b366;fontColor=#82b366;fontSize=10;exitX=0.5;exitY=1;entryX=0.7;entryY=0;" edge="1" parent="1" source="mcp_crate" target="api_crate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges: API to Logic -->
+        <mxCell id="e_api_dp" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#9673a6;exitX=0.3;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="api_crate" target="data_processing">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges: API/Logic to Data Access -->
+        <mxCell id="e_api_da" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;exitX=0.7;exitY=1;entryX=0.5;entryY=0;dashed=1;" edge="1" parent="1" source="api_crate" target="metadata_trait">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_dp_embed" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;exitX=0.25;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="data_processing" target="embed_trait">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_dp_vector" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;exitX=0.75;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="data_processing" target="vector_trait">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_api_activity" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#b85450;exitX=0.9;exitY=1;entryX=0.5;entryY=0;dashed=1;" edge="1" parent="1" source="api_crate" target="activity_trait">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="840" y="450"/>
+              <mxPoint x="840" y="570"/>
+              <mxPoint x="830" y="570"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Edges: Data Access to External -->
+        <mxCell id="e_embed_openai" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#6c8ebf;dashed=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="embed_trait" target="openai">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="160" y="570"/>
+              <mxPoint x="10" y="570"/>
+              <mxPoint x="10" y="170"/>
+              <mxPoint x="285" y="170"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_vector_qdrant" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#6c8ebf;dashed=1;exitX=0;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="vector_trait" target="qdrant">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="280" y="610"/>
+              <mxPoint x="0" y="610"/>
+              <mxPoint x="0" y="170"/>
+              <mxPoint x="125" y="170"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_meta_sqlite" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#6c8ebf;dashed=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="metadata_trait" target="sqlite">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="600" y="610"/>
+              <mxPoint x="970" y="610"/>
+              <mxPoint x="970" y="170"/>
+              <mxPoint x="460" y="170"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Edges: Tools -->
+        <mxCell id="e_tools_api" value="" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#6699CC;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="tools_group" target="api_crate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges: Frontend to web -->
+        <mxCell id="e_frontend_web" value="static build" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#d6b656;fontSize=10;fontColor=#d6b656;exitX=0;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="frontend_box" target="web_crate">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- All layers to data_structures -->
+        <mxCell id="e_da_ds" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#999999;exitX=0.5;exitY=1;entryX=0.5;entryY=0;dashed=1;dashPattern=4 4;" edge="1" parent="1" source="da_group" target="ds_group">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend" value="&lt;b&gt;Legend&lt;/b&gt;&#xa;Solid → direct calls&#xa;Dashed → trait-based / async" style="text;html=1;fontSize=10;align=left;verticalAlign=top;fillColor=#f5f5f5;strokeColor=#CCCCCC;rounded=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="990" y="600" width="170" height="60" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

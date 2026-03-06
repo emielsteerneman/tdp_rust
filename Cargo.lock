@@ -722,18 +722,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "chat"
-version = "0.1.0"
-dependencies = [
- "configuration",
- "reqwest",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "chrono"
 version = "0.4.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4361,7 +4349,6 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "encoding_rs",
- "futures-channel",
  "futures-core",
  "futures-util",
  "h2",

@@ -16,10 +16,9 @@ Rust workspace with the following crates:
 | `api` | Library | Shared business logic (search, list, filter) |
 | `data_access` | Library | Trait-based clients: Qdrant, SQLite, OpenAI, FastEmbed |
 | `data_processing` | Library | Chunking, embedding, IDF, search orchestration |
-| `data_structures` | Library | Shared types (TDP, League, Chunk, Filter) |
+| `data_structures` | Library | Shared types (TDPName, League, Chunk, ContentItem, Filter) |
 | `configuration` | Library | Config loading and client initialization |
 | `tools` | Binaries | CLI tools for initialization, search, and analytics |
-| `chat` | Library | (experimental) Chat/conversation support |
 
 ## Getting Started
 
@@ -40,7 +39,7 @@ Rust workspace with the following crates:
    ```
    cp config.toml.example config.toml
    ```
-   Fill in your OpenAI API key and the path to your TDP JSON files.
+   Fill in your OpenAI API key and the path to your TDP markdown files.
 
    > **Note:** `embedding_size` must match the embed model's output dimension. If you change models, re-run `make init` to rebuild the Qdrant collection — mismatches cause silent failures.
 
@@ -108,7 +107,7 @@ All CLI tools live in the `tools` crate and are run via `cargo run -p tools --bi
 
 ### initialize
 
-Parses TDP JSON files, computes embeddings, builds IDF, and upserts everything into Qdrant + SQLite.
+Parses TDP markdown files, computes embeddings, builds IDF, and upserts everything into Qdrant + SQLite.
 
 ```
 make init
@@ -193,12 +192,17 @@ make activity ARGS="agents --since 2025-06-01"
 
 The MCP server exposes TDP search functionality to LLMs. Available tools:
 
-- `search` - Semantic search across all TDPs
-- `get_tdp_contents` - Retrieve full markdown of a specific paper
+- `search` - Hybrid semantic + keyword search across all TDPs
 - `list_papers` - List papers with optional league/year/team filters
 - `list_teams` - List team names with optional hint filter
 - `list_leagues` - List all RoboCup leagues
 - `list_years` - List years with optional league/year/team filters
+- `get_tdp_contents` - Retrieve full markdown of a specific paper
+- `get_table_of_contents` - Get the structured table of contents of a paper
+- `get_abstract` - Get a paper's abstract
+- `get_paragraph` - Get a specific content item by sequence number
+- `get_table` - Get a specific table by sequence number
+- `get_image` - Get a specific image caption and path by sequence number
 
 ```
 cargo run -p mcp
