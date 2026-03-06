@@ -1,6 +1,7 @@
 use data_processing::{
-    chunk::utils::{load_all_chunks_from_tdps, load_all_tdp_jsons},
+    content_chunker::tdp_to_chunks,
     embed::embed_chunks,
+    markdown_parser::load_all_markdown_tdps,
     text::create_idf,
 };
 use data_structures::{IDF, embed_type::EmbedType, filter::Filter};
@@ -8,8 +9,6 @@ use tracing::info;
 
 #[tokio::main]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /* Assumption: A "document" in the inverse document frequency is a chunk */
-
     let _stdout_subscriber = tracing_subscriber::fmt::init();
     let config = configuration::AppConfig::load_from_file("config.toml").unwrap();
 
@@ -18,28 +17,34 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
 
     let mut filter = Filter::default();
-    //filter.add_league("soccer_smallsize".try_into()?);
-    //filter.add_league("soccer_midsize".try_into()?);
     for year in 2015..2026 {
         filter.add_year(year);
     }
 
-    /* Step 1 : Load TDPs and Chunks */
-    info!("Loading TDPs and Chunks");
-    let tdps = load_all_tdp_jsons(&config.data_processing.tdps_markdown_root, Some(filter)).await?;
-    let mut chunks = load_all_chunks_from_tdps(&tdps)?;
-    info!("Loaded {} tdps and {} chunks", tdps.len(), chunks.len());
+    /* Step 1 : Load markdown TDPs */
+    info!("Loading markdown TDPs");
+    let tdps =
+        load_all_markdown_tdps(&config.data_processing.tdps_markdown_root, Some(filter))?;
+    info!("Loaded {} TDPs", tdps.len());
 
-    metadata_client.store_tdps(tdps.clone()).await?;
+    /* Step 2 : Create chunks */
+    info!("Creating chunks");
+    let mut chunks: Vec<_> = tdps.iter().flat_map(tdp_to_chunks).collect();
+    info!("Created {} chunks", chunks.len());
 
-    /* Step 2 : Create and store IDF */
+    /* Step 3 : Store paper metadata */
+    info!("Storing paper metadata");
+    for tdp in tdps {
+        metadata_client.store_paper(tdp).await?;
+    }
+
+    /* Step 4 : Create and store IDF */
     info!("Creating IDF");
     let texts: Vec<&str> = chunks.iter().map(|c| c.text.as_str()).collect();
     let idf_map = create_idf(&texts, &[1, 5, 10]);
-    // TODO do I really need to clone idf_map here?
     metadata_client.store_idf(idf_map.clone()).await?;
 
-    /* Step 3 : Create embeddings */
+    /* Step 5 : Create embeddings */
     info!("Creating embeddings");
     embed_chunks(
         &mut chunks,
@@ -48,9 +53,8 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(&idf_map),
     )
     .await?;
-    // embed_chunks(&mut chunks, None, &idf_map).await?;
 
-    /* Step 4 : Store chunks */
+    /* Step 6 : Store chunks */
     info!("Storing chunks");
     for chunk in chunks {
         vector_client.store_chunk(chunk).await?;
