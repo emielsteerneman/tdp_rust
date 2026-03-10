@@ -2,7 +2,6 @@ import type {
 	SearchResult,
 	SearchParams,
 	TDPName,
-	Paper,
 	TeamName,
 	League
 } from './types';
@@ -63,42 +62,6 @@ export async function search(params: SearchParams, fetchFn?: FetchFn): Promise<S
  */
 export async function listPapers(fetchFn?: FetchFn): Promise<TDPName[]> {
 	return fetchApi<TDPName[]>('/papers', fetchFn);
-}
-
-/**
- * Get a specific paper's content by ID (league, year, team)
- * GET /api/papers/:id
- *
- * The ID is constructed as: league__year__team__index
- * For example: soccer_smallsize__2019__RoboTeam_Twente__0
- */
-export async function getPaper(
-	league: string,
-	year: number,
-	team: string,
-	index: number = 0,
-	fetchFn?: FetchFn
-): Promise<Paper> {
-	const id = `${league}__${year}__${team}__${index}`;
-	return fetchApi<Paper>(`/papers/${id}`, fetchFn);
-}
-
-/**
- * Alternative: Get paper content using GetTdpContentsArgs structure
- * GET /api/papers with query parameters
- */
-export async function getPaperByParams(
-	league: string,
-	year: number,
-	team: string,
-	fetchFn?: FetchFn
-): Promise<Paper> {
-	const searchParams = new URLSearchParams({
-		league,
-		year: year.toString(),
-		team
-	});
-	return fetchApi<Paper>(`/paper?${searchParams.toString()}`, fetchFn);
 }
 
 /**

@@ -25,10 +25,10 @@ export interface SearchResultChunk {
 	league: League;
 	year: number;
 	team: TeamName;
-	paragraph_sequence_id: number;
-	chunk_sequence_id: number;
-	idx_begin: number;
-	idx_end: number;
+	content_seq: number;
+	chunk_seq: number;
+	content_type: string;
+	title: string;
 	text: string;
 }
 
@@ -72,5 +72,3 @@ export interface ApiResponse<T> {
 	data: T;
 }
 
-// For get_tdp_contents, the response is just a string (markdown)
-export type Paper = string;
