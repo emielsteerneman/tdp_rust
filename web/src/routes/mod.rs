@@ -6,6 +6,7 @@ mod paragraph;
 mod search;
 mod table;
 mod table_of_contents;
+mod tdps;
 mod teams;
 mod years;
 
@@ -40,6 +41,11 @@ pub fn create_router(state: AppState) -> Router {
             state.clone(),
             crate::middleware::activity_logging,
         ))
+        .with_state(state.clone());
+
+    // TDP file routes (no activity logging, static file serving)
+    let tdps_routes = Router::new()
+        .route("/tdps/{*path}", get(tdps::serve_tdps_file))
         .with_state(state);
 
     // Serve static frontend files with SPA fallback
@@ -51,6 +57,7 @@ pub fn create_router(state: AppState) -> Router {
     // API routes take precedence, then static files
     Router::new()
         .merge(api_routes)
+        .merge(tdps_routes)
         .fallback_service(static_files)
         .layer(cors)
 }

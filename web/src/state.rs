@@ -8,6 +8,7 @@ pub struct AppState {
     pub metadata_client: Arc<dyn MetadataClient + Send + Sync>,
     pub searcher: Arc<Searcher>,
     pub activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    pub tdps_markdown_root: String,
 }
 
 impl AppState {
@@ -15,11 +16,13 @@ impl AppState {
         metadata_client: Arc<dyn MetadataClient + Send + Sync>,
         searcher: Arc<Searcher>,
         activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+        tdps_markdown_root: String,
     ) -> Self {
         Self {
             metadata_client,
             searcher,
             activity_client,
+            tdps_markdown_root,
         }
     }
 }

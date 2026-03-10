@@ -66,7 +66,12 @@ async fn main() -> anyhow::Result<()> {
         leagues,
     );
 
-    let state = AppState::new(metadata_client.clone(), Arc::new(searcher), activity_client);
+    let state = AppState::new(
+        metadata_client.clone(),
+        Arc::new(searcher),
+        activity_client,
+        config.data_processing.tdps_markdown_root.clone(),
+    );
 
     let router = routes::create_router(state);
 
