@@ -1,37 +1,18 @@
 import type { PageLoad } from './$types';
-import { getPaper } from '$lib/api';
 import { error } from '@sveltejs/kit';
 
 export const load: PageLoad = async ({ params, fetch }) => {
-	try {
-		// Parse the ID format: league__year__team__index
-		const parts = params.id.split('__');
-		if (parts.length !== 4) {
-			throw error(400, 'Invalid paper ID format. Expected: league__year__team__index');
-		}
+  const lyti = params.id;
 
-		const [league, yearStr, team, indexStr] = parts;
-		const year = parseInt(yearStr, 10);
-		const index = parseInt(indexStr, 10);
+  const response = await fetch(`/tdps/${lyti}.md`);
+  if (!response.ok) {
+    throw error(response.status, 'Paper not found');
+  }
 
-		if (isNaN(year) || isNaN(index)) {
-			throw error(400, 'Invalid year or index in paper ID');
-		}
+  const rawMarkdown = await response.text();
 
-		// Fetch the paper content (markdown)
-		const content = await getPaper(league, year, team, index, fetch);
-
-		return {
-			content,
-			metadata: {
-				league,
-				team,
-				year,
-				index
-			}
-		};
-	} catch (err) {
-		console.error('Error loading paper:', err);
-		throw error(404, 'Paper not found');
-	}
+  return {
+    rawMarkdown,
+    lyti
+  };
 };
