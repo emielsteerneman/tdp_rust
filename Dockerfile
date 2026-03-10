@@ -16,16 +16,14 @@ WORKDIR /build
 
 # Copy Cargo workspace and lock file
 COPY Cargo.toml Cargo.lock ./
-COPY src ./src
-COPY mcp ./mcp
-COPY web ./web
 COPY api ./api
-COPY chat ./chat
 COPY configuration ./configuration
 COPY data_access ./data_access
 COPY data_processing ./data_processing
 COPY data_structures ./data_structures
+COPY mcp ./mcp
 COPY tools ./tools
+COPY web ./web
 
 # Copy frontend
 COPY frontend ./frontend

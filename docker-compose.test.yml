@@ -18,7 +18,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       # Connect to the existing Qdrant instance on the host
-      TDP_DATA_ACCESS__VECTOR__QDRANT__URL: "http://host.docker.internal:6333"
+      TDP_DATA_ACCESS__VECTOR__QDRANT__URL: "http://host.docker.internal:6334"
       TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY: ${TDP_OPENAI_API_KEY:-}
     restart: unless-stopped
     depends_on:
@@ -36,25 +36,11 @@ services:
     volumes:
       - ./my_sqlite.db:/app/my_sqlite.db
       - ./activity.db:/app/activity.db
+      - ${TDP_MARKDOWN_ROOT:?Set TDP_MARKDOWN_ROOT in .env}:/data/tdps_markdown:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       # Connect to the existing Qdrant instance on the host
-      TDP_DATA_ACCESS__VECTOR__QDRANT__URL: "http://host.docker.internal:6333"
+      TDP_DATA_ACCESS__VECTOR__QDRANT__URL: "http://host.docker.internal:6334"
       TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY: ${TDP_OPENAI_API_KEY:-}
     restart: unless-stopped
-
-  # SvelteKit Frontend
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: frontend
-    container_name: tdp-frontend-test
-    ports:
-      - "51080:8080"
-    environment:
-      VITE_API_URL: "http://web:50000"
-    restart: unless-stopped
-    depends_on:
-      - web

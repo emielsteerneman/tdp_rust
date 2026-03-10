@@ -10,7 +10,7 @@ mcp:
 	cargo run -p mcp
 
 ui:
-	cd frontend && npm run dev -- --host --port 50000
+	cd frontend && npm run dev -- --host --port 50080
 
 # --- Infrastructure ---
 
@@ -20,7 +20,7 @@ qdrant-restart:
 	docker run --network=host --name qdrant -d qdrant/qdrant:v1.16
 
 qdrant-snapshot:
-	./scripts/qdrant_create_download_delete_snapshot.sh
+	./scripts/qdrant_create_download_delete_snapshot.sh qdrant.snapshot
 
 docker:
 	docker compose up --build

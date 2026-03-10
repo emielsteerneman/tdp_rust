@@ -10,6 +10,10 @@ export default defineConfig({
 			'/api': {
 				target: 'http://localhost:50000',
 				changeOrigin: true
+			},
+			'/tdps': {
+				target: 'http://localhost:50000',
+				changeOrigin: true
 			}
 		}
 	}

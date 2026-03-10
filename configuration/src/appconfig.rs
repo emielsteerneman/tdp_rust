@@ -32,6 +32,7 @@ impl AppConfig {
         // Example: TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-...
         builder = builder.add_source(
             config::Environment::with_prefix("TDP")
+                .prefix_separator("_")
                 .try_parsing(true)
                 .separator("__"),
         );

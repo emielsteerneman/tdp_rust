@@ -57,6 +57,8 @@ services:
     depends_on:
       qdrant:
         condition: service_healthy
+    volumes:
+      - ${TDP_MARKDOWN_ROOT:?Set TDP_MARKDOWN_ROOT in .env}:/data/tdps_markdown:ro
     # environment:
       # Override config settings via TDP_* environment variables
       # Example: TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-proj-...
