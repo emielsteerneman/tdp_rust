@@ -9,7 +9,7 @@ papers from RoboCup teams and exposes them via a hybrid semantic+keyword search 
 - CLI tools for corpus initialization and offline analysis
 
 ## Architecture
-Cargo workspace with 11 crates organized in layers:
+Cargo workspace with 10 crates organized in layers:
 - `data_structures` — shared domain types, no I/O
 - `data_access` — trait-defined storage abstractions (EmbedClient, VectorClient, MetadataClient, ActivityClient)
 - `data_processing` — chunking, IDF computation, hybrid search orchestration (`Searcher`)
@@ -66,12 +66,12 @@ filename = "my_sqlite.db"
 filename = "activity.db"
 
 [data_processing]
-tdps_json_root = "/path/to/tdps_json/"
+tdps_markdown_root = "/path/to/tdps_markdown/"
 ```
 
 Other prerequisites:
 - **Qdrant** must be running at the configured URL before starting `mcp` or `web` (use `docker-compose up qdrant`)
-- **TDP JSON files** must exist at `tdps_json_root` before running `initialize`
+- **TDP markdown files** must exist at `tdps_markdown_root` before running `initialize`
 - **Static files**: the web server expects files at `./static/` (relative to cwd), but the frontend builds to `frontend/build/`. For local dev, symlink: `ln -s frontend/build static`
 - **Embed model ↔ Qdrant size must match**: if you change the embed model, update `embedding_size` and re-run `initialize` to rebuild the Qdrant collection. Mismatches cause silent failures.
 

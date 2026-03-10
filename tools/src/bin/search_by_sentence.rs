@@ -14,16 +14,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 || args[1] == "--help" || args[1] == "-h" {
-        eprintln!("Usage: {} <query> [--mode <dense|sparse|hybrid>]", args[0]);
+        eprintln!("Usage: {} <query> [--mode <dense|sparse|hybrid>] [--type <text|table|image>]", args[0]);
         eprintln!();
         eprintln!("Arguments:");
-        eprintln!("  <query>                    Search query string");
-        eprintln!("  --mode <dense|sparse|hybrid>  Search mode (default: hybrid)");
+        eprintln!("  <query>                          Search query string");
+        eprintln!("  --mode <dense|sparse|hybrid>     Search mode (default: hybrid)");
+        eprintln!("  --type <text|table|image>        Filter by content type (default: all)");
         eprintln!();
         eprintln!("Examples:");
         eprintln!("  {} \"battery capacity tigers\"", args[0]);
         eprintln!("  {} \"neural network\" --mode dense", args[0]);
-        eprintln!("  {} \"bang bang\" --mode sparse", args[0]);
+        eprintln!("  {} \"omniwheels\" --type image", args[0]);
         std::process::exit(1);
     }
 
@@ -44,6 +45,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
         }
     }
+
+    // Parse content type filter (default: all)
+    let content_type_filter: Option<String> =
+        if let Some(type_idx) = args.iter().position(|arg| arg == "--type") {
+            if let Some(type_str) = args.get(type_idx + 1) {
+                let ct = match type_str.to_lowercase().as_str() {
+                    "text" => "text",
+                    "table" => "table",
+                    "image" => "image",
+                    _ => {
+                        eprintln!("Invalid type: {}. Use 'text', 'table', or 'image'", type_str);
+                        std::process::exit(1);
+                    }
+                };
+                Some(ct.to_string())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
     info!("Running Search By Sentence");
     info!("Query: {}", query);
@@ -97,16 +119,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let results = search_structured(&searcher, search_args, activity_client, EventSource::Dev)
         .await?;
 
-    println!("Found {} results\n", results.chunks.len());
+    let chunks: Vec<_> = if let Some(ref ct) = content_type_filter {
+        results
+            .chunks
+            .iter()
+            .filter(|sc| sc.chunk.content_type.to_lowercase() == *ct)
+            .collect()
+    } else {
+        results.chunks.iter().collect()
+    };
 
-    for (i, scored_chunk) in results.chunks.iter().enumerate() {
+    println!("Found {} results\n", chunks.len());
+
+    for (i, scored_chunk) in chunks.iter().enumerate() {
         println!(
-            "[{:2}] Score: {:.4} | {} | {} | {}",
+            "[{:2}] Score: {:.4} | {} | {} | {} | {:?} seq={}:{}",
             i,
             scored_chunk.score,
             scored_chunk.chunk.league.name_pretty,
             scored_chunk.chunk.team.name_pretty,
-            scored_chunk.chunk.year
+            scored_chunk.chunk.year,
+            scored_chunk.chunk.content_type,
+            scored_chunk.chunk.content_seq,
+            scored_chunk.chunk.chunk_seq,
         );
         println!("    {}", scored_chunk.chunk.text);
         println!();

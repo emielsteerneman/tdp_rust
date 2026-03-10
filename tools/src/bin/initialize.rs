@@ -20,6 +20,11 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for year in 2015..2026 {
         filter.add_year(year);
     }
+    filter.add_league(data_structures::file::League::new(
+        "soccer".to_string(),
+        "smallsize".to_string(),
+        None,
+    ));
 
     /* Step 1 : Load markdown TDPs */
     info!("Loading markdown TDPs");

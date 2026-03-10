@@ -1,5 +1,5 @@
 .PHONY: qdrant-restart web ui docker docker-logs docker-down init clean
-.PHONY: activity repl search-by-sentence create-idf mcp leagues
+.PHONY: activity repl search search-text search-table search-image create-idf mcp leagues
 
 # --- Services ---
 
@@ -42,8 +42,17 @@ create-idf:
 repl:
 	cargo run -p tools --bin repl
 
-search-by-sentence:
-	cargo run -p tools --bin search_by_sentence
+search:
+	cargo run -p tools --bin search_by_sentence -- $(filter-out $@,$(MAKECMDGOALS))
+
+search-text:
+	cargo run -p tools --bin search_by_sentence -- $(filter-out $@,$(MAKECMDGOALS)) --type text
+
+search-table:
+	cargo run -p tools --bin search_by_sentence -- $(filter-out $@,$(MAKECMDGOALS)) --type table
+
+search-image:
+	cargo run -p tools --bin search_by_sentence -- $(filter-out $@,$(MAKECMDGOALS)) --type image
 
 activity:
 	cargo run -p tools --bin activity -- $(ARGS)
@@ -55,3 +64,7 @@ clean: qdrant-restart
 
 leagues:
 	@curl -s http://localhost:50000/api/leagues | python3 -m json.tool
+
+# Catch-all to allow passing bare arguments to targets like `make search omniwheels`
+%:
+	@:

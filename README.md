@@ -174,7 +174,7 @@ make activity ARGS="agents --since 2025-06-01"
 | `make init` | Initialize database (parse, embed, index) |
 | `make create-idf` | Recompute IDF map |
 | `make repl` | Interactive search REPL |
-| `make search-by-sentence` | Run sentence-level search benchmarks |
+| `make search "query"` | Search for a query |
 | `make activity ARGS="..."` | Run the activity analytics CLI |
 
 **Infrastructure:**
