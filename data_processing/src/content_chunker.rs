@@ -90,7 +90,7 @@ fn split_text(text: &str, max_chars: usize, overlap_chars: usize) -> Vec<String>
 
                 // Start new chunk with overlap from end of previous chunk
                 let overlap_start = if current.len() > overlap_chars {
-                    current.len() - overlap_chars
+                    current.floor_char_boundary(current.len() - overlap_chars)
                 } else {
                     0
                 };
@@ -165,6 +165,19 @@ mod tests {
         assert_eq!(c.chunk_seq, 0);
         assert_eq!(c.content_seq, 3);
         assert_eq!(c.text, "Table 1: Results\n| col1 | col2 |\n| a | b |");
+    }
+
+    #[test]
+    fn test_split_text_with_multibyte_chars() {
+        // Greek rho (ρ) is 2 bytes in UTF-8. Fill text so the overlap boundary
+        // lands inside a multi-byte character.
+        let para1 = "a".repeat(700) + &"ρ".repeat(100); // 700 + 200 bytes = 900 bytes
+        let para2 = "b".repeat(800);
+        let text = format!("{}\n\n{}", para1, para2);
+
+        // Should not panic
+        let result = split_text(&text, MAX_CHUNK_CHARS, OVERLAP_CHARS);
+        assert!(result.len() >= 2);
     }
 
     #[test]

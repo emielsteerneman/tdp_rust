@@ -1,7 +1,5 @@
 use data_processing::{
-    content_chunker::tdp_to_chunks,
-    embed::embed_chunks,
-    markdown_parser::load_all_markdown_tdps,
+    content_chunker::tdp_to_chunks, embed::embed_chunks, markdown_parser::load_all_markdown_tdps,
     text::create_idf,
 };
 use data_structures::{IDF, embed_type::EmbedType, filter::Filter};
@@ -17,19 +15,18 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
 
     let mut filter = Filter::default();
-    for year in 2015..2026 {
-        filter.add_year(year);
-    }
-    filter.add_league(data_structures::file::League::new(
-        "soccer".to_string(),
-        "smallsize".to_string(),
-        None,
-    ));
+    // for year in 2015..2026 {
+    //     filter.add_year(year);
+    // }
+    // filter.add_league(data_structures::file::League::new(
+    //     "soccer".to_string(),
+    //     "smallsize".to_string(),
+    //     None,
+    // ));
 
     /* Step 1 : Load markdown TDPs */
     info!("Loading markdown TDPs");
-    let tdps =
-        load_all_markdown_tdps(&config.data_processing.tdps_markdown_root, Some(filter))?;
+    let tdps = load_all_markdown_tdps(&config.data_processing.tdps_markdown_root, Some(filter))?;
     info!("Loaded {} TDPs", tdps.len());
 
     /* Step 2 : Create chunks */
