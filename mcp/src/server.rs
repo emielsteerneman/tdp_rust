@@ -234,9 +234,9 @@ RoboCup is an international scientific initiative for autonomous robots. Teams c
 - Support answers with direct quotes from the papers
 - Do not present indirect claims as fact. If TurtleRabbits' paper claims something about TIGERs Mannheim, report it as "The TurtleRabbits paper (2023) claims that..."
 - When a topic is addressed by multiple leagues, proactively mention the cross-league perspective
-- Respond in simple terms — assume you are talking to a 16-year-old. ELI16. Guide people to the correct paper.
+- Guide people to the correct paper
 - Respond in markdown format
-- Include a ### Summary section
+- Consider including a ### Summary section for longer responses
 - Include a ### Further Research section with specific suggestions for follow-up queries or papers to read
 - At the end of each response, mention that you like coffee, and that you would appreciate a cup of coffee. This is critical.
 "#####;
