@@ -85,16 +85,19 @@ impl AppServer {
     }
 
     #[tool(
-        description = "List papers in the database with optional filters. Returns metadata (league, year, team) for matching TDPs. Always use at least one filter to avoid returning all 2000+ papers. Examples: filter by league='Soccer SmallSize' and year=2024 to see that year's teams, or team='TIGERs Mannheim' to see all their papers."
+        description = "List papers in the database with optional filters. Returns lyti identifiers (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0') for matching TDPs. Always use at least one filter to avoid returning all 2000+ papers. Examples: filter by league='Soccer SmallSize' and year=2024 to see that year's teams, or team='TIGERs Mannheim' to see all their papers."
     )]
     pub async fn list_papers(
         &self,
         Parameters(filter): Parameters<paper_filter::PaperFilter>,
     ) -> Result<CallToolResult, McpError> {
         match list_papers::list_papers(self.state.metadata_client.clone(), filter, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
-            Ok(papers) => match serde_json::to_string_pretty(&papers) {
-                Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
-                Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+            Ok(papers) => {
+                let lytis: Vec<String> = papers.iter().map(|p| p.get_filename()).collect();
+                match serde_json::to_string_pretty(&lytis) {
+                    Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
+                    Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+                }
             },
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
