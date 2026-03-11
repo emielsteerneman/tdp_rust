@@ -583,6 +583,70 @@ impl MetadataClient for SqliteClient {
         })
     }
 
+    fn load_content_items_range<'a>(
+        &'a self,
+        lyti: String,
+        start_seq: u32,
+        end_seq_exclusive: u32,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ContentItem>, MetadataClientError>> + Send + 'a>>
+    {
+        let conn = self.conn.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = conn.lock().unwrap();
+
+                let mut stmt = conn
+                    .prepare(
+                        "SELECT content_seq, content_type, depth, title, body, image_path
+                         FROM toc_entry
+                         WHERE lyti = ?1 AND content_seq >= ?2 AND content_seq < ?3
+                         ORDER BY content_seq",
+                    )
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let rows = stmt
+                    .query_map(params![lyti, start_seq, end_seq_exclusive], |row| {
+                        let content_seq: u32 = row.get(0)?;
+                        let content_type_str: String = row.get(1)?;
+                        let depth: u8 = row.get(2)?;
+                        let title: String = row.get(3)?;
+                        let body: String = row.get::<_, Option<String>>(4)?.unwrap_or_default();
+                        let image_path: Option<String> = row.get(5)?;
+                        Ok((content_seq, content_type_str, depth, title, body, image_path))
+                    })
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let mut results = Vec::new();
+                for row in rows {
+                    let (content_seq, content_type_str, depth, title, body, image_path) =
+                        row.map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    let content_type = ContentType::try_from(content_type_str.as_str())
+                        .map_err(|e| MetadataClientError::Internal(e))?;
+                    results.push(ContentItem {
+                        content_seq,
+                        content_type,
+                        depth,
+                        title,
+                        body,
+                        image_path,
+                    });
+                }
+
+                if results.is_empty() {
+                    return Err(MetadataClientError::NotFound(format!(
+                        "No content items found for lyti: {}, range: {}..{}",
+                        lyti, start_seq, end_seq_exclusive
+                    )));
+                }
+
+                Ok(results)
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
     fn load_paper_abstract<'a>(
         &'a self,
         lyti: String,

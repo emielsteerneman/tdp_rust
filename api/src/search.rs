@@ -143,10 +143,10 @@ pub async fn search_structured(
     args: SearchArgs,
     activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
     source: EventSource,
-) -> anyhow::Result<data_structures::intermediate::SearchResult> {
+) -> anyhow::Result<data_structures::intermediate::EnrichedSearchResult> {
     let search_type_str = format!("{:?}", args.search_type);
     let search_result = searcher
-        .search(
+        .search_enriched(
             args.query.clone(),
             args.limit,
             args.to_filter()?,

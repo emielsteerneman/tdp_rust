@@ -99,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     leagues.sort();
 
-    let searcher = Searcher::new(embed_client, vector_client, idf_map, teams, leagues);
+    let searcher = Searcher::new(embed_client, vector_client, metadata_client.clone(), idf_map, teams, leagues);
 
     println!("\n=== Search Results ===");
     println!("Query: {}", query);
@@ -122,19 +122,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Found {} results\n", results.chunks.len());
 
-    for (i, scored_chunk) in results.chunks.iter().enumerate() {
+    for (i, enriched) in results.chunks.iter().enumerate() {
+        let breadcrumb_str = if enriched.breadcrumbs.is_empty() {
+            String::new()
+        } else {
+            let trail: Vec<String> = enriched.breadcrumbs.iter().map(|b| b.title.clone()).collect();
+            format!(" [{}]", trail.join(" > "))
+        };
         println!(
-            "[{:2}] Score: {:.4} | {} | {} | {} | {:?} seq={}:{}",
+            "[{:2}] Score: {:.4} | {} | {} | {} | {:?} seq={}:{}{}",
             i,
-            scored_chunk.score,
-            scored_chunk.chunk.league.name_pretty,
-            scored_chunk.chunk.team.name_pretty,
-            scored_chunk.chunk.year,
-            scored_chunk.chunk.content_type,
-            scored_chunk.chunk.content_seq,
-            scored_chunk.chunk.chunk_seq,
+            enriched.score,
+            enriched.chunk.league.name_pretty,
+            enriched.chunk.team.name_pretty,
+            enriched.chunk.year,
+            enriched.chunk.content_type,
+            enriched.chunk.content_seq,
+            enriched.chunk.chunk_seq,
+            breadcrumb_str,
         );
-        println!("    {}", scored_chunk.chunk.text);
+        println!("    {}", enriched.chunk.text);
         println!();
     }
 

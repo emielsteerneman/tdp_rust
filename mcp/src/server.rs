@@ -1,5 +1,7 @@
 use crate::state::AppState;
-use api::{get_abstract, get_image, get_paragraph, get_table, get_table_of_contents, get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search};
+use api::{get_abstract, get_image, get_paragraph, get_section, get_table, get_table_of_contents, get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search};
+use data_structures::content::ContentType;
+use data_structures::intermediate::SectionResult;
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
@@ -16,10 +18,18 @@ struct CompactSearchResult {
 #[derive(Serialize)]
 struct CompactChunk {
     lyti: String,
+    content_seq: u32,
     title: String,
     content_type: String,
     score: f32,
     text: String,
+    section_path: Vec<CompactBreadcrumb>,
+}
+
+#[derive(Serialize)]
+struct CompactBreadcrumb {
+    seq: u32,
+    title: String,
 }
 
 #[derive(Clone)]
@@ -38,7 +48,7 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Search across 2000+ RoboCup Team Description Papers (TDPs). Returns relevant text chunks with source paper metadata. Use keyword queries like 'trajectory planning' or 'omnidirectional drive'. Filter by league (e.g. 'Soccer SmallSize'), year, or team name to narrow results. Use search_type 'hybrid' (default) for general queries, 'sparse' for exact technical terms, 'dense' for conceptual/semantic similarity."
+        description = "Search across 2000+ RoboCup Team Description Papers (TDPs). Returns relevant text chunks with source paper metadata, content_seq, and section_path breadcrumbs for navigation. Use the content_seq with get_section to read full sections. Use keyword queries like 'trajectory planning' or 'omnidirectional drive'. Filter by league (e.g. 'Soccer SmallSize'), year, or team name to narrow results. Use search_type 'hybrid' (default) for general queries, 'sparse' for exact technical terms, 'dense' for conceptual/semantic similarity."
     )]
     pub async fn search(
         &self,
@@ -48,12 +58,17 @@ impl AppServer {
             Ok(result) => {
                 let compact = CompactSearchResult {
                     query: result.query,
-                    results: result.chunks.into_iter().map(|sc| CompactChunk {
-                        lyti: sc.chunk.league_year_team_idx,
-                        title: sc.chunk.title,
-                        content_type: sc.chunk.content_type,
-                        score: sc.score,
-                        text: sc.chunk.text,
+                    results: result.chunks.into_iter().map(|ec| CompactChunk {
+                        lyti: ec.chunk.league_year_team_idx,
+                        content_seq: ec.chunk.content_seq,
+                        title: ec.chunk.title,
+                        content_type: ec.chunk.content_type,
+                        score: ec.score,
+                        text: ec.chunk.text,
+                        section_path: ec.breadcrumbs.into_iter().map(|b| CompactBreadcrumb {
+                            seq: b.content_seq,
+                            title: b.title,
+                        }).collect(),
                     }).collect(),
                     suggestions: result.suggestions.teams,
                 };
@@ -163,7 +178,23 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Get the full text of a paragraph/section from a paper. Requires the paper lyti and content_seq number from get_table_of_contents. Returns the complete section text."
+        description = "Get a section from a paper with its breadcrumb path. Returns the section content and optionally all subsections. Set include_children=false to retrieve just a single content item (paragraph, table, or image). Requires the paper lyti and content_seq from search results or get_table_of_contents."
+    )]
+    pub async fn get_section(
+        &self,
+        Parameters(args): Parameters<get_section::GetSectionArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match get_section::get_section(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+            Ok(result) => {
+                let markdown = render_section_as_markdown(&result);
+                Ok(CallToolResult::success(vec![Content::text(markdown)]))
+            },
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "(Deprecated: use get_section instead) Get the full text of a paragraph/section from a paper. Requires the paper lyti and content_seq number from get_table_of_contents. Returns the complete section text."
     )]
     pub async fn get_paragraph(
         &self,
@@ -176,7 +207,7 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Get a table from a paper. Requires the paper lyti and content_seq number from get_table_of_contents. Returns the table caption and pipe-delimited body."
+        description = "(Deprecated: use get_section instead) Get a table from a paper. Requires the paper lyti and content_seq number from get_table_of_contents. Returns the table caption and pipe-delimited body."
     )]
     pub async fn get_table(
         &self,
@@ -189,7 +220,7 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Get an image's caption and file path from a paper. Requires the paper lyti and content_seq number from get_table_of_contents."
+        description = "(Deprecated: use get_section instead) Get an image's caption and file path from a paper. Requires the paper lyti and content_seq number from get_table_of_contents."
     )]
     pub async fn get_image(
         &self,
@@ -213,6 +244,51 @@ impl AppServer {
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }
+}
+
+fn render_section_as_markdown(result: &SectionResult) -> String {
+    let mut out = String::new();
+
+    // Breadcrumb trail
+    if !result.breadcrumbs.is_empty() {
+        let trail: Vec<String> = result
+            .breadcrumbs
+            .iter()
+            .map(|b| format!("{} (seq={})", b.title, b.content_seq))
+            .collect();
+        out.push_str(&format!("*{}*\n\n", trail.join(" > ")));
+    }
+
+    // Content items
+    for item in &result.items {
+        match item.content_type {
+            ContentType::Text => {
+                let hashes = "#".repeat(item.depth as usize);
+                out.push_str(&format!("{} {}\n\n", hashes, item.title));
+                if !item.body.is_empty() {
+                    out.push_str(&item.body);
+                    out.push_str("\n\n");
+                }
+            }
+            ContentType::Table => {
+                out.push_str(&format!("**{}**\n\n", item.title));
+                if !item.body.is_empty() {
+                    out.push_str(&item.body);
+                    out.push_str("\n\n");
+                }
+            }
+            ContentType::Image => {
+                out.push_str(&format!("**{}**\n", item.title));
+                if let Some(path) = &item.image_path {
+                    out.push_str(&format!("Image: {}\n\n", path));
+                } else {
+                    out.push('\n');
+                }
+            }
+        }
+    }
+
+    out.trim_end().to_string()
 }
 
 #[tool_handler]

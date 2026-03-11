@@ -60,6 +60,7 @@ async fn main() -> anyhow::Result<()> {
     let searcher = Searcher::new(
         embed_client.clone(),
         vector_client.clone(),
+        metadata_client.clone(),
         Arc::new(idf_map),
         teams,
         leagues,

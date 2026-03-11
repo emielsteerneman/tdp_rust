@@ -52,3 +52,20 @@ pub struct SearchSuggestions {
     pub teams: Vec<String>,
     pub leagues: Vec<String>,
 }
+
+/// A search result chunk enriched with breadcrumb navigation.
+#[derive(Debug, Clone, Serialize)]
+pub struct EnrichedChunk {
+    pub chunk: SearchResultChunk,
+    pub score: f32,
+    pub breadcrumbs: Vec<super::BreadcrumbEntry>,
+}
+
+/// Search result with breadcrumb-enriched chunks.
+#[derive(Debug, Clone, Serialize)]
+pub struct EnrichedSearchResult {
+    pub query: String,
+    pub filter: Option<Filter>,
+    pub chunks: Vec<EnrichedChunk>,
+    pub suggestions: SearchSuggestions,
+}
