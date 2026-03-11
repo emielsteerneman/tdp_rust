@@ -4,6 +4,23 @@ use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
 use rmcp::{ErrorData as McpError, ServerHandler, tool, tool_handler, tool_router};
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct CompactSearchResult {
+    query: String,
+    results: Vec<CompactChunk>,
+    suggestions: Vec<String>,
+}
+
+#[derive(Serialize)]
+struct CompactChunk {
+    lyti: String,
+    title: String,
+    content_type: String,
+    score: f32,
+    text: String,
+}
 
 #[derive(Clone)]
 pub struct AppServer {
@@ -21,14 +38,30 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Search across 2000+ RoboCup Team Description Papers (TDPs). Returns relevant text chunks with source paper metadata (league, year, team). Use keyword queries like 'trajectory planning' or 'omnidirectional drive'. Filter by league (e.g. 'Soccer SmallSize'), year, or team name to narrow results. Use search_type 'hybrid' (default) for general queries, 'sparse' for exact technical terms, 'dense' for conceptual/semantic similarity."
+        description = "Search across 2000+ RoboCup Team Description Papers (TDPs). Returns relevant text chunks with source paper metadata. Use keyword queries like 'trajectory planning' or 'omnidirectional drive'. Filter by league (e.g. 'Soccer SmallSize'), year, or team name to narrow results. Use search_type 'hybrid' (default) for general queries, 'sparse' for exact technical terms, 'dense' for conceptual/semantic similarity."
     )]
     pub async fn search(
         &self,
         Parameters(args): Parameters<search::SearchArgs>,
     ) -> Result<CallToolResult, McpError> {
-        match search::search(&self.state.searcher, args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
-            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+        match search::search_structured(&self.state.searcher, args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+            Ok(result) => {
+                let compact = CompactSearchResult {
+                    query: result.query,
+                    results: result.chunks.into_iter().map(|sc| CompactChunk {
+                        lyti: sc.chunk.league_year_team_idx,
+                        title: sc.chunk.title,
+                        content_type: sc.chunk.content_type,
+                        score: sc.score,
+                        text: sc.chunk.text,
+                    }).collect(),
+                    suggestions: result.suggestions.teams,
+                };
+                match serde_json::to_string_pretty(&compact) {
+                    Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
+                    Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+                }
+            },
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }
