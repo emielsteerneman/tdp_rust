@@ -17,6 +17,10 @@ pub struct Filter {
         description = "An optional list of league_year_team_index on which to filter results"
     )]
     pub league_year_team_indexes: Option<HashSet<String>>,
+    #[schemars(
+        description = "An optional list of content types on which to filter results (text, table, image)"
+    )]
+    pub content_types: Option<HashSet<String>>,
 }
 
 impl Filter {
@@ -50,6 +54,11 @@ impl Filter {
         league_year_team_indexes.insert(league_year_team_index);
     }
 
+    pub fn add_content_type(&mut self, content_type: String) {
+        let content_types = self.content_types.get_or_insert_with(HashSet::new);
+        content_types.insert(content_type);
+    }
+
     pub fn matches_chunk(&self, chunk: &Chunk) -> bool {
         if let Some(teams) = &self.teams {
             if !teams.contains(&chunk.team.name) {
@@ -68,6 +77,11 @@ impl Filter {
         }
         if let Some(indexes) = &self.league_year_team_indexes {
             if !indexes.contains(&chunk.league_year_team_idx) {
+                return false;
+            }
+        }
+        if let Some(content_types) = &self.content_types {
+            if !content_types.contains(chunk.content_type.as_str()) {
                 return false;
             }
         }

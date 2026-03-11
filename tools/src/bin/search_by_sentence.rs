@@ -113,25 +113,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         year_filter: None,
         team_filter: None,
         lyti_filter: None,
+        content_type_filter: content_type_filter,
         search_type: search_mode,
     };
 
     let results = search_structured(&searcher, search_args, activity_client, EventSource::Dev)
         .await?;
 
-    let chunks: Vec<_> = if let Some(ref ct) = content_type_filter {
-        results
-            .chunks
-            .iter()
-            .filter(|sc| sc.chunk.content_type.to_lowercase() == *ct)
-            .collect()
-    } else {
-        results.chunks.iter().collect()
-    };
+    println!("Found {} results\n", results.chunks.len());
 
-    println!("Found {} results\n", chunks.len());
-
-    for (i, scored_chunk) in chunks.iter().enumerate() {
+    for (i, scored_chunk) in results.chunks.iter().enumerate() {
         println!(
             "[{:2}] Score: {:.4} | {} | {} | {} | {:?} seq={}:{}",
             i,

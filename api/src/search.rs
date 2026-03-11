@@ -18,6 +18,8 @@ pub enum SearchError {
     LeagueParseError(#[from] LeagueParseError),
     #[error("Failed to parse year: {0}")]
     YearParseError(#[from] std::num::ParseIntError),
+    #[error("Invalid content type: '{0}'. Use 'text', 'table', or 'image'.")]
+    ContentTypeParseError(String),
 }
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
@@ -48,6 +50,11 @@ pub struct SearchArgs {
         description = "Optional comma-separated filter for specific papers by their league__year__team__index identifier, e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0'. Rarely needed — prefer league/year/team filters."
     )]
     pub lyti_filter: Option<String>,
+
+    #[schemars(
+        description = "Optional comma-separated content type filter. Values: 'text', 'table', 'image'. E.g. 'text, table' to exclude images. Defaults to all types."
+    )]
+    pub content_type_filter: Option<String>,
 
     #[schemars(
         description = "Search method: 'hybrid' (default, best for most queries — combines semantic and keyword matching), 'sparse' (keyword-only, best for exact technical terms like 'PID controller'), 'dense' (semantic-only, best for conceptual queries like 'how to make robots kick harder')."
@@ -83,6 +90,16 @@ impl SearchArgs {
             }
         }
 
+        if let Some(content_type_filter) = &self.content_type_filter {
+            for ct in content_type_filter.split(",") {
+                let ct = ct.trim().to_lowercase();
+                if !["text", "table", "image"].contains(&ct.as_str()) {
+                    return Err(SearchError::ContentTypeParseError(ct));
+                }
+                filter.add_content_type(ct);
+            }
+        }
+
         Ok(Some(filter))
     }
 }
@@ -114,6 +131,7 @@ pub async fn search(
             "league_filter": args.league_filter,
             "year_filter": args.year_filter,
             "team_filter": args.team_filter,
+            "content_type_filter": args.content_type_filter,
         }),
     );
 
@@ -147,6 +165,7 @@ pub async fn search_structured(
             "league_filter": args.league_filter,
             "year_filter": args.year_filter,
             "team_filter": args.team_filter,
+            "content_type_filter": args.content_type_filter,
         }),
     );
 
@@ -166,6 +185,7 @@ mod tests {
             year_filter: Some("2021, 2024".to_string()),
             team_filter: Some("RoboTeam Twente, TIGERs Mannheim".to_string()),
             lyti_filter: Some("rescue_simulation_infrastructure__2012__UvA_Rescue__0".to_string()),
+            content_type_filter: Some("text, table".to_string()),
             search_type: EmbedType::DENSE,
         };
 
@@ -190,6 +210,9 @@ mod tests {
                 .unwrap()
                 .contains("rescue_simulation_infrastructure__2012__UvA_Rescue__0")
         );
+        assert!(filter.content_types.as_ref().unwrap().contains("text"));
+        assert!(filter.content_types.as_ref().unwrap().contains("table"));
+        assert!(!filter.content_types.as_ref().unwrap().contains("image"));
     }
 
     #[test]
@@ -226,6 +249,17 @@ mod tests {
             Err(SearchError::LeagueParseError(
                 LeagueParseError::BadFieldCount(4)
             ))
+        ));
+
+        // Test invalid content type
+        let args = SearchArgs {
+            content_type_filter: Some("text, video".to_string()),
+            ..Default::default()
+        };
+        let result = args.to_filter();
+        assert!(matches!(
+            result,
+            Err(SearchError::ContentTypeParseError(_))
         ));
     }
 }

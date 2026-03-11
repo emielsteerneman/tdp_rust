@@ -398,6 +398,16 @@ impl VectorClient for QdrantClient {
                 }
             }
 
+            if let Some(content_types) = f.content_types {
+                if !content_types.is_empty() {
+                    info!("Adding content_type filter {:?}", content_types);
+                    conditions.push(Condition::matches(
+                        "content_type",
+                        content_types.into_iter().collect::<Vec<String>>(),
+                    ));
+                }
+            }
+
             if !conditions.is_empty() {
                 query_builder =
                     query_builder.filter(qdrant_client::qdrant::Filter::must(conditions));
