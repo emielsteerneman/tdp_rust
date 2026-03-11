@@ -229,7 +229,13 @@ export function preprocessMarkdown(raw: string, lyti: string): string {
         case 'image_name': {
           const filename = line.trim();
           const alt = pendingImageCaption ?? filename;
-          output.push(`![${alt}](/tdps/${lyti}/${filename})`);
+          const caption = pendingImageCaption;
+          output.push(`<figure style="text-align: center;">`);
+          output.push(`<img src="/tdps/${lyti}/${filename}" alt="${alt}" />`);
+          if (caption) {
+            output.push(`<figcaption>${caption}</figcaption>`);
+          }
+          output.push(`</figure>`);
           output.push('');
           pendingImageCaption = null;
           subSection = 'none';
