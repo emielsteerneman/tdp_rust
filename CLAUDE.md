@@ -60,10 +60,10 @@ url = "http://localhost:6334"
 embedding_size = 1536          # must match the embed model's output dimension
 
 [data_access.metadata.sqlite]
-filename = "my_sqlite.db"
+filename = "data/my_sqlite.db"
 
 [data_access.activity.sqlite]
-filename = "activity.db"
+filename = "data/activity.db"
 
 [data_processing]
 tdps_markdown_root = "/path/to/tdps_markdown/"

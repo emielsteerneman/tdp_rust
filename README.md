@@ -210,10 +210,10 @@ cargo run -p mcp
 
 ## Activity Logging
 
-All interactions (searches, paper opens, list operations) are logged to `activity.db` from both Web and MCP sources. HTTP requests from the web server also capture IP and user-agent for scraper detection.
+All interactions (searches, paper opens, list operations) are logged to `data/activity.db` from both Web and MCP sources. HTTP requests from the web server also capture IP and user-agent for scraper detection.
 
 Configure in `config.toml`:
 ```toml
 [data_access.activity.sqlite]
-filename = "activity.db"
+filename = "data/activity.db"
 ```

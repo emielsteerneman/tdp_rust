@@ -4,9 +4,7 @@
 .env
 config.toml
 config.docker.toml
-*.db
-*.db-shm
-*.db-wal
+data/
 *.snapshot
 _*
 frontend/node_modules
