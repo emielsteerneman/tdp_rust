@@ -60,7 +60,7 @@ activity:
 # --- Utilities ---
 
 clean: qdrant-restart
-	rm -f my_sqlite.db my_sqlite.db-shm my_sqlite.db-wal
+	rm -rf data && mkdir data
 
 leagues:
 	@curl -s http://localhost:50000/api/leagues | python3 -m json.tool
