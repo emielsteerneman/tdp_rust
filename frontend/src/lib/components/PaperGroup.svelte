@@ -58,6 +58,9 @@
 					text={chunk.text}
 					{query}
 					score={chunk.score}
+					breadcrumbs={chunk.breadcrumbs}
+					title={chunk.title}
+					{paperId}
 				/>
 			{/each}
 
