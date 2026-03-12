@@ -47,23 +47,23 @@
 
 <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
 	{#if data.error}
-		<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-			<p class="text-red-800">Error: {data.error}</p>
+		<div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+			<p class="text-red-800 dark:text-red-300">Error: {data.error}</p>
 		</div>
 	{/if}
 
 	{#if !data.query}
 		<div class="text-center py-12">
-			<h1 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Search TDP Papers</h1>
-			<p class="text-gray-600">Enter a search query to get started.</p>
+			<h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Search TDP Papers</h1>
+			<p class="text-gray-600 dark:text-gray-400">Enter a search query to get started.</p>
 		</div>
 	{:else}
 		<div class="mb-4 sm:mb-6">
-			<h1 class="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">
+			<h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
 				Search Results for "{data.query}"
 			</h1>
 			{#if data.searchResult}
-				<p class="text-sm sm:text-base text-gray-600">
+				<p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
 					Found {data.searchResult.chunks.length} {data.searchResult.chunks.length === 1
 						? 'result'
 						: 'results'} in {paperGroups.length} {paperGroups.length === 1
@@ -77,7 +77,7 @@
 			<div class="flex justify-center items-center py-16">
 				<div class="text-center">
 					<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-					<p class="text-gray-600">Loading results...</p>
+					<p class="text-gray-600 dark:text-gray-400">Loading results...</p>
 				</div>
 			</div>
 		{:else if data.searchResult && data.searchResult.chunks.length > 0}
@@ -91,13 +91,13 @@
 				{/each}
 			</div>
 		{:else if data.searchResult}
-			<div class="bg-white border border-gray-200 rounded-lg p-6 sm:p-8 text-center">
-				<svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6 sm:p-8 text-center">
+				<svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 				</svg>
-				<p class="text-gray-600 mb-2">No results found for "{data.query}"</p>
+				<p class="text-gray-600 dark:text-gray-400 mb-2">No results found for "{data.query}"</p>
 				{#if hasFilters}
-					<p class="text-sm text-gray-500 mt-2">
+					<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
 						Try removing some filters to see more results.
 					</p>
 				{/if}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { slide } from 'svelte/transition';
 	import type { League, TeamName } from '$lib/types';
 
 	interface Props {
@@ -33,17 +34,25 @@
 		$page.url.searchParams.getAll('team')
 	);
 
-	// Filtered teams based on search query
-	let filteredTeams = $derived(
-		teamSearchQuery.trim() === ''
+	// Filtered teams based on search query, selected float to top
+	let sortedFilteredTeams = $derived.by(() => {
+		const filtered = teamSearchQuery.trim() === ''
 			? teams
 			: teams.filter(t =>
 				t.name_pretty.toLowerCase().includes(teamSearchQuery.toLowerCase())
-			)
-	);
+			);
+		const selected = filtered.filter(t => selectedTeams.includes(t.name));
+		const unselected = filtered.filter(t => !selectedTeams.includes(t.name));
+		return [...selected, ...unselected];
+	});
 
 	// Sort years in descending order
 	let sortedYears = $derived([...years].sort((a, b) => b - a));
+
+	// Total active filter count (for mobile FAB badge)
+	let totalActiveCount = $derived(
+		selectedLeagues.length + selectedYears.length + selectedTeams.length
+	);
 
 	// Build hierarchical league tree grouped by major > minor > sub
 	let leagueTree = $derived.by(() => {
@@ -89,10 +98,8 @@
 
 		params.delete('league');
 		if (allSelected) {
-			// Deselect all in this group, keep the rest
 			current.filter(v => !names.includes(v)).forEach(v => params.append('league', v));
 		} else {
-			// Select all in this group, plus keep existing
 			const merged = new Set([...current, ...names]);
 			merged.forEach(v => params.append('league', v));
 		}
@@ -113,11 +120,9 @@
 		const currentValues = params.getAll(type);
 
 		if (currentValues.includes(value)) {
-			// Remove the value
 			params.delete(type);
 			currentValues.filter(v => v !== value).forEach(v => params.append(type, v));
 		} else {
-			// Add the value
 			params.append(type, value);
 		}
 
@@ -133,59 +138,81 @@
 		goto(`${$page.url.pathname}${qs ? '?' + qs : ''}`, { replaceState: true, keepFocus: true });
 	}
 
-	function hasActiveFilters() {
-		return selectedLeagues.length > 0 || selectedYears.length > 0 || selectedTeams.length > 0;
-	}
-
 	function toggleMobileDrawer() {
 		mobileDrawerOpen = !mobileDrawerOpen;
 	}
 </script>
 
-{#snippet leagueTreeContent()}
-	<div class="space-y-1">
+<!-- ==================== Shared snippets ==================== -->
+
+{#snippet sectionHeader(label: string, count: number, expanded: boolean, toggle: () => void)}
+	<button
+		onclick={toggle}
+		class="flex items-center justify-between w-full text-left font-medium text-gray-900 dark:text-gray-100 mb-2 group"
+	>
+		<span class="flex items-center gap-2">
+			{label}
+			{#if count > 0}
+				<span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+					{count}
+				</span>
+			{/if}
+		</span>
+		<svg
+			class="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-transform duration-200 {expanded ? 'rotate-180' : ''}"
+			fill="none"
+			stroke="currentColor"
+			viewBox="0 0 24 24"
+		>
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+		</svg>
+	</button>
+{/snippet}
+
+{#snippet leagueContent()}
+	<div class="space-y-0.5">
 		{#each leagueTree as group}
-			<label class="flex items-center space-x-2 cursor-pointer mt-2">
+			<label class="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors mt-1">
 				<input
 					type="checkbox"
 					checked={groupAllSelected(group.allNames)}
 					indeterminate={groupSomeSelected(group.allNames)}
 					onchange={() => toggleGroupLeagues(group.allNames)}
-					class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+					class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 dark:bg-gray-700"
 				/>
-				<span class="text-sm font-semibold text-gray-900">{group.majorLabel}</span>
+				<span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{group.majorLabel}</span>
 			</label>
 			{#each group.children as child}
 				{#if child.league}
-					<label class="flex items-center space-x-2 cursor-pointer pl-4">
+					<label class="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1 pl-6 transition-colors {selectedLeagues.includes(child.league.name) ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}">
 						<input
 							type="checkbox"
 							checked={selectedLeagues.includes(child.league.name)}
 							onchange={() => toggleFilter('league', child.league!.name)}
-							class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+							class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 dark:bg-gray-700"
 						/>
-						<span class="text-sm text-gray-700">{child.minorLabel}</span>
+						<span class="text-sm text-gray-700 dark:text-gray-300">{child.minorLabel}</span>
 					</label>
 				{:else}
-					<label class="flex items-center space-x-2 cursor-pointer pl-4 mt-1">
+					<label class="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1 pl-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors mt-0.5">
 						<input
 							type="checkbox"
 							checked={groupAllSelected(child.allNames)}
 							indeterminate={groupSomeSelected(child.allNames)}
 							onchange={() => toggleGroupLeagues(child.allNames)}
-							class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+							class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 dark:bg-gray-700"
 						/>
-						<span class="text-sm font-medium text-gray-800">{child.minorLabel}</span>
+						<span class="text-sm font-medium text-gray-800 dark:text-gray-200">{child.minorLabel}</span>
 					</label>
 					{#each child.subs as sub}
-						<label class="flex items-center space-x-2 cursor-pointer pl-8">
+						<label class="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1 pl-10 transition-colors {selectedLeagues.includes(sub.league.name) ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}">
 							<input
 								type="checkbox"
 								checked={selectedLeagues.includes(sub.league.name)}
 								onchange={() => toggleFilter('league', sub.league.name)}
-								class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+								class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 dark:bg-gray-700"
 							/>
-							<span class="text-sm text-gray-700">{sub.sub}</span>
+							<span class="text-sm text-gray-700 dark:text-gray-300">{sub.sub}</span>
 						</label>
 					{/each}
 				{/if}
@@ -194,44 +221,129 @@
 	</div>
 {/snippet}
 
-<!-- Mobile Filter Toggle Button -->
+{#snippet yearContent()}
+	<div class="flex flex-wrap gap-1.5">
+		{#each sortedYears as year}
+			<button
+				onclick={() => toggleFilter('year', year.toString())}
+				class="px-2.5 py-1 text-sm rounded-full border transition-all duration-150
+					{selectedYears.includes(year)
+						? 'bg-blue-100 dark:bg-blue-900/50 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-300 font-medium shadow-sm'
+						: 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30'}"
+			>
+				{year}
+			</button>
+		{/each}
+	</div>
+{/snippet}
+
+{#snippet teamContent()}
+	<div>
+		<div class="relative mb-2">
+			<input
+				type="text"
+				bind:value={teamSearchQuery}
+				placeholder="Search teams..."
+				class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 dark:bg-gray-800 focus:bg-white dark:focus:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
+			/>
+			<svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+			</svg>
+		</div>
+		<div class="space-y-0.5 max-h-64 overflow-y-auto">
+			{#each sortedFilteredTeams as team}
+				<label class="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1 transition-colors {selectedTeams.includes(team.name) ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}">
+					<input
+						type="checkbox"
+						checked={selectedTeams.includes(team.name)}
+						onchange={() => toggleFilter('team', team.name)}
+						class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 dark:bg-gray-700"
+					/>
+					<span class="text-sm text-gray-700 dark:text-gray-300 truncate">{team.name_pretty}</span>
+				</label>
+			{/each}
+		</div>
+	</div>
+{/snippet}
+
+{#snippet filterSections()}
+	<!-- League Filter -->
+	<div class="mb-5">
+		{@render sectionHeader('League', selectedLeagues.length, leagueExpanded, () => leagueExpanded = !leagueExpanded)}
+		{#if leagueExpanded}
+			<div transition:slide={{ duration: 200 }}>
+				{@render leagueContent()}
+			</div>
+		{/if}
+	</div>
+
+	<!-- Year Filter -->
+	<div class="mb-5">
+		{@render sectionHeader('Year', selectedYears.length, yearExpanded, () => yearExpanded = !yearExpanded)}
+		{#if yearExpanded}
+			<div transition:slide={{ duration: 200 }}>
+				{@render yearContent()}
+			</div>
+		{/if}
+	</div>
+
+	<!-- Team Filter -->
+	<div class="mb-5">
+		{@render sectionHeader('Team', selectedTeams.length, teamExpanded, () => teamExpanded = !teamExpanded)}
+		{#if teamExpanded}
+			<div transition:slide={{ duration: 200 }}>
+				{@render teamContent()}
+			</div>
+		{/if}
+	</div>
+{/snippet}
+
+<!-- ==================== Mobile ==================== -->
+
+<!-- Mobile Filter Toggle FAB -->
 <button
 	onclick={toggleMobileDrawer}
-	class="lg:hidden fixed bottom-4 right-4 z-40 bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-colors"
+	class="lg:hidden fixed bottom-4 right-4 z-40 bg-blue-600 text-white rounded-full p-3.5 shadow-lg hover:bg-blue-700 active:scale-95 transition-all"
 	aria-label="Toggle filters"
 >
 	<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
 	</svg>
+	{#if totalActiveCount > 0}
+		<span class="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+			{totalActiveCount}
+		</span>
+	{/if}
 </button>
 
 <!-- Mobile Drawer Overlay -->
 {#if mobileDrawerOpen}
 	<button
 		type="button"
-		class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+		class="lg:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
 		onclick={toggleMobileDrawer}
 		aria-label="Close filters"
+		transition:slide={{ duration: 200 }}
 	></button>
 {/if}
 
 <!-- Mobile Drawer -->
-<aside class="lg:hidden fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out {mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'} overflow-y-auto">
+<aside class="lg:hidden fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 ease-in-out {mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'} overflow-y-auto">
 	<div class="p-4">
 		<div class="flex items-center justify-between mb-4">
-			<h2 class="text-lg font-semibold text-gray-900">Filters</h2>
-			<div class="flex items-center space-x-2">
-				{#if hasActiveFilters()}
+			<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Filters</h2>
+			<div class="flex items-center gap-2">
+				{#if totalActiveCount > 0}
 					<button
 						onclick={clearAllFilters}
-						class="text-sm text-blue-600 hover:text-blue-800"
+						class="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
 					>
 						Clear all
 					</button>
 				{/if}
 				<button
 					onclick={toggleMobileDrawer}
-					class="p-1 text-gray-500 hover:text-gray-700"
+					class="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 					aria-label="Close filters"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -241,212 +353,26 @@
 			</div>
 		</div>
 
-		<!-- League Filter -->
-		<div class="mb-6">
-			<button
-				onclick={() => leagueExpanded = !leagueExpanded}
-				class="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
-			>
-				<span>League</span>
-				<svg
-					class="w-5 h-5 transition-transform {leagueExpanded ? 'rotate-180' : ''}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-			{#if leagueExpanded}
-				{@render leagueTreeContent()}
-			{/if}
-		</div>
-
-		<!-- Year Filter -->
-		<div class="mb-6">
-			<button
-				onclick={() => yearExpanded = !yearExpanded}
-				class="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
-			>
-				<span>Year</span>
-				<svg
-					class="w-5 h-5 transition-transform {yearExpanded ? 'rotate-180' : ''}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-			{#if yearExpanded}
-				<div class="space-y-2">
-					{#each sortedYears as year}
-						<label class="flex items-center space-x-2 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={selectedYears.includes(year)}
-								onchange={() => toggleFilter('year', year.toString())}
-								class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-							/>
-							<span class="text-sm text-gray-700">{year}</span>
-						</label>
-					{/each}
-				</div>
-			{/if}
-		</div>
-
-		<!-- Team Filter -->
-		<div class="mb-6">
-			<button
-				onclick={() => teamExpanded = !teamExpanded}
-				class="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
-			>
-				<span>Team</span>
-				<svg
-					class="w-5 h-5 transition-transform {teamExpanded ? 'rotate-180' : ''}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-			{#if teamExpanded}
-				<div class="space-y-2">
-					<input
-						type="text"
-						bind:value={teamSearchQuery}
-						placeholder="Search teams..."
-						class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2"
-					/>
-					<div class="space-y-2 max-h-64 overflow-y-auto">
-						{#each filteredTeams as team}
-							<label class="flex items-center space-x-2 cursor-pointer">
-								<input
-									type="checkbox"
-									checked={selectedTeams.includes(team.name)}
-									onchange={() => toggleFilter('team', team.name)}
-									class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-								/>
-								<span class="text-sm text-gray-700">{team.name_pretty}</span>
-							</label>
-						{/each}
-					</div>
-				</div>
-			{/if}
-		</div>
-
+		{@render filterSections()}
 	</div>
 </aside>
 
-<!-- Desktop Sidebar -->
-<aside class="hidden lg:block w-64 flex-shrink-0 bg-white border-r border-gray-200 h-screen sticky top-16 overflow-y-auto">
+<!-- ==================== Desktop Sidebar ==================== -->
+
+<aside class="hidden lg:block w-64 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 h-screen sticky top-16 overflow-y-auto bg-gray-50/50 dark:bg-gray-900/50">
 	<div class="p-4">
 		<div class="flex items-center justify-between mb-4">
-			<h2 class="text-lg font-semibold text-gray-900">Filters</h2>
-			{#if hasActiveFilters()}
+			<h2 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filters</h2>
+			{#if totalActiveCount > 0}
 				<button
 					onclick={clearAllFilters}
-					class="text-sm text-blue-600 hover:text-blue-800"
+					class="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
 				>
 					Clear all
 				</button>
 			{/if}
 		</div>
 
-		<!-- League Filter -->
-		<div class="mb-6">
-			<button
-				onclick={() => leagueExpanded = !leagueExpanded}
-				class="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
-			>
-				<span>League</span>
-				<svg
-					class="w-5 h-5 transition-transform {leagueExpanded ? 'rotate-180' : ''}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-			{#if leagueExpanded}
-				{@render leagueTreeContent()}
-			{/if}
-		</div>
-
-		<!-- Year Filter -->
-		<div class="mb-6">
-			<button
-				onclick={() => yearExpanded = !yearExpanded}
-				class="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
-			>
-				<span>Year</span>
-				<svg
-					class="w-5 h-5 transition-transform {yearExpanded ? 'rotate-180' : ''}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-			{#if yearExpanded}
-				<div class="space-y-2">
-					{#each sortedYears as year}
-						<label class="flex items-center space-x-2 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={selectedYears.includes(year)}
-								onchange={() => toggleFilter('year', year.toString())}
-								class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-							/>
-							<span class="text-sm text-gray-700">{year}</span>
-						</label>
-					{/each}
-				</div>
-			{/if}
-		</div>
-
-		<!-- Team Filter -->
-		<div class="mb-6">
-			<button
-				onclick={() => teamExpanded = !teamExpanded}
-				class="flex items-center justify-between w-full text-left font-medium text-gray-900 mb-2"
-			>
-				<span>Team</span>
-				<svg
-					class="w-5 h-5 transition-transform {teamExpanded ? 'rotate-180' : ''}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</button>
-			{#if teamExpanded}
-				<div class="space-y-2">
-					<input
-						type="text"
-						bind:value={teamSearchQuery}
-						placeholder="Search teams..."
-						class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2"
-					/>
-					<div class="space-y-2 max-h-64 overflow-y-auto">
-						{#each filteredTeams as team}
-							<label class="flex items-center space-x-2 cursor-pointer">
-								<input
-									type="checkbox"
-									checked={selectedTeams.includes(team.name)}
-									onchange={() => toggleFilter('team', team.name)}
-									class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-								/>
-								<span class="text-sm text-gray-700">{team.name_pretty}</span>
-							</label>
-						{/each}
-					</div>
-				</div>
-			{/if}
-		</div>
+		{@render filterSections()}
 	</div>
 </aside>
