@@ -39,20 +39,20 @@
 
 <svelte:window onscroll={handleScroll} />
 
-<div class="min-h-screen bg-gray-50 flex">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
 	<TableOfContents {headings} {activeId} />
 
 	<div class="flex-1 min-w-0">
 		<div class="max-w-4xl mx-auto px-4 py-6 sm:py-8">
 			<!-- Paper Content -->
-			<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
+			<div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
 				<article
-					class="prose prose-gray prose-sm sm:prose-base max-w-none
+					class="prose prose-gray dark:prose-invert prose-sm sm:prose-base max-w-none
 						prose-headings:font-bold prose-headings:scroll-mt-24
 						prose-h2:text-xl sm:prose-h2:text-2xl
 						prose-h3:text-lg sm:prose-h3:text-xl
 						prose-p:leading-relaxed
-						prose-a:text-blue-600 hover:prose-a:text-blue-800
+						prose-a:text-blue-600 hover:prose-a:text-blue-800 dark:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300
 						prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto"
 				>
 					{@html htmlContent}
@@ -63,12 +63,12 @@
 			<div class="flex justify-center">
 				<button
 					disabled
-					class="relative px-4 sm:px-6 py-2 sm:py-3 bg-gray-300 text-gray-500 rounded-lg font-medium cursor-not-allowed group text-sm sm:text-base"
+					class="relative px-4 sm:px-6 py-2 sm:py-3 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg font-medium cursor-not-allowed group text-sm sm:text-base"
 					title="Coming soon"
 				>
 					View Original PDF
 					<span
-						class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none"
+						class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none"
 					>
 						Coming soon
 					</span>

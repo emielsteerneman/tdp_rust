@@ -26,7 +26,7 @@
 	}
 </script>
 
-<div class="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
 	{#if firstChunk}
 		<div class="mb-3">
 			<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
@@ -34,19 +34,19 @@
 					<a
 						href="/paper/{paperId}"
 						target="_blank"
-						class="text-base sm:text-lg font-semibold text-blue-600 hover:text-blue-800 hover:underline break-words"
+						class="text-base sm:text-lg font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline break-words"
 					>
 						{firstChunk.team.name_pretty}
 					</a>
-					<div class="text-xs sm:text-sm text-gray-600 mt-1">
+					<div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
 						{firstChunk.league.name_pretty} • {firstChunk.year}
 					</div>
 				</div>
 				<div class="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-0">
-					<span class="text-xs text-gray-500 font-mono">
+					<span class="text-xs text-gray-500 dark:text-gray-400 font-mono">
 						avg: {averageScore.toFixed(3)}
 					</span>
-					<span class="text-xs text-gray-400">
+					<span class="text-xs text-gray-400 dark:text-gray-500">
 						{chunks.length} {chunks.length === 1 ? 'match' : 'matches'}
 					</span>
 				</div>
@@ -76,14 +76,14 @@
 					{/each}
 					<button
 						onclick={toggleExpanded}
-						class="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium"
+						class="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
 					>
 						Show less
 					</button>
 				{:else}
 					<button
 						onclick={toggleExpanded}
-						class="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium"
+						class="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
 					>
 						Show {remainingChunks.length} more {remainingChunks.length === 1
 							? 'match'

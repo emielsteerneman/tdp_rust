@@ -24,7 +24,7 @@
 		let result = text;
 		for (const word of words) {
 			const regex = new RegExp(`(${escapeRegex(word)})`, 'gi');
-			result = result.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+			result = result.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-700/60 dark:text-yellow-100">$1</mark>');
 		}
 
 		return result;
@@ -55,14 +55,14 @@
 	});
 </script>
 
-<div class="text-xs sm:text-sm text-gray-700 leading-relaxed">
+<div class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
 	{#if crumbs.length > 0}
-		<div class="text-xs text-gray-400 mb-1">
+		<div class="text-xs text-gray-400 dark:text-gray-500 mb-1">
 			{#each crumbs as crumb, i}
 				{#if i > 0}
 					<span class="mx-1">&gt;</span>
 				{/if}
-				<a href={crumb.href} class="hover:text-blue-600 hover:underline">{crumb.title}</a>
+				<a href={crumb.href} class="hover:text-blue-600 dark:hover:text-blue-400 hover:underline">{crumb.title}</a>
 			{/each}
 		</div>
 	{/if}
@@ -70,7 +70,7 @@
 		<div class="flex-1 min-w-0 break-words">
 			{@html highlighted}
 		</div>
-		<span class="text-xs text-gray-500 font-mono flex-shrink-0">
+		<span class="text-xs text-gray-500 dark:text-gray-400 font-mono flex-shrink-0">
 			{score.toFixed(3)}
 		</span>
 	</div>

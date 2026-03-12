@@ -4,9 +4,16 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<script>
+			// Prevent flash: apply dark class before first paint
+			if (localStorage.getItem('theme') === 'dark' ||
+				(!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+				document.documentElement.classList.add('dark');
+			}
+		</script>
 		%sveltekit.head%
 	</head>
-	<body data-sveltekit-preload-data="hover">
+	<body data-sveltekit-preload-data="hover" class="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

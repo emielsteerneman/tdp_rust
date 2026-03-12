@@ -72,14 +72,14 @@
 	});
 
 	function getLeagueBadgeColor(leagueName: string): string {
-		if (leagueName.includes('smallsize')) return 'bg-blue-100 text-blue-800';
-		if (leagueName.includes('middlesize')) return 'bg-green-100 text-green-800';
-		if (leagueName.includes('humanoid')) return 'bg-purple-100 text-purple-800';
-		if (leagueName.includes('standard_platform')) return 'bg-orange-100 text-orange-800';
-		if (leagueName.includes('rescue')) return 'bg-red-100 text-red-800';
-		if (leagueName.includes('athome')) return 'bg-yellow-100 text-yellow-800';
-		if (leagueName.includes('industrial')) return 'bg-gray-100 text-gray-800';
-		return 'bg-gray-100 text-gray-800';
+		if (leagueName.includes('smallsize')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
+		if (leagueName.includes('middlesize')) return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+		if (leagueName.includes('humanoid')) return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
+		if (leagueName.includes('standard_platform')) return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
+		if (leagueName.includes('rescue')) return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+		if (leagueName.includes('athome')) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+		if (leagueName.includes('industrial')) return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+		return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
 	}
 
 	let hasActiveFilters = $derived(
@@ -90,8 +90,8 @@
 </script>
 
 <!-- Introduction (desktop only) -->
-<div class="hidden md:block bg-gradient-to-b from-blue-50 to-white py-8 px-4">
-	<p class="max-w-3xl mx-auto text-gray-600 text-base leading-relaxed">
+<div class="hidden md:block bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/30 dark:to-transparent py-8 px-4">
+	<p class="max-w-3xl mx-auto text-gray-600 dark:text-gray-400 text-base leading-relaxed">
 		Opponents on the field, and colleagues next to it. Not just us, but all before us through the knowledge in their TDPs. Over 2000 and counting. Reading 2000 papers is of course impossible. Therefore, to keep our inspiration and innovation going, I made this information more accessible through this TDP Search Engine.
 	</p>
 </div>
@@ -99,14 +99,14 @@
 <!-- Papers -->
 <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
 	<div class="mb-6">
-		<h2 class="text-xl sm:text-2xl font-semibold text-gray-900">
+		<h2 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-gray-100">
 			{#if hasActiveFilters}
 				Filtered Papers
 			{:else}
 				All Papers
 			{/if}
 		</h2>
-		<p class="text-sm text-gray-600 mt-1">
+		<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
 			Showing {filteredPapers.length} of {data.papers.length} papers
 		</p>
 	</div>
@@ -116,15 +116,15 @@
 			<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
 		</div>
 	{:else if filteredPapers.length === 0}
-		<div class="text-center py-12 bg-gray-50 rounded-lg">
-			<svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<div class="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+			<svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 			</svg>
-			<p class="text-gray-500 text-lg mb-2">
+			<p class="text-gray-500 dark:text-gray-400 text-lg mb-2">
 				No papers match the selected filters.
 			</p>
 			{#if hasActiveFilters}
-				<p class="text-sm text-gray-400">
+				<p class="text-sm text-gray-400 dark:text-gray-500">
 					Try adjusting your filters to see more results.
 				</p>
 			{/if}
@@ -133,7 +133,7 @@
 		<div class="space-y-8">
 			{#each groupedPapers as yearGroup}
 				<section>
-					<h3 class="text-2xl sm:text-3xl font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4">
+					<h3 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
 						{yearGroup.year}
 					</h3>
 					<div class="space-y-4">
