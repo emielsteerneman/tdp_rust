@@ -19,19 +19,25 @@ The backend (`api/src/search.rs`) already accepts `content_type_filter` as a que
 
 ### 2. Clickable breadcrumbs on each chunk result
 
-Each `SearchResultChunk` already includes `breadcrumbs: BreadcrumbEntry[]` from the API. These show the section hierarchy where the chunk lives (e.g. `Introduction > 1.1 Related Work`). Currently not rendered.
+Each `SearchResultChunk` already includes `breadcrumbs: BreadcrumbEntry[]` from the API. These are the **ancestor** sections only (not including the chunk's own section). The chunk's own section title is in `SearchResultChunk.title`.
+
+The full breadcrumb trail is: `breadcrumbs[0] > breadcrumbs[1] > ... > chunk.title`.
 
 **Rendering:** Small gray breadcrumb path above each chunk's text content, using `>` as separator.
 
-**Clickable:** Each breadcrumb segment links to `/paper/{paperId}#{slugified-title}`, navigating to the paper page and scrolling to that section. The slugify function must match the paper page's heading ID generation:
+**Clickable:** Each breadcrumb segment links to `/paper/{paperId}#{slugified-title}`, navigating to the paper page and scrolling to that section. Here `paperId` is `chunk.league_year_team_idx` (the lyti string). The slugify function must match the paper page's heading ID generation:
 
 ```
 text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-')
 ```
 
+**Edge cases:**
+- `breadcrumbs` may be `undefined` at runtime (the Rust struct uses `#[serde(skip_serializing_if = "Vec::is_empty")]`). Default to `[]` when absent.
+- If both `breadcrumbs` is empty and `title` is empty, show no breadcrumb trail.
+
 **Files:**
-- `frontend/src/lib/components/ChunkResult.svelte` — accept `breadcrumbs: BreadcrumbEntry[]` and `paperId: string` props; render clickable breadcrumb path above text
-- `frontend/src/lib/components/PaperGroup.svelte` — pass `breadcrumbs` and `paperId` (already available as `chunk.breadcrumbs` and `paperId` prop) through to `ChunkResult`
+- `frontend/src/lib/components/ChunkResult.svelte` — accept `breadcrumbs: BreadcrumbEntry[]`, `title: string`, and `paperId: string` props; render clickable breadcrumb path above text; handle undefined breadcrumbs
+- `frontend/src/lib/components/PaperGroup.svelte` — pass `breadcrumbs`, `title`, and `paperId` (already available from chunk and paperId prop) through to `ChunkResult`
 
 ### 3. Bump default result limit to 20
 
