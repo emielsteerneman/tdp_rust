@@ -125,7 +125,12 @@
 	}
 
 	function clearAllFilters() {
-		goto('/', { replaceState: true });
+		const params = new URLSearchParams($page.url.searchParams);
+		params.delete('league');
+		params.delete('year');
+		params.delete('team');
+		const qs = params.toString();
+		goto(`${$page.url.pathname}${qs ? '?' + qs : ''}`, { replaceState: true, keepFocus: true });
 	}
 
 	function hasActiveFilters() {
