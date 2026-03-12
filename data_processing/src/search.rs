@@ -9,10 +9,7 @@ use data_structures::{
     content::TocEntry,
     embed_type::EmbedType,
     filter::Filter,
-    intermediate::{
-        BreadcrumbEntry, EnrichedChunk, EnrichedSearchResult, ScoredChunk, SearchResult,
-        SearchSuggestions,
-    },
+    intermediate::{BreadcrumbEntry, SearchResult, SearchResultChunk, SearchSuggestions},
 };
 use tracing::{info, warn};
 
@@ -73,7 +70,6 @@ impl Searcher {
         }
     }
 
-    /// Plain search without breadcrumb enrichment (backwards-compatible).
     pub async fn search(
         &self,
         query: String,
@@ -81,40 +77,13 @@ impl Searcher {
         filter: Option<Filter>,
         search_type: EmbedType,
     ) -> anyhow::Result<SearchResult> {
-        let enriched = self
-            .search_enriched(query, limit, filter, search_type)
-            .await?;
-
-        Ok(SearchResult {
-            query: enriched.query,
-            filter: enriched.filter,
-            chunks: enriched
-                .chunks
-                .into_iter()
-                .map(|ec| ScoredChunk {
-                    chunk: ec.chunk,
-                    score: ec.score,
-                })
-                .collect(),
-            suggestions: enriched.suggestions,
-        })
-    }
-
-    /// Search with breadcrumb-enriched results.
-    pub async fn search_enriched(
-        &self,
-        query: String,
-        limit: Option<u64>,
-        filter: Option<Filter>,
-        search_type: EmbedType,
-    ) -> anyhow::Result<EnrichedSearchResult> {
         info!("Search n={limit:?} type={search_type:?} filter={filter:?}");
         info!("Query : {query}");
 
         let limit = limit.unwrap_or(15);
         let query_trim = query.trim();
         if query_trim.is_empty() {
-            return Ok(EnrichedSearchResult {
+            return Ok(SearchResult {
                 query,
                 filter,
                 chunks: Vec::new(),
@@ -178,15 +147,14 @@ impl Searcher {
                     .get(&chunk.league_year_team_idx)
                     .map(|toc| compute_breadcrumbs(toc, chunk.content_seq))
                     .unwrap_or_default();
-                EnrichedChunk {
-                    chunk: chunk.into(),
-                    score,
-                    breadcrumbs,
-                }
+                let mut result_chunk: SearchResultChunk = chunk.into();
+                result_chunk.score = score;
+                result_chunk.breadcrumbs = breadcrumbs;
+                result_chunk
             })
             .collect();
 
-        Ok(EnrichedSearchResult {
+        Ok(SearchResult {
             query,
             filter,
             chunks,

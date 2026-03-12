@@ -1,5 +1,5 @@
 use api::activity::EventSource;
-use api::search::{search_structured, SearchArgs};
+use api::search::{search, SearchArgs};
 use data_processing::search::Searcher;
 use data_structures::embed_type::EmbedType;
 use std::collections::HashSet;
@@ -117,31 +117,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         search_type: search_mode,
     };
 
-    let results = search_structured(&searcher, search_args, activity_client, EventSource::Dev)
+    let results = search(&searcher, search_args, activity_client, EventSource::Dev)
         .await?;
 
     println!("Found {} results\n", results.chunks.len());
 
-    for (i, enriched) in results.chunks.iter().enumerate() {
-        let breadcrumb_str = if enriched.breadcrumbs.is_empty() {
+    for (i, chunk) in results.chunks.iter().enumerate() {
+        let breadcrumb_str = if chunk.breadcrumbs.is_empty() {
             String::new()
         } else {
-            let trail: Vec<String> = enriched.breadcrumbs.iter().map(|b| b.title.clone()).collect();
+            let trail: Vec<String> = chunk.breadcrumbs.iter().map(|b| b.title.clone()).collect();
             format!(" [{}]", trail.join(" > "))
         };
         println!(
-            "[{:2}] Score: {:.4} | {} | {} | {} | {:?} seq={}:{}{}",
+            "[{:2}] Score: {:.4} | {} | {} | {} | {} seq={}:{}{}",
             i,
-            enriched.score,
-            enriched.chunk.league.name_pretty,
-            enriched.chunk.team.name_pretty,
-            enriched.chunk.year,
-            enriched.chunk.content_type,
-            enriched.chunk.content_seq,
-            enriched.chunk.chunk_seq,
+            chunk.score,
+            chunk.league.name_pretty,
+            chunk.team.name_pretty,
+            chunk.year,
+            chunk.content_type,
+            chunk.content_seq,
+            chunk.chunk_seq,
             breadcrumb_str,
         );
-        println!("    {}", enriched.chunk.text);
+        println!("    {}", chunk.text);
         println!();
     }
 

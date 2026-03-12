@@ -1,9 +1,10 @@
+use schemars::JsonSchema;
 use serde::Serialize;
 
 use crate::content::ContentItem;
 
 /// One ancestor in the section hierarchy path.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct BreadcrumbEntry {
     pub content_seq: u32,
     pub title: String,

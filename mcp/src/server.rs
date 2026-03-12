@@ -54,18 +54,18 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<search::SearchArgs>,
     ) -> Result<CallToolResult, McpError> {
-        match search::search_structured(&self.state.searcher, args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match search::search(&self.state.searcher, args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
             Ok(result) => {
                 let compact = CompactSearchResult {
                     query: result.query,
-                    results: result.chunks.into_iter().map(|ec| CompactChunk {
-                        lyti: ec.chunk.league_year_team_idx,
-                        content_seq: ec.chunk.content_seq,
-                        title: ec.chunk.title,
-                        content_type: ec.chunk.content_type,
-                        score: ec.score,
-                        text: ec.chunk.text,
-                        section_path: ec.breadcrumbs.into_iter().map(|b| CompactBreadcrumb {
+                    results: result.chunks.into_iter().map(|c| CompactChunk {
+                        lyti: c.league_year_team_idx,
+                        content_seq: c.content_seq,
+                        title: c.title,
+                        content_type: c.content_type,
+                        score: c.score,
+                        text: c.text,
+                        section_path: c.breadcrumbs.into_iter().map(|b| CompactBreadcrumb {
                             seq: b.content_seq,
                             title: b.title,
                         }).collect(),

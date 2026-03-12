@@ -1,6 +1,6 @@
 use crate::file::{League, TeamName};
 use crate::filter::Filter;
-use crate::intermediate::Chunk;
+use crate::intermediate::{BreadcrumbEntry, Chunk};
 use schemars::JsonSchema;
 use serde::Serialize;
 
@@ -8,14 +8,8 @@ use serde::Serialize;
 pub struct SearchResult {
     pub query: String,
     pub filter: Option<Filter>,
-    pub chunks: Vec<ScoredChunk>,
+    pub chunks: Vec<SearchResultChunk>,
     pub suggestions: SearchSuggestions,
-}
-
-#[derive(Debug, Clone, Serialize, JsonSchema)]
-pub struct ScoredChunk {
-    pub chunk: SearchResultChunk,
-    pub score: f32,
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]
@@ -29,6 +23,9 @@ pub struct SearchResultChunk {
     pub content_type: String,
     pub title: String,
     pub text: String,
+    pub score: f32,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub breadcrumbs: Vec<BreadcrumbEntry>,
 }
 
 impl From<Chunk> for SearchResultChunk {
@@ -43,6 +40,8 @@ impl From<Chunk> for SearchResultChunk {
             content_type: chunk.content_type.as_str().to_string(),
             title: chunk.title,
             text: chunk.text,
+            score: 0.0,
+            breadcrumbs: Vec::new(),
         }
     }
 }
@@ -51,21 +50,4 @@ impl From<Chunk> for SearchResultChunk {
 pub struct SearchSuggestions {
     pub teams: Vec<String>,
     pub leagues: Vec<String>,
-}
-
-/// A search result chunk enriched with breadcrumb navigation.
-#[derive(Debug, Clone, Serialize)]
-pub struct EnrichedChunk {
-    pub chunk: SearchResultChunk,
-    pub score: f32,
-    pub breadcrumbs: Vec<super::BreadcrumbEntry>,
-}
-
-/// Search result with breadcrumb-enriched chunks.
-#[derive(Debug, Clone, Serialize)]
-pub struct EnrichedSearchResult {
-    pub query: String,
-    pub filter: Option<Filter>,
-    pub chunks: Vec<EnrichedChunk>,
-    pub suggestions: SearchSuggestions,
 }

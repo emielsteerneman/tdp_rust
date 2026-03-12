@@ -20,6 +20,11 @@ export interface TDPName {
 	index: number;
 }
 
+export interface BreadcrumbEntry {
+	content_seq: number;
+	title: string;
+}
+
 export interface SearchResultChunk {
 	league_year_team_idx: string;
 	league: League;
@@ -30,11 +35,8 @@ export interface SearchResultChunk {
 	content_type: string;
 	title: string;
 	text: string;
-}
-
-export interface ScoredChunk {
-	chunk: SearchResultChunk;
 	score: number;
+	breadcrumbs: BreadcrumbEntry[];
 }
 
 export interface SearchSuggestions {
@@ -45,7 +47,7 @@ export interface SearchSuggestions {
 export interface SearchResult {
 	query: string;
 	filter: Filter | null;
-	chunks: ScoredChunk[];
+	chunks: SearchResultChunk[];
 	suggestions: SearchSuggestions;
 }
 

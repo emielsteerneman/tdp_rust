@@ -8,8 +8,8 @@ use crate::state::AppState;
 pub async fn search_handler(
     State(state): State<AppState>,
     Query(args): Query<api::search::SearchArgs>,
-) -> Result<Json<ApiResponse<data_structures::intermediate::EnrichedSearchResult>>, ApiError> {
-    let result = api::search::search_structured(
+) -> Result<Json<ApiResponse<data_structures::intermediate::SearchResult>>, ApiError> {
+    let result = api::search::search(
         &state.searcher,
         args,
         state.activity_client.clone(),

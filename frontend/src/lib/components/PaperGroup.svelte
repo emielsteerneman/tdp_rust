@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { ScoredChunk } from '$lib/types';
+	import type { SearchResultChunk } from '$lib/types';
 	import ChunkResult from './ChunkResult.svelte';
 
 	interface Props {
 		paperId: string;
-		chunks: ScoredChunk[];
+		chunks: SearchResultChunk[];
 		query: string;
 	}
 
@@ -16,7 +16,7 @@
 		chunks.reduce((sum, c) => sum + c.score, 0) / chunks.length
 	);
 
-	const firstChunk = $derived(chunks[0]?.chunk);
+	const firstChunk = $derived(chunks[0]);
 	const topChunks = $derived(chunks.slice(0, 3));
 	const remainingChunks = $derived(chunks.slice(3));
 	const hasMore = $derived(remainingChunks.length > 0);
@@ -53,21 +53,21 @@
 		</div>
 
 		<div class="space-y-2 sm:space-y-3">
-			{#each topChunks as scoredChunk}
+			{#each topChunks as chunk}
 				<ChunkResult
-					text={scoredChunk.chunk.text}
+					text={chunk.text}
 					{query}
-					score={scoredChunk.score}
+					score={chunk.score}
 				/>
 			{/each}
 
 			{#if hasMore}
 				{#if expanded}
-					{#each remainingChunks as scoredChunk}
+					{#each remainingChunks as chunk}
 						<ChunkResult
-							text={scoredChunk.chunk.text}
+							text={chunk.text}
 							{query}
-							score={scoredChunk.score}
+							score={chunk.score}
 						/>
 					{/each}
 					<button
