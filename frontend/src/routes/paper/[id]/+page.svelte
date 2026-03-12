@@ -48,7 +48,7 @@
 			<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
 				<article
 					class="prose prose-gray prose-sm sm:prose-base max-w-none
-						prose-headings:font-bold
+						prose-headings:font-bold prose-headings:scroll-mt-24
 						prose-h2:text-xl sm:prose-h2:text-2xl
 						prose-h3:text-lg sm:prose-h3:text-xl
 						prose-p:leading-relaxed
