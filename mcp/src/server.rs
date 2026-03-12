@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use api::{get_abstract, get_image, get_paragraph, get_section, get_table, get_table_of_contents, get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search};
+use api::{get_abstract, get_section, get_table_of_contents, get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search};
 use data_structures::content::ContentType;
 use data_structures::intermediate::{BreadcrumbEntry, SectionResult};
 use rmcp::handler::server::router::tool::ToolRouter;
@@ -185,44 +185,6 @@ impl AppServer {
         }
     }
 
-    #[tool(
-        description = "(Deprecated: use get_section instead) Get the full text of a paragraph/section from a paper. Requires the paper lyti and content_seq number from get_table_of_contents. Returns the complete section text."
-    )]
-    pub async fn get_paragraph(
-        &self,
-        Parameters(args): Parameters<get_paragraph::GetParagraphArgs>,
-    ) -> Result<CallToolResult, McpError> {
-        match get_paragraph::get_paragraph(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
-            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
-            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
-        }
-    }
-
-    #[tool(
-        description = "(Deprecated: use get_section instead) Get a table from a paper. Requires the paper lyti and content_seq number from get_table_of_contents. Returns the table caption and pipe-delimited body."
-    )]
-    pub async fn get_table(
-        &self,
-        Parameters(args): Parameters<get_table::GetTableArgs>,
-    ) -> Result<CallToolResult, McpError> {
-        match get_table::get_table(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
-            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
-            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
-        }
-    }
-
-    #[tool(
-        description = "(Deprecated: use get_section instead) Get an image's caption and file path from a paper. Requires the paper lyti and content_seq number from get_table_of_contents."
-    )]
-    pub async fn get_image(
-        &self,
-        Parameters(args): Parameters<get_image::GetImageArgs>,
-    ) -> Result<CallToolResult, McpError> {
-        match get_image::get_image(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
-            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
-            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
-        }
-    }
 
     #[tool(
         description = "Get the abstract of a paper. Requires the paper lyti identifier. Returns the abstract text — useful for quick paper overview before diving into specific sections."
