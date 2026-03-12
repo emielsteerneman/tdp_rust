@@ -1,11 +1,10 @@
 use data_structures::content::TocEntry;
 use data_structures::intermediate::BreadcrumbEntry;
 
-/// Compute the content_seq range for a section and its children.
+/// Returns which content_seq's belong to a section and everything nested inside it.
 ///
-/// Returns `(start_seq, end_seq_exclusive)`. All items with
-/// `start_seq <= content_seq < end_seq_exclusive` belong to the section.
-/// Returns `None` if `content_seq` is not found in the ToC.
+/// Given ToC `[(0,d1,"Vision"), (1,d2,"Camera"), (2,d2,"Detection")]`,
+/// `compute_section_range(toc, 0)` → `Some((0, 2))` (Vision owns Camera but not Detection).
 pub fn compute_section_range(toc: &[TocEntry], content_seq: u32) -> Option<(u32, u32)> {
     let target_idx = toc.iter().position(|e| e.content_seq == content_seq)?;
     let start_depth = toc[target_idx].depth;
@@ -20,11 +19,10 @@ pub fn compute_section_range(toc: &[TocEntry], content_seq: u32) -> Option<(u32,
     Some((content_seq, end_seq))
 }
 
-/// Compute the breadcrumb path for a given content_seq within a table of contents.
+/// Returns the parent chain from the root down to (but not including) the given section.
 ///
-/// Finds the target entry's depth, then walks backwards collecting the nearest
-/// ancestor at each strictly lower depth level. Returns the path in root-first order.
-/// Returns an empty vec if content_seq is not found or is a root-level section.
+/// Given ToC `[(0,d1,"Vision"), (1,d2,"Camera"), (2,d3,"Mirror")]`,
+/// `compute_breadcrumbs(toc, 2)` → `[Vision, Camera]` (ancestors of Mirror, root-first).
 pub fn compute_breadcrumbs(toc: &[TocEntry], content_seq: u32) -> Vec<BreadcrumbEntry> {
     // Find the index and depth of the target entry
     let Some(target_idx) = toc.iter().position(|e| e.content_seq == content_seq) else {
