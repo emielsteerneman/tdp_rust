@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { marked } from 'marked';
 	import type { PageData } from './$types';
-	import { preprocessMarkdown, extractHeadings } from '$lib/markdown';
+	import { preprocessMarkdown, extractHeadings, slugifyHeading } from '$lib/markdown';
 	import TableOfContents from '$lib/components/TableOfContents.svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -10,11 +10,7 @@
 	const renderer = new marked.Renderer();
 	// @ts-ignore — marked v12 uses (text, level, raw) not the object form
 	renderer.heading = (text: string, level: number) => {
-		const id = text
-			.toLowerCase()
-			.replace(/[^a-z0-9\s-]/g, '')
-			.trim()
-			.replace(/\s+/g, '-');
+		const id = slugifyHeading(text);
 		return `<h${level} id="${id}">${text}</h${level}>`;
 	};
 	marked.use({ renderer });

@@ -266,6 +266,18 @@ export function preprocessMarkdown(raw: string, lyti: string): string {
 }
 
 /**
+ * Generate a URL-safe heading ID from heading text.
+ * Must match the marked renderer's heading ID logic.
+ */
+export function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
+/**
  * Extract headings from pre-processed (standard) markdown for TOC.
  * Generates URL-safe IDs from heading text.
  */
@@ -281,12 +293,7 @@ export function extractHeadings(markdown: string): TocHeading[] {
     const text = match[2].trim();
     const level = hashes.length;
 
-    // Generate URL-safe id: lowercase, remove chars that aren't alphanumeric/space/hyphen, spaces → hyphens
-    const id = text
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '-');
+    const id = slugifyHeading(text);
 
     headings.push({ id, text, level });
   }
