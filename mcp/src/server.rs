@@ -1,7 +1,7 @@
 use crate::state::AppState;
 use api::{get_abstract, get_image, get_paragraph, get_section, get_table, get_table_of_contents, get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search};
 use data_structures::content::ContentType;
-use data_structures::intermediate::SectionResult;
+use data_structures::intermediate::{BreadcrumbEntry, SectionResult};
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
@@ -23,14 +23,9 @@ struct CompactChunk {
     content_type: String,
     score: f32,
     text: String,
-    section_path: Vec<CompactBreadcrumb>,
+    section_path: Vec<BreadcrumbEntry>,
 }
 
-#[derive(Serialize)]
-struct CompactBreadcrumb {
-    seq: u32,
-    title: String,
-}
 
 #[derive(Clone)]
 pub struct AppServer {
@@ -65,10 +60,7 @@ impl AppServer {
                         content_type: c.content_type,
                         score: c.score,
                         text: c.text,
-                        section_path: c.breadcrumbs.into_iter().map(|b| CompactBreadcrumb {
-                            seq: b.content_seq,
-                            title: b.title,
-                        }).collect(),
+                        section_path: c.breadcrumbs,
                     }).collect(),
                     suggestions: result.suggestions.teams,
                 };
@@ -165,7 +157,7 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Get the table of contents for a specific paper. Returns all content items (paragraphs, tables, images) with sequence numbers, types, and titles. Use the paper's lyti identifier (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0'). Call this first to understand paper structure, then use get_paragraph/get_table/get_image to retrieve specific content."
+        description = "Get the table of contents for a specific paper. Returns all content items (paragraphs, tables, images) with sequence numbers, types, and titles. Use the paper's lyti identifier (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0'). Call this first to understand paper structure, then use get_section with a content_seq to retrieve specific content."
     )]
     pub async fn get_table_of_contents(
         &self,
