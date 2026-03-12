@@ -3,8 +3,8 @@ use data_structures::intermediate::BreadcrumbEntry;
 
 /// Returns which content_seq's belong to a section and everything nested inside it.
 ///
-/// Given ToC `[(0,d1,"Vision"), (1,d2,"Camera"), (2,d2,"Detection")]`,
-/// `compute_section_range(toc, 0)` → `Some((0, 2))` (Vision owns Camera but not Detection).
+/// Given ToC `[(0,d1,"Vision"), (1,d2,"Camera"), (2,d1,"Motion")]`,
+/// `compute_section_range(toc, 0)` → `Some((0, 2))` (Vision owns Camera but not Motion).
 pub fn compute_section_range(toc: &[TocEntry], content_seq: u32) -> Option<(u32, u32)> {
     let target_idx = toc.iter().position(|e| e.content_seq == content_seq)?;
     let start_depth = toc[target_idx].depth;
