@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use crate::file::{League, TDPName, TeamName};
-use crate::intermediate::Chunk;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -43,10 +42,6 @@ impl Filter {
         self.add_league_year_team_index(tdp_name.get_filename());
     }
 
-    pub fn add_chunk(&mut self, chunk: Chunk) {
-        self.add_league_year_team_index(chunk.league_year_team_idx);
-    }
-
     pub fn add_league_year_team_index(&mut self, league_year_team_index: String) {
         let league_year_team_indexes = self
             .league_year_team_indexes
@@ -57,35 +52,6 @@ impl Filter {
     pub fn add_content_type(&mut self, content_type: String) {
         let content_types = self.content_types.get_or_insert_with(HashSet::new);
         content_types.insert(content_type);
-    }
-
-    pub fn matches_chunk(&self, chunk: &Chunk) -> bool {
-        if let Some(teams) = &self.teams {
-            if !teams.contains(&chunk.team.name) {
-                return false;
-            }
-        }
-        if let Some(leagues) = &self.leagues {
-            if !leagues.contains(&chunk.league.name) {
-                return false;
-            }
-        }
-        if let Some(years) = &self.years {
-            if !years.contains(&chunk.year) {
-                return false;
-            }
-        }
-        if let Some(indexes) = &self.league_year_team_indexes {
-            if !indexes.contains(&chunk.league_year_team_idx) {
-                return false;
-            }
-        }
-        if let Some(content_types) = &self.content_types {
-            if !content_types.contains(chunk.content_type.as_str()) {
-                return false;
-            }
-        }
-        true
     }
 
     pub fn matches_tdp_name(&self, tdp_name: &TDPName) -> bool {
