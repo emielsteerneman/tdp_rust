@@ -33,6 +33,7 @@
 				<div class="flex-1 min-w-0">
 					<a
 						href="/paper/{paperId}"
+						target="_blank"
 						class="text-base sm:text-lg font-semibold text-blue-600 hover:text-blue-800 hover:underline break-words"
 					>
 						{firstChunk.team.name_pretty}
