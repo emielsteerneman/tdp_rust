@@ -18,9 +18,11 @@ export const load: PageLoad = async ({ url, fetch }) => {
 
 	const params: SearchParams = {
 		query,
+		limit: 20,
 		league_filter: league,
 		year_filter: year,
-		team_filter: team
+		team_filter: team,
+		content_type_filter: 'text'
 	};
 
 	try {

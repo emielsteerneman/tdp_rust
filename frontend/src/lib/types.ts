@@ -67,6 +67,7 @@ export interface SearchParams {
 	year_filter?: string;
 	team_filter?: string;
 	lyti_filter?: string;
+	content_type_filter?: string;
 	search_type?: EmbedType;
 }
 
