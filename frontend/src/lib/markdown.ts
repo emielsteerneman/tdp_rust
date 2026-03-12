@@ -50,6 +50,41 @@ export function preprocessMarkdown(raw: string, lyti: string): string {
   // Whether we've emitted the abstract ">" prefix for this abstract block
   let inAbstract = false;
 
+  // Frontmatter accumulators
+  let frontmatterTitle: string | null = null;
+  let frontmatterAuthors: string[] = [];
+  let frontmatterInstitutions: string[] = [];
+  let frontmatterUrls: string[] = [];
+  let frontmatterEmitted = false;
+
+  function emitFrontmatter() {
+    if (frontmatterEmitted) return;
+    frontmatterEmitted = true;
+
+    if (frontmatterTitle) {
+      output.push('# ' + frontmatterTitle);
+      output.push('');
+    }
+    if (frontmatterAuthors.length > 0) {
+      output.push(frontmatterAuthors.join(', '));
+      output.push('');
+    }
+    if (frontmatterInstitutions.length > 0) {
+      output.push('*' + frontmatterInstitutions.join('; ') + '*');
+      output.push('');
+    }
+    if (frontmatterUrls.length > 0) {
+      const links = frontmatterUrls.map((url) => `[${url}](${url})`);
+      output.push(links.join(' · '));
+      output.push('');
+    }
+    // Only add separator if we emitted anything
+    if (frontmatterTitle || frontmatterAuthors.length > 0 || frontmatterInstitutions.length > 0 || frontmatterUrls.length > 0) {
+      output.push('---');
+      output.push('');
+    }
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
@@ -80,12 +115,14 @@ export function preprocessMarkdown(raw: string, lyti: string): string {
       continue;
     }
     if (line === '# abstract') {
+      emitFrontmatter();
       topSection = 'abstract';
       subSection = 'none';
       inAbstract = false;
       continue;
     }
     if (line === '# paragraph') {
+      emitFrontmatter();
       topSection = 'paragraph';
       subSection = 'none';
       paragraphDepth = 1;
@@ -93,6 +130,7 @@ export function preprocessMarkdown(raw: string, lyti: string): string {
       continue;
     }
     if (line === '# references') {
+      emitFrontmatter();
       topSection = 'references';
       subSection = 'none';
       output.push('## References');
@@ -100,15 +138,27 @@ export function preprocessMarkdown(raw: string, lyti: string): string {
       continue;
     }
 
-    // ── Strip front-matter sections ───────────────────────────────────────
-    if (
-      topSection === 'title' ||
-      topSection === 'authors' ||
-      topSection === 'institutions' ||
-      topSection === 'mailboxes' ||
-      topSection === 'urls'
-    ) {
-      // Discard all lines in these sections
+    // ── Accumulate front-matter sections ────────────────────────────────
+    if (topSection === 'title') {
+      if (line.trim()) frontmatterTitle = line.trim();
+      continue;
+    }
+    if (topSection === 'authors') {
+      const author = line.replace(/^\*\s*/, '').trim();
+      if (author) frontmatterAuthors.push(author);
+      continue;
+    }
+    if (topSection === 'institutions') {
+      const inst = line.replace(/^\*\s*/, '').trim();
+      if (inst) frontmatterInstitutions.push(inst);
+      continue;
+    }
+    if (topSection === 'urls') {
+      const url = line.replace(/^\*\s*/, '').trim();
+      if (url) frontmatterUrls.push(url);
+      continue;
+    }
+    if (topSection === 'mailboxes') {
       continue;
     }
 
