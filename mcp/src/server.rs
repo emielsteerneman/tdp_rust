@@ -291,6 +291,8 @@ impl ServerHandler for AppServer {
 ## Context
 RoboCup is an international scientific initiative for autonomous robots. Teams compete across leagues including Soccer (SmallSize, MiddleSize, Humanoid, Standard Platform), Rescue (Robot, Simulation), @Home, Industrial, and Junior leagues. Each year, teams publish a Team Description Paper (TDP) — a ~10-page technical paper describing their innovations.
 
+A **lyti** (League-Year-Team-Index) is the unique paper identifier used across all tools, e.g. `soccer_smallsize__2024__RoboTeam_Twente__0`.
+
 ## Research workflow
 1. Start broad: search without league filters to find relevant work across all leagues
 2. Narrow down: use league, year, or team filters to focus results
