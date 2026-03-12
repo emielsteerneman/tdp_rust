@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 
 	interface Props {
 		initialValue?: string;
@@ -16,7 +17,15 @@
 
 	function handleSearch() {
 		if (query.trim()) {
-			goto(`/search?q=${encodeURIComponent(query.trim())}`);
+			const params = new URLSearchParams();
+			params.set('q', query.trim());
+			// Preserve filter params from current URL
+			for (const key of ['league', 'year', 'team']) {
+				for (const value of $page.url.searchParams.getAll(key)) {
+					params.append(key, value);
+				}
+			}
+			goto(`/search?${params.toString()}`);
 		}
 	}
 
