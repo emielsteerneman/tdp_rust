@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import SearchBar from './SearchBar.svelte';
+
+	let currentQuery = $derived($page.url.searchParams.get('q') || '');
 </script>
 
 <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -14,13 +17,13 @@
 
 			<!-- Search Bar (desktop) -->
 			<div class="hidden md:flex flex-1 justify-center px-8">
-				<SearchBar compact={true} />
+				<SearchBar compact={true} initialValue={currentQuery} />
 			</div>
 		</div>
 
 		<!-- Search Bar (mobile - always visible) -->
 		<div class="md:hidden pb-3">
-			<SearchBar compact={false} />
+			<SearchBar compact={false} initialValue={currentQuery} />
 		</div>
 	</div>
 </nav>
