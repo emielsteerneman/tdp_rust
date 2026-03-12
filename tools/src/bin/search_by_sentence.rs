@@ -1,5 +1,5 @@
 use api::activity::EventSource;
-use api::search::{search_structured, SearchArgs};
+use api::search::{search, SearchArgs};
 use data_processing::search::Searcher;
 use data_structures::embed_type::EmbedType;
 use std::collections::HashSet;
@@ -99,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     leagues.sort();
 
-    let searcher = Searcher::new(embed_client, vector_client, idf_map, teams, leagues);
+    let searcher = Searcher::new(embed_client, vector_client, metadata_client.clone(), idf_map, teams, leagues);
 
     println!("\n=== Search Results ===");
     println!("Query: {}", query);
@@ -117,24 +117,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         search_type: search_mode,
     };
 
-    let results = search_structured(&searcher, search_args, activity_client, EventSource::Dev)
+    let results = search(&searcher, search_args, activity_client, EventSource::Dev)
         .await?;
 
     println!("Found {} results\n", results.chunks.len());
 
-    for (i, scored_chunk) in results.chunks.iter().enumerate() {
+    for (i, chunk) in results.chunks.iter().enumerate() {
+        let breadcrumb_str = if chunk.breadcrumbs.is_empty() {
+            String::new()
+        } else {
+            let trail: Vec<String> = chunk.breadcrumbs.iter().map(|b| b.title.clone()).collect();
+            format!(" [{}]", trail.join(" > "))
+        };
         println!(
-            "[{:2}] Score: {:.4} | {} | {} | {} | {:?} seq={}:{}",
+            "[{:2}] Score: {:.4} | {} | {} | {} | {} seq={}:{}{}",
             i,
-            scored_chunk.score,
-            scored_chunk.chunk.league.name_pretty,
-            scored_chunk.chunk.team.name_pretty,
-            scored_chunk.chunk.year,
-            scored_chunk.chunk.content_type,
-            scored_chunk.chunk.content_seq,
-            scored_chunk.chunk.chunk_seq,
+            chunk.score,
+            chunk.league.name_pretty,
+            chunk.team.name_pretty,
+            chunk.year,
+            chunk.content_type,
+            chunk.content_seq,
+            chunk.chunk_seq,
+            breadcrumb_str,
         );
-        println!("    {}", scored_chunk.chunk.text);
+        println!("    {}", chunk.text);
         println!();
     }
 

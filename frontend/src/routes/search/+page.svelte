@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import type { ScoredChunk } from '$lib/types';
+	import type { SearchResultChunk } from '$lib/types';
 	import PaperGroup from '$lib/components/PaperGroup.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -16,21 +16,21 @@
 
 	interface PaperGroup {
 		paperId: string;
-		chunks: ScoredChunk[];
+		chunks: SearchResultChunk[];
 		avgScore: number;
 	}
 
 	const paperGroups = $derived(() => {
 		if (!data.searchResult?.chunks) return [];
 
-		const groups = new Map<string, ScoredChunk[]>();
+		const groups = new Map<string, SearchResultChunk[]>();
 
-		for (const scoredChunk of data.searchResult.chunks) {
-			const paperId = scoredChunk.chunk.league_year_team_idx;
+		for (const chunk of data.searchResult.chunks) {
+			const paperId = chunk.league_year_team_idx;
 			if (!groups.has(paperId)) {
 				groups.set(paperId, []);
 			}
-			groups.get(paperId)!.push(scoredChunk);
+			groups.get(paperId)!.push(chunk);
 		}
 
 		const groupArray: PaperGroup[] = [];

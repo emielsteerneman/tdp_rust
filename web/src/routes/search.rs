@@ -9,7 +9,7 @@ pub async fn search_handler(
     State(state): State<AppState>,
     Query(args): Query<api::search::SearchArgs>,
 ) -> Result<Json<ApiResponse<data_structures::intermediate::SearchResult>>, ApiError> {
-    let result = api::search::search_structured(
+    let result = api::search::search(
         &state.searcher,
         args,
         state.activity_client.clone(),

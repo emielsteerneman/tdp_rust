@@ -109,40 +109,6 @@ pub async fn search(
     args: SearchArgs,
     activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
     source: EventSource,
-) -> anyhow::Result<String> {
-    let search_type_str = format!("{:?}", args.search_type);
-    let search_result = searcher
-        .search(
-            args.query.clone(),
-            args.limit,
-            args.to_filter()?,
-            args.search_type.into(),
-        )
-        .await?;
-
-    log_activity(
-        activity_client,
-        source,
-        "search",
-        serde_json::json!({
-            "query": args.query,
-            "search_type": search_type_str,
-            "result_count": search_result.chunks.len(),
-            "league_filter": args.league_filter,
-            "year_filter": args.year_filter,
-            "team_filter": args.team_filter,
-            "content_type_filter": args.content_type_filter,
-        }),
-    );
-
-    Ok(serde_json::to_string_pretty(&search_result)?)
-}
-
-pub async fn search_structured(
-    searcher: &Searcher,
-    args: SearchArgs,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
-    source: EventSource,
 ) -> anyhow::Result<data_structures::intermediate::SearchResult> {
     let search_type_str = format!("{:?}", args.search_type);
     let search_result = searcher

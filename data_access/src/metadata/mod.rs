@@ -74,4 +74,11 @@ pub trait MetadataClient: Send + Sync {
         lyti: String,
     ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>>;
 
+    fn load_content_items_range<'a>(
+        &'a self,
+        lyti: String,
+        start_seq: u32,
+        end_seq_exclusive: u32,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<ContentItem>, MetadataClientError>> + Send + 'a>>;
+
 }
