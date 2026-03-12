@@ -6,7 +6,7 @@ use data_access::metadata::MetadataClient;
 use data_access::vector::VectorClient;
 use data_structures::{
     IDF,
-    content::TocEntry,
+    content::{ContentType, TocEntry},
     embed_type::EmbedType,
     filter::Filter,
     intermediate::{BreadcrumbEntry, SearchResult, SearchResultChunk, SearchSuggestions},
@@ -26,7 +26,7 @@ fn compute_breadcrumbs(toc: &[TocEntry], content_seq: u32) -> Vec<BreadcrumbEntr
     let mut needed_depth = target_depth;
 
     for entry in toc[..target_idx].iter().rev() {
-        if entry.depth < needed_depth {
+        if entry.depth < needed_depth && entry.content_type == ContentType::Text {
             crumbs.push(BreadcrumbEntry {
                 content_seq: entry.content_seq,
                 title: entry.title.clone(),

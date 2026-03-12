@@ -1,4 +1,4 @@
-use data_structures::content::TocEntry;
+use data_structures::content::{ContentType, TocEntry};
 use data_structures::intermediate::BreadcrumbEntry;
 
 /// Returns which content_seq's belong to a section and everything nested inside it.
@@ -35,7 +35,7 @@ pub fn compute_breadcrumbs(toc: &[TocEntry], content_seq: u32) -> Vec<Breadcrumb
     let mut needed_depth = target_depth;
 
     for entry in toc[..target_idx].iter().rev() {
-        if entry.depth < needed_depth {
+        if entry.depth < needed_depth && entry.content_type == ContentType::Text {
             crumbs.push(BreadcrumbEntry {
                 content_seq: entry.content_seq,
                 title: entry.title.clone(),
@@ -129,6 +129,22 @@ mod tests {
     fn test_breadcrumbs_empty_toc() {
         let crumbs = compute_breadcrumbs(&[], 0);
         assert!(crumbs.is_empty());
+    }
+
+    #[test]
+    fn test_breadcrumbs_skip_image_at_same_depth() {
+        // Real-world case: "Software" heading (text) followed by "Software" image at same depth.
+        // Breadcrumbs should point to the text heading, not the image.
+        let toc = vec![
+            TocEntry { content_seq: 0, content_type: ContentType::Text, depth: 1, title: "Software".into() },
+            TocEntry { content_seq: 1, content_type: ContentType::Image, depth: 1, title: "Software".into() },
+            TocEntry { content_seq: 2, content_type: ContentType::Text, depth: 2, title: "Vision".into() },
+            TocEntry { content_seq: 3, content_type: ContentType::Image, depth: 2, title: "Vision".into() },
+        ];
+        let crumbs = compute_breadcrumbs(&toc, 3);
+        assert_eq!(crumbs.len(), 1);
+        assert_eq!(crumbs[0].content_seq, 0); // text heading, not image at seq=1
+        assert_eq!(crumbs[0].title, "Software");
     }
 
     // ── compute_section_range tests ──────────────────────────────────────
