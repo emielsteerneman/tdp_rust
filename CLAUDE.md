@@ -60,7 +60,7 @@ url = "http://localhost:6334"
 embedding_size = 1536          # must match the embed model's output dimension
 
 [data_access.metadata.sqlite]
-filename = "data/my_sqlite.db"
+filename = "data/metadata.db"
 
 [data_access.activity.sqlite]
 filename = "data/activity.db"

@@ -794,7 +794,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_read_existing_db() -> Result<(), Box<dyn std::error::Error>> {
-        let db_filename = "../data/my_sqlite.db";
+        let db_filename = "../data/metadata.db";
 
         // Check if file exists
         match std::fs::exists(db_filename) {

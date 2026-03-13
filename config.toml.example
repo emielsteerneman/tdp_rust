@@ -26,7 +26,7 @@ embedding_size = 1536  # must match the embed model's output dimension — chang
 
 # SQLite metadata database
 [data_access.metadata.sqlite]
-filename = "data/my_sqlite.db"
+filename = "data/metadata.db"
 
 # SQLite activity/logging database
 [data_access.activity.sqlite]

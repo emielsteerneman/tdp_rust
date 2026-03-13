@@ -55,8 +55,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /mcp-bin /app/mcp
 COPY config.docker.toml /app/config.toml
-COPY my_sqlite.db /app/my_sqlite.db
-COPY activity.db /app/activity.db
+COPY data/metadata.db /app/data/metadata.db
+COPY data/activity.db /app/data/activity.db
 
 WORKDIR /app
 
@@ -77,8 +77,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /web-bin /app/web
 COPY config.docker.toml /app/config.toml
-COPY my_sqlite.db /app/my_sqlite.db
-COPY activity.db /app/activity.db
+COPY data/metadata.db /app/data/metadata.db
+COPY data/activity.db /app/data/activity.db
 
 # Copy frontend static files
 COPY --from=builder /build/frontend/build /app/static

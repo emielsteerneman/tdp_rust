@@ -130,7 +130,7 @@ url = "http://localhost:6334"
 embedding_size = 1536
 
 [data_access.metadata.sqlite]
-filename = "my_sqlite.db"
+filename = "metadata.db"
 
 [data_processing]
 tdps_markdown_root = "some_root"
@@ -170,7 +170,7 @@ embedding_size = 1536
 run = "local_override"
 
 [data_access.metadata.sqlite]
-filename = "my_sqlite.db"
+filename = "metadata.db"
 
 [data_processing]
 tdps_markdown_root = "some_root"

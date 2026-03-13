@@ -5,7 +5,7 @@
 # Users can override specific settings using environment variables:
 # - TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-...
 # - TDP_DATA_ACCESS__EMBED__OPENAI__MODEL_NAME=text-embedding-3-large
-# - TDP_DATA_PROCESSING__TDPS_JSON_ROOT=/path/to/tdps
+# - TDP_DATA_PROCESSING__TDPS_MARKDOWN_ROOT=/path/to/tdps_markdown
 #
 # All environment variable keys use the TDP_ prefix and __ (double underscore) to separate nested levels
 
@@ -29,13 +29,11 @@ embedding_size = 1536        # Fixed with pre-filled snapshot
 
 # SQLite metadata database (mounted volume)
 [data_access.metadata.sqlite]
-filename = "/app/my_sqlite.db"
+filename = "/app/data/metadata.db"
 
 # SQLite activity/logging database (mounted volume)
 [data_access.activity.sqlite]
-filename = "/app/activity.db"
+filename = "/app/data/activity.db"
 
 [data_processing]
-# Set via environment variable: TDP_DATA_PROCESSING__TDPS_MARKDOWN_ROOT=/path/to/tdps
-# Or mount a volume at runtime
-tdps_markdown_root = "/data/tdps"
+tdps_markdown_root = "/data/tdps_markdown"

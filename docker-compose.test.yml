@@ -12,8 +12,8 @@ services:
       - "51001:50001"
       - "51002:50002"
     volumes:
-      - ./data/my_sqlite.db:/app/my_sqlite.db
-      - ./data/activity.db:/app/activity.db
+      - ./data/metadata.db:/app/data/metadata.db
+      - ./data/activity.db:/app/data/activity.db
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -34,8 +34,8 @@ services:
     ports:
       - "51000:50000"
     volumes:
-      - ./data/my_sqlite.db:/app/my_sqlite.db
-      - ./data/activity.db:/app/activity.db
+      - ./data/metadata.db:/app/data/metadata.db
+      - ./data/activity.db:/app/data/activity.db
       - ${TDP_MARKDOWN_ROOT:?Set TDP_MARKDOWN_ROOT in .env}:/data/tdps_markdown:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
