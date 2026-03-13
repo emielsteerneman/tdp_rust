@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import PaperCard from '$lib/components/PaperCard.svelte';
+	import { getLeagueBadgeColor } from '$lib/leagueColors';
 	import type { TDPName, League, TeamName } from '$lib/types';
 
 	interface Props {
@@ -71,16 +72,6 @@
 			}));
 	});
 
-	function getLeagueBadgeColor(leagueName: string): string {
-		if (leagueName.includes('smallsize')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-		if (leagueName.includes('middlesize')) return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-		if (leagueName.includes('humanoid')) return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
-		if (leagueName.includes('standard_platform')) return 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300';
-		if (leagueName.includes('rescue')) return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-		if (leagueName.includes('athome')) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-		if (leagueName.includes('industrial')) return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
-		return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
-	}
 
 	let hasActiveFilters = $derived(
 		selectedLeagues.length > 0 || selectedYears.length > 0 || selectedTeams.length > 0
@@ -140,7 +131,7 @@
 						{#each yearGroup.leagues as leagueGroup}
 							<div>
 								<div class="flex items-center gap-2 mb-2">
-									<span class="px-3 py-1 text-base font-semibold rounded-full {getLeagueBadgeColor(leagueGroup.league.name)}">
+									<span class="px-3 py-1 text-base font-semibold rounded-full {getLeagueBadgeColor(leagueGroup.league.league_major)}">
 										{leagueGroup.league.name_pretty}
 									</span>
 								</div>

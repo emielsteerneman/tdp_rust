@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { slide } from 'svelte/transition';
 	import type { League, TeamName } from '$lib/types';
+	import { getLeagueColor } from '$lib/leagueColors';
 
 	interface Props {
 		leagues: League[];
@@ -180,6 +181,7 @@
 					onchange={() => toggleGroupLeagues(group.allNames)}
 					class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 dark:bg-gray-700"
 				/>
+				<span class="w-2.5 h-2.5 rounded-full flex-shrink-0 {getLeagueColor(group.majorLabel).dot}"></span>
 				<span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{group.majorLabel}</span>
 			</label>
 			{#each group.children as child}
