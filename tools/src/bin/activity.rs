@@ -17,9 +17,9 @@ async fn main() -> anyhow::Result<()> {
     let subcommand = args.get(1).map(|s| s.as_str()).unwrap_or("summary");
 
     match subcommand {
-        "summary" => summary(&client, &args[2..]).await?,
-        "recent" => recent(&client, &args[2..]).await?,
-        "agents" => agents(&client, &args[2..]).await?,
+        "summary" => summary(&client, args.get(2..).unwrap_or_default()).await?,
+        "recent" => recent(&client, args.get(2..).unwrap_or_default()).await?,
+        "agents" => agents(&client, args.get(2..).unwrap_or_default()).await?,
         _ => {
             eprintln!("Usage: activity <command>");
             eprintln!();

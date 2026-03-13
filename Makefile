@@ -1,5 +1,5 @@
 .PHONY: qdrant-restart web ui docker docker-logs docker-down init clean
-.PHONY: activity repl search search-text search-table search-image create-idf mcp leagues
+.PHONY: activity activity-docker repl search search-text search-table search-image create-idf mcp leagues
 
 # --- Services ---
 
@@ -56,6 +56,9 @@ search-image:
 
 activity:
 	cargo run -p tools --bin activity -- $(ARGS)
+
+activity-docker:
+	TDP_DATA_ACCESS__ACTIVITY__SQLITE__FILENAME=data/activity_docker/activity.db cargo run -p tools --bin activity -- $(ARGS)
 
 # --- Utilities ---
 

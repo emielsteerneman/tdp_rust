@@ -39,6 +39,8 @@ services:
     depends_on:
       qdrant:
         condition: service_healthy
+    volumes:
+      - ./data/activity_docker:/app/activity_data
     environment:
       - RUST_LOG=debug
       # Override config settings via TDP_* environment variables
@@ -58,6 +60,7 @@ services:
       qdrant:
         condition: service_healthy
     volumes:
+      - ./data/activity_docker:/app/activity_data
       - ${TDP_MARKDOWN_ROOT:?Set TDP_MARKDOWN_ROOT in .env}:/data/tdps_markdown:ro
     # environment:
       # Override config settings via TDP_* environment variables

@@ -20,17 +20,19 @@ pub enum LeagueParseError {
 
 impl League {
     pub fn new(league_major: String, league_minor: String, league_sub: Option<String>) -> Self {
+        let to_machine = |s: &str| s.to_lowercase().replace('@', "at");
+
         let name = match &league_sub {
             Some(sub) => format!(
                 "{}_{}_{}",
-                league_major.to_lowercase(),
-                league_minor.to_lowercase(),
-                sub.to_lowercase()
+                to_machine(&league_major),
+                to_machine(&league_minor),
+                to_machine(&sub)
             ),
             None => format!(
                 "{}_{}",
-                league_major.to_lowercase(),
-                league_minor.to_lowercase()
+                to_machine(&league_major),
+                to_machine(&league_minor)
             ),
         };
 
@@ -151,6 +153,26 @@ mod tests {
         let league: League = "test_league_sub".try_into()?;
         assert_eq!(league.name, "test_league_sub");
         assert_eq!(league.name_pretty, "Test League Sub");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_at_symbol_roundtrip() -> Result<(), Box<dyn std::error::Error>> {
+        // From machine name (indexing path)
+        let league: League = "industrial_atwork".try_into()?;
+        assert_eq!(league.name, "industrial_atwork");
+        assert_eq!(league.name_pretty, "Industrial @Work");
+
+        // From pretty name (SQLite load_leagues path)
+        let league: League = "Industrial @Work".try_into()?;
+        assert_eq!(league.name, "industrial_atwork");
+        assert_eq!(league.name_pretty, "Industrial @Work");
+
+        // @Home
+        let league: League = "@Home Domestic".try_into()?;
+        assert_eq!(league.name, "athome_domestic");
+        assert_eq!(league.name_pretty, "@Home Domestic");
 
         Ok(())
     }

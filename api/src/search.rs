@@ -80,7 +80,7 @@ impl SearchArgs {
 
         if let Some(team_filter) = &self.team_filter {
             for team in team_filter.split(",") {
-                filter.add_team(TeamName::from_pretty(team.trim()));
+                filter.add_team(TeamName::new(team.trim()));
             }
         }
 

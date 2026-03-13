@@ -10,6 +10,7 @@ metadata.db-wal
 # my_sqlite.db
 my_sqlite.db-shm
 my_sqlite.db-wal
+data/activity_docker/
 .env
 .env.*
 !.env.example
