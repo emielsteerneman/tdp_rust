@@ -119,7 +119,7 @@ All live in `event_processing/src/events.rs`. Each implements `Serialize` + `Typ
 | `GetTableEvent` | `"get_table"` | paper, content_seq |
 | `GetImageEvent` | `"get_image"` | paper, content_seq |
 | `GetTdpContentsEvent` | `"get_tdp_contents"` | league, year, team |
-| `HttpRequestEvent` | `"http_request"` | method, path, status, duration_ms |
+| `HttpRequestEvent` | `"http_request"` | method, path, status, duration_ms, ip, user_agent |
 | `PaperOpenEvent` | `"paper_open"` | paper_id, referrer |
 
 ### SQLite Listener
