@@ -14,15 +14,7 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
 
-    let mut filter = Filter::default();
-    // for year in 2015..2026 {
-    //     filter.add_year(year);
-    // }
-    // filter.add_league(data_structures::file::League::new(
-    //     "soccer".to_string(),
-    //     "smallsize".to_string(),
-    //     None,
-    // ));
+    let filter = Filter::default();
 
     /* Step 1 : Load markdown TDPs */
     info!("Loading markdown TDPs");
@@ -84,7 +76,7 @@ pub fn print_idf_statistics(idf_map: &IDF) {
 #[cfg(test)]
 mod tests {
     use data_access::embed::embed_sparse;
-    use data_structures::{IDF, intermediate::Chunk};
+    use data_structures::IDF;
     use std::collections::HashMap;
 
     #[test]
@@ -94,11 +86,8 @@ mod tests {
             ("world".to_string(), (1, 2.0)),
             ("hello world".to_string(), (2, 3.0)),
         ]);
-        let chunk = Chunk {
-            text: "hello world. I am world".to_string(),
-            ..Default::default()
-        };
-        let sparse = embed_sparse(&chunk.text, &idf_map);
+        let text = "hello world. I am world";
+        let sparse = embed_sparse(text, &idf_map);
         assert_eq!(sparse, HashMap::from([(0, 1.0), (1, 4.0), (2, 3.0)]));
     }
 }

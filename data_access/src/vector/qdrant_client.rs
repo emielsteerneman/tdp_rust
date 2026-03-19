@@ -687,8 +687,8 @@ mod tests {
         let chunk = Chunk {
             dense_embedding: dense_embedding.clone(),
             sparse_embedding: sparse_embedding.clone(),
-            league_year_team_idx: "test_league__1998__test_team__0".to_string(),
-            league: League::try_from("test_league").unwrap(),
+            league_year_team_idx: "soccer_smallsize__1998__test_team__0".to_string(),
+            league: League::SoccerSmallSize,
             year: 1998,
             team: TeamName::new("test_team"),
             content_seq: 0,
@@ -748,8 +748,8 @@ mod tests {
         let chunk_1 = Chunk {
             dense_embedding: dense_embedding.clone(),
             sparse_embedding: sparse_embedding.clone(),
-            league_year_team_idx: "test_league_1__1998__test_team_1__0".to_string(),
-            league: League::try_from("test_league_1").unwrap(),
+            league_year_team_idx: "soccer_midsize__1998__test_team_1__0".to_string(),
+            league: League::SoccerMidSize,
             year: 1998,
             team: TeamName::new("test_team_1"),
             content_seq: 0,
@@ -764,8 +764,8 @@ mod tests {
         let chunk_2_1 = Chunk {
             dense_embedding: dense_embedding.clone(),
             sparse_embedding: sparse_embedding.clone(),
-            league_year_team_idx: "test_league_2__2008__test_team_2__0".to_string(),
-            league: League::try_from("test_league_2").unwrap(),
+            league_year_team_idx: "rescue_robot__2008__test_team_2__0".to_string(),
+            league: League::RescueRobot,
             year: 2008,
             team: TeamName::new("test_team_2"),
             content_seq: 0,
@@ -779,8 +779,8 @@ mod tests {
         let chunk_2_2 = Chunk {
             dense_embedding: dense_embedding.clone(),
             sparse_embedding: sparse_embedding.clone(),
-            league_year_team_idx: "test_league_2__2008__test_team_2__1".to_string(),
-            league: League::try_from("test_league_2").unwrap(),
+            league_year_team_idx: "rescue_robot__2008__test_team_2__1".to_string(),
+            league: League::RescueRobot,
             year: 2008,
             team: TeamName::new("test_team_2"),
             content_seq: 0,
