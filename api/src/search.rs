@@ -147,7 +147,7 @@ mod tests {
         let args = SearchArgs {
             query: "test".to_string(),
             limit: Some(10),
-            league_filter: Some("Soccer Smallsize, Soccer Humanoid".to_string()),
+            league_filter: Some("Soccer SmallSize, Soccer MidSize".to_string()),
             year_filter: Some("2021, 2024".to_string()),
             team_filter: Some("RoboTeam Twente, TIGERs Mannheim".to_string()),
             lyti_filter: Some("rescue_simulation_infrastructure__2012__UvA_Rescue__0".to_string()),
@@ -162,9 +162,9 @@ mod tests {
                 .leagues
                 .as_ref()
                 .unwrap()
-                .contains("Soccer SmallSize")
+                .contains(&League::SoccerSmallSize)
         );
-        assert!(filter.leagues.as_ref().unwrap().contains("Soccer Humanoid"));
+        assert!(filter.leagues.as_ref().unwrap().contains(&League::SoccerMidSize));
         assert!(filter.years.as_ref().unwrap().contains(&2021));
         assert!(filter.years.as_ref().unwrap().contains(&2024));
         assert!(filter.teams.as_ref().unwrap().contains("RoboTeam Twente"));
@@ -191,7 +191,7 @@ mod tests {
         let result = args.to_filter();
         assert!(matches!(result, Err(SearchError::YearParseError(_))));
 
-        // Test invalid league separator
+        // Test invalid league name
         let args = SearchArgs {
             league_filter: Some("InvalidLeague".to_string()),
             ..Default::default()
@@ -200,11 +200,11 @@ mod tests {
         assert!(matches!(
             result,
             Err(SearchError::LeagueParseError(
-                LeagueParseError::BadSeparator()
+                LeagueParseError::Unknown(_)
             ))
         ));
 
-        // Test invalid league field count
+        // Test another invalid league name (was previously BadFieldCount)
         let args = SearchArgs {
             league_filter: Some("soccer_smallsize_extra_field".to_string()),
             ..Default::default()
@@ -213,7 +213,7 @@ mod tests {
         assert!(matches!(
             result,
             Err(SearchError::LeagueParseError(
-                LeagueParseError::BadFieldCount(4)
+                LeagueParseError::Unknown(_)
             ))
         ));
 

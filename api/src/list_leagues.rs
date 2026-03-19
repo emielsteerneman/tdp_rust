@@ -45,9 +45,9 @@ mod tests {
         client.expect_load_leagues().returning(|| {
             Box::pin(async move {
                 Ok(vec![
-                    League::new("soccer".to_string(), "smallsize".to_string(), None),
-                    League::new("soccer".to_string(), "midsize".to_string(), None),
-                    League::new("rescue".to_string(), "simulation".to_string(), None),
+                    League::SoccerSmallSize,
+                    League::SoccerMidSize,
+                    League::RescueRobot,
                 ])
             })
         });
@@ -56,9 +56,9 @@ mod tests {
 
         let leagues = list_leagues(client.clone(), None, EventSource::Web).await?;
         assert_eq!(leagues.len(), 3);
-        assert_eq!(leagues[0].name, "soccer_smallsize");
-        assert_eq!(leagues[1].name, "soccer_midsize");
-        assert_eq!(leagues[2].name, "rescue_simulation");
+        assert_eq!(leagues[0].name(), "soccer_smallsize");
+        assert_eq!(leagues[1].name(), "soccer_midsize");
+        assert_eq!(leagues[2].name(), "rescue_robot");
 
         Ok(())
     }

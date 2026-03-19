@@ -55,25 +55,25 @@ mod tests {
             Box::pin(async move {
                 Ok(vec![
                     TDPName::new(
-                        League::new("soccer".to_string(), "smallsize".to_string(), None),
+                        League::SoccerSmallSize,
                         2019,
                         TeamName::from_pretty("RoboTeam Twente"),
                         None,
                     ),
                     TDPName::new(
-                        League::new("soccer".to_string(), "smallsize".to_string(), None),
+                        League::SoccerSmallSize,
                         2020,
                         TeamName::from_pretty("Er-Force"),
                         None,
                     ),
                     TDPName::new(
-                        League::new("soccer".to_string(), "midsize".to_string(), None),
+                        League::SoccerMidSize,
                         2019,
                         TeamName::from_pretty("TIGERs Mannheim"),
                         None,
                     ),
                     TDPName::new(
-                        League::new("soccer".to_string(), "midsize".to_string(), None),
+                        League::SoccerMidSize,
                         2021,
                         TeamName::from_pretty("Delft Mercurians"),
                         None,

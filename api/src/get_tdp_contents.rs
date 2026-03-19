@@ -66,7 +66,7 @@ mod tests {
 
         mock.expect_get_tdp_markdown()
             .with(predicate::function(|tdp: &TDPName| {
-                tdp.league.name_pretty == "Soccer SmallSize"
+                tdp.league == League::SoccerSmallSize
                     && tdp.year == 2019
                     && tdp.team_name.name_pretty == "RoboTeam Twente"
             }))
