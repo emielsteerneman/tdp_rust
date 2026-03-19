@@ -46,7 +46,6 @@ pub struct QdrantClient {
 pub struct QdrantConfig {
     pub url: String,
     pub embedding_size: u64,
-    pub run: String,
 }
 
 impl QdrantClient {
@@ -629,7 +628,7 @@ mod tests {
         let client = QdrantClient::new(QdrantConfig {
             url: "http://localhost:6334".to_string(),
             embedding_size: 1536,
-            run: "test_run".to_string(),
+
         })
         .await;
 
@@ -643,7 +642,7 @@ mod tests {
         let client = QdrantClient::new(QdrantConfig {
             url: "http://localhost:6334".to_string(),
             embedding_size: 1536,
-            run: "test_run".to_string(),
+
         })
         .await;
 
@@ -672,7 +671,7 @@ mod tests {
         let client = QdrantClient::new(QdrantConfig {
             url: "http://localhost:7334".to_string(),
             embedding_size: 3,
-            run: "test_run".to_string(),
+
         })
         .await;
 
@@ -733,7 +732,7 @@ mod tests {
         let client = QdrantClient::new(QdrantConfig {
             url: "http://localhost:7334".to_string(),
             embedding_size: 3,
-            run: "test_run".to_string(),
+
         })
         .await;
 

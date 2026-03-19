@@ -49,7 +49,6 @@ docker-compose up
 `config.toml` is gitignored — create it in the repo root before running anything. Minimum required fields:
 ```toml
 [data_access]
-run = "dev"
 
 [data_access.embed.openai]
 model_name = "text-embedding-3-small"
