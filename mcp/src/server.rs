@@ -98,7 +98,7 @@ impl AppServer {
     pub async fn list_leagues(&self) -> Result<CallToolResult, McpError> {
         match list_leagues::list_leagues(self.state.metadata_client.clone(), self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
             Ok(leagues) => {
-                let names: Vec<&str> = leagues.iter().map(|l| l.name_pretty.as_str()).collect();
+                let names: Vec<&str> = leagues.iter().map(|l| l.name_pretty()).collect();
                 match serde_json::to_string_pretty(&names) {
                     Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
                     Err(e) => Err(McpError::internal_error(e.to_string(), None)),

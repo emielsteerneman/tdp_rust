@@ -92,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut leagues = tdps
         .into_iter()
-        .map(|tdp| tdp.league.name_pretty.clone())
+        .map(|tdp| tdp.league.name_pretty().to_string())
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
@@ -133,7 +133,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "[{:2}] Score: {:.4} | {} | {} | {} | {} seq={}:{}{}",
             i,
             chunk.score,
-            chunk.league.name_pretty,
+            chunk.league.name_pretty(),
             chunk.team.name_pretty,
             chunk.year,
             chunk.content_type,

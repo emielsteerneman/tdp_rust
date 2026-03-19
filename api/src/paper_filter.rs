@@ -23,7 +23,7 @@ impl PaperFilter {
         if let Some(ref league_str) = self.league {
             let league = League::try_from(league_str.as_str())
                 .map_err(|e| ApiError::Argument("league".to_string(), e.to_string()))?;
-            if paper.league.name != league.name {
+            if paper.league != league {
                 return Ok(false);
             }
         }

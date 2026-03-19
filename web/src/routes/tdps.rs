@@ -34,14 +34,14 @@ pub async fn serve_tdps_file(
     let league = &tdp_name.league;
     let year = tdp_name.year.to_string();
 
-    let league_path = if let Some(ref sub) = league.league_sub {
-        root.join(&league.league_major)
-            .join(&league.league_minor)
+    let league_path = if let Some(sub) = league.sub() {
+        root.join(league.major())
+            .join(league.minor())
             .join(sub)
             .join(&year)
     } else {
-        root.join(&league.league_major)
-            .join(&league.league_minor)
+        root.join(league.major())
+            .join(league.minor())
             .join(&year)
     };
 

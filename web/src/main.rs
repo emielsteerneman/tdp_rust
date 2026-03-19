@@ -52,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut leagues: Vec<String> = tdps
         .iter()
-        .map(|tdp| tdp.league.name_pretty.clone())
+        .map(|tdp| tdp.league.name_pretty().to_string())
         .collect::<HashSet<_>>()
         .into_iter()
         .collect();

@@ -407,7 +407,7 @@ impl MetadataClient for SqliteClient {
             tokio::task::spawn_blocking(move || {
                 let mut conn = conn.lock().unwrap();
                 let lyti = tdp.name.get_filename();
-                let league = &tdp.name.league.name_pretty;
+                let league = tdp.name.league.name();
                 let year = tdp.name.year;
                 let team = &tdp.name.team_name.name_pretty;
                 let idx = tdp.name.index;
@@ -862,7 +862,7 @@ mod tests {
         // Test load_leagues
         let leagues = client.load_leagues().await.expect("Failed to load leagues");
         assert_eq!(leagues.len(), 2);
-        let league_names: Vec<String> = leagues.iter().map(|l| l.name_pretty.clone()).collect();
+        let league_names: Vec<String> = leagues.iter().map(|l| l.name_pretty().to_string()).collect();
         assert!(league_names.contains(&"Soccer SmallSize".to_string()));
         assert!(league_names.contains(&"Soccer MidSize".to_string()));
 
