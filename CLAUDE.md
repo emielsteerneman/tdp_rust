@@ -24,7 +24,7 @@ Key architectural rule: both `mcp` and `web` call the same `api` handlers — do
 
 ## Key Conventions
 - **TDP naming**: `{league}__{year}__{team}__{index}` (double underscore), e.g. `soccer_smallsize__2024__RoboTeam_Twente__0`
-- **Dual name forms**: every `League` and `TeamName` has a machine name (`soccer_smallsize`) and pretty name (`Soccer SmallSize`). Qdrant payloads use pretty names; file keys use machine names.
+- **Dual name forms**: every `League` and `TeamName` has a machine name (`soccer_smallsize`) and pretty name (`Soccer SmallSize`). Qdrant payloads store league as machine name and team as pretty name; file keys use machine names.
 - **Trait-based DI**: all external systems are behind async traits — switch implementations via config, not code changes.
 - **`configuration::helpers`**: use these factory functions to instantiate clients; don't construct them directly in `main.rs`.
 - **Fire-and-forget event dispatch**: `EventDispatcher::dispatch` spawns a task per listener; never blocks the caller. Handlers call `dispatcher.dispatch(source, Event::Variant(...))`.
