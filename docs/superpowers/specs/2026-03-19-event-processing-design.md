@@ -112,7 +112,7 @@ pub struct GetTableOfContentsEvent {
 #[derive(Debug, Clone, Serialize)]
 pub struct GetSectionEvent {
     pub paper: String,
-    pub content_seq: Option<u32>,
+    pub content_seq: u32,
     pub include_children: bool,
     pub items_returned: usize,
 }
