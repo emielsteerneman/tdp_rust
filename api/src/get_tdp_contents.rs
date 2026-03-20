@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
 use data_access::metadata::MetadataClient;
 use data_structures::file::{League, TDPName, TeamName};
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, GetTdpContentsEvent};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use crate::activity::{EventSource, log_activity};
 use crate::error::ApiError;
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
@@ -24,7 +24,7 @@ pub struct GetTdpContentsArgs {
 pub async fn get_tdp_contents(
     metadata_client: Arc<dyn MetadataClient>,
     args: GetTdpContentsArgs,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<String, ApiError> {
     let league = League::try_from(args.league.as_str())
@@ -37,14 +37,12 @@ pub async fn get_tdp_contents(
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "get_tdp_contents",
-        serde_json::json!({
-            "league": args.league,
-            "year": args.year,
-            "team": args.team,
+        Event::GetTdpContents(GetTdpContentsEvent {
+            league: args.league.clone(),
+            year: args.year.to_string(),
+            team: args.team.clone(),
         }),
     );
 
@@ -79,7 +77,7 @@ mod tests {
             team: "RoboTeam Twente".to_string(),
         };
 
-        let result = get_tdp_contents(client, args, None, EventSource::Web)
+        let result = get_tdp_contents(client, args, &EventDispatcher::new(), EventSource::Web)
             .await
             .unwrap();
         assert_eq!(result, expected_markdown);

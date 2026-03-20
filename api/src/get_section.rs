@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
 use data_access::metadata::MetadataClient;
 use data_structures::intermediate::SectionResult;
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, GetSectionEvent};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use crate::activity::{EventSource, log_activity};
 use crate::error::ApiError;
 use crate::paper_navigation::{compute_breadcrumbs, compute_section_range};
 
@@ -27,7 +27,7 @@ pub struct GetSectionArgs {
 pub async fn get_section(
     metadata_client: Arc<dyn MetadataClient>,
     args: GetSectionArgs,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<SectionResult, ApiError> {
     let include_children = args.include_children.unwrap_or(true);
@@ -60,15 +60,13 @@ pub async fn get_section(
         vec![item]
     };
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "get_section",
-        serde_json::json!({
-            "paper": args.paper,
-            "content_seq": args.content_seq,
-            "include_children": include_children,
-            "items_returned": items.len(),
+        Event::GetSection(GetSectionEvent {
+            paper: args.paper.clone(),
+            content_seq: args.content_seq,
+            include_children,
+            items_returned: items.len(),
         }),
     );
 
@@ -180,8 +178,8 @@ mod tests {
                 content_seq: 1,
                 include_children: Some(true),
             },
-            None,
-            EventSource::Dev,
+            &EventDispatcher::new(),
+            EventSource::Web,
         )
         .await
         .unwrap();
@@ -229,8 +227,8 @@ mod tests {
                 content_seq: 2,
                 include_children: Some(false),
             },
-            None,
-            EventSource::Dev,
+            &EventDispatcher::new(),
+            EventSource::Web,
         )
         .await
         .unwrap();

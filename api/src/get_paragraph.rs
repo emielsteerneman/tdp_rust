@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
 use data_access::metadata::MetadataClient;
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, GetParagraphEvent};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use crate::activity::{EventSource, log_activity};
 use crate::error::ApiError;
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
@@ -21,7 +21,7 @@ pub struct GetParagraphArgs {
 pub async fn get_paragraph(
     metadata_client: Arc<dyn MetadataClient>,
     args: GetParagraphArgs,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<String, ApiError> {
     let item = metadata_client
@@ -29,13 +29,11 @@ pub async fn get_paragraph(
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "get_paragraph",
-        serde_json::json!({
-            "paper": args.paper,
-            "content_seq": args.content_seq,
+        Event::GetParagraph(GetParagraphEvent {
+            paper: args.paper.clone(),
+            content_seq: args.content_seq,
         }),
     );
 
@@ -75,7 +73,7 @@ mod tests {
             content_seq: 0,
         };
 
-        let result = get_paragraph(client, args, None, EventSource::Dev)
+        let result = get_paragraph(client, args, &EventDispatcher::new(), EventSource::Web)
             .await
             .unwrap();
 

@@ -1,16 +1,13 @@
-use std::sync::Arc;
-
-use data_access::activity::ActivityClient;
 use data_processing::search::Searcher;
 use data_structures::{
     embed_type::EmbedType,
     file::{League, LeagueParseError, TeamName},
     filter::Filter,
 };
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, SearchEvent};
 use schemars::JsonSchema;
 use serde::Deserialize;
-
-use crate::activity::{EventSource, log_activity};
 
 #[derive(thiserror::Error, Debug)]
 pub enum SearchError {
@@ -107,7 +104,7 @@ impl SearchArgs {
 pub async fn search(
     searcher: &Searcher,
     args: SearchArgs,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> anyhow::Result<data_structures::intermediate::SearchResult> {
     let search_type_str = format!("{:?}", args.search_type);
@@ -120,18 +117,16 @@ pub async fn search(
         )
         .await?;
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "search",
-        serde_json::json!({
-            "query": args.query,
-            "search_type": search_type_str,
-            "result_count": search_result.chunks.len(),
-            "league_filter": args.league_filter,
-            "year_filter": args.year_filter,
-            "team_filter": args.team_filter,
-            "content_type_filter": args.content_type_filter,
+        Event::Search(SearchEvent {
+            query: args.query.clone(),
+            search_type: search_type_str,
+            result_count: search_result.chunks.len(),
+            league_filter: args.league_filter.clone(),
+            year_filter: args.year_filter.clone(),
+            team_filter: args.team_filter.clone(),
+            content_type_filter: args.content_type_filter.clone(),
         }),
     );
 

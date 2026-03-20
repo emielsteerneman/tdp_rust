@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
 use data_access::metadata::MetadataClient;
 use data_structures::file::TDPName;
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, ListPapersEvent};
 
-use crate::activity::{EventSource, log_activity};
 use crate::error::ApiError;
 use crate::paper_filter::PaperFilter;
 
 pub async fn list_papers(
     metadata_client: Arc<dyn MetadataClient>,
     filter: PaperFilter,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<Vec<TDPName>, ApiError> {
     let papers = metadata_client
@@ -21,15 +21,13 @@ pub async fn list_papers(
 
     let result = filter.filter_papers(papers)?;
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "list_papers",
-        serde_json::json!({
-            "league": filter.league,
-            "year": filter.year,
-            "team": filter.team,
-            "result_count": result.len(),
+        Event::ListPapers(ListPapersEvent {
+            league: filter.league.clone(),
+            year: filter.year.map(|y| y.to_string()),
+            team: filter.team.clone(),
+            result_count: result.len(),
         }),
     );
 
@@ -43,7 +41,8 @@ mod tests {
     use std::sync::Arc;
 
     use super::list_papers;
-    use crate::activity::EventSource;
+    use event_processing::dispatcher::EventDispatcher;
+    use event_processing::EventSource;
     use crate::paper_filter::PaperFilter;
 
     #[tokio::test]
@@ -80,7 +79,7 @@ mod tests {
         let papers = list_papers(
             client.clone(),
             PaperFilter::default(),
-            None,
+            &EventDispatcher::new(),
             EventSource::Web,
         )
         .await?;
