@@ -1570,6 +1570,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "event_processing"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "eventsource-stream"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
