@@ -1,5 +1,5 @@
-use api::activity::EventSource;
 use api::search::{search, SearchArgs};
+use event_processing::EventSource;
 use data_processing::search::Searcher;
 use data_structures::embed_type::EmbedType;
 use std::collections::HashSet;
@@ -76,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let embed_client = configuration::helpers::load_any_embed_client(&config);
     let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
-    let activity_client = configuration::helpers::load_activity_client(&config);
+    let dispatcher = configuration::helpers::build_event_dispatcher(&config);
 
     let idf_map = Arc::new(metadata_client.load_idf().await?);
 
@@ -117,7 +117,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         search_type: search_mode,
     };
 
-    let results = search(&searcher, search_args, activity_client, EventSource::Dev)
+    let results = search(&searcher, search_args, &dispatcher, EventSource::Web)
         .await?;
 
     println!("Found {} results\n", results.chunks.len());

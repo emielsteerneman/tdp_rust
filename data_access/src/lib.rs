@@ -1,4 +1,3 @@
-pub mod activity;
 pub mod config;
 pub mod embed;
 pub mod file;

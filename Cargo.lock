@@ -5827,6 +5827,7 @@ dependencies = [
  "data_access",
  "data_processing",
  "data_structures",
+ "event_processing",
  "serde",
  "serde_json",
  "thiserror 2.0.18",

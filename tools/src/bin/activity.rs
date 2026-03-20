@@ -1,7 +1,6 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
+use event_processing::listeners::sqlite::SqliteListener;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -9,17 +8,23 @@ async fn main() -> anyhow::Result<()> {
     let config = configuration::AppConfig::load_from_file(config_path)
         .map_err(|e| anyhow::anyhow!("Failed to load config from {}: {}", config_path, e))?;
 
-    let client: Arc<dyn ActivityClient + Send + Sync> =
-        configuration::helpers::load_activity_client(&config)
-            .ok_or_else(|| anyhow::anyhow!("No activity client configured in config.toml"))?;
+    let sqlite_cfg = config
+        .event_processing
+        .as_ref()
+        .and_then(|ep| ep.activity.as_ref())
+        .and_then(|a| a.sqlite.as_ref())
+        .ok_or_else(|| anyhow::anyhow!("No activity SQLite listener configured in config.toml"))?;
+
+    let listener = SqliteListener::new(sqlite_cfg)
+        .map_err(|e| anyhow::anyhow!("Failed to create SQLite listener: {}", e))?;
 
     let args: Vec<String> = std::env::args().collect();
     let subcommand = args.get(1).map(|s| s.as_str()).unwrap_or("summary");
 
     match subcommand {
-        "summary" => summary(&client, args.get(2..).unwrap_or_default()).await?,
-        "recent" => recent(&client, args.get(2..).unwrap_or_default()).await?,
-        "agents" => agents(&client, args.get(2..).unwrap_or_default()).await?,
+        "summary" => summary(&listener, args.get(2..).unwrap_or_default()).await?,
+        "recent" => recent(&listener, args.get(2..).unwrap_or_default()).await?,
+        "agents" => agents(&listener, args.get(2..).unwrap_or_default()).await?,
         _ => {
             eprintln!("Usage: activity <command>");
             eprintln!();
@@ -40,12 +45,12 @@ fn parse_flag(args: &[String], flag: &str) -> Option<String> {
 }
 
 async fn summary(
-    client: &Arc<dyn ActivityClient + Send + Sync>,
+    listener: &SqliteListener,
     args: &[String],
 ) -> anyhow::Result<()> {
     let since = parse_flag(args, "--since");
 
-    let events = client
+    let events = listener
         .query_events(None, None, since.clone(), None)
         .await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
@@ -112,14 +117,14 @@ async fn summary(
 }
 
 async fn recent(
-    client: &Arc<dyn ActivityClient + Send + Sync>,
+    listener: &SqliteListener,
     args: &[String],
 ) -> anyhow::Result<()> {
-    let limit: u32 = parse_flag(args, "--limit")
+    let limit: usize = parse_flag(args, "--limit")
         .and_then(|s| s.parse().ok())
         .unwrap_or(20);
 
-    let events = client
+    let events = listener
         .query_events(None, None, None, Some(limit))
         .await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
@@ -150,12 +155,12 @@ async fn recent(
 }
 
 async fn agents(
-    client: &Arc<dyn ActivityClient + Send + Sync>,
+    listener: &SqliteListener,
     args: &[String],
 ) -> anyhow::Result<()> {
     let since = parse_flag(args, "--since");
 
-    let events = client
+    let events = listener
         .query_events(None, Some("http_request".to_string()), since, None)
         .await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
