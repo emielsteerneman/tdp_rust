@@ -8,7 +8,7 @@ Activity logging is currently tightly coupled to a single SQLite backend via the
 
 - Decouple event emission from event consumption
 - Support multiple listeners (SQLite logging, Telegram notifications, future listeners)
-- Type-safe event creation at the handler level
+- Type-safe events end-to-end (handlers create typed variants, listeners match on them)
 - Fire-and-forget semantics (listeners never block API responses)
 - Easy to add/remove listeners via config
 
@@ -25,13 +25,12 @@ Activity logging is currently tightly coupled to a single SQLite backend via the
 ```
 event_processing/
   src/
-    lib.rs              -- Event, TypedEvent trait, EventListener trait, EventSource enum
+    lib.rs              -- Event enum, EventSource enum, EventListener trait
     dispatcher.rs       -- EventDispatcher
     listeners/
       mod.rs
       sqlite.rs         -- SqliteListener (event storage + query)
       telegram.rs       -- TelegramListener
-    events.rs           -- All 14 typed event structs
 ```
 
 ### Core Types
@@ -43,25 +42,152 @@ pub enum EventSource {
     Mcp,
 }
 
-/// Untyped event as seen by listeners
-pub struct Event {
-    pub source: String,
-    pub event_type: String,
-    pub payload: serde_json::Value,
+/// All possible events in the system. Type-safe end-to-end.
+/// Handlers create variants, listeners pattern-match on them.
+#[derive(Debug, Clone, Serialize)]
+pub enum Event {
+    Search(SearchEvent),
+    ListLeagues(ListLeaguesEvent),
+    ListYears(ListYearsEvent),
+    ListTeams(ListTeamsEvent),
+    ListPapers(ListPapersEvent),
+    GetAbstract(GetAbstractEvent),
+    GetTableOfContents(GetTableOfContentsEvent),
+    GetSection(GetSectionEvent),
+    GetParagraph(GetParagraphEvent),
+    GetTable(GetTableEvent),
+    GetImage(GetImageEvent),
+    GetTdpContents(GetTdpContentsEvent),
+    HttpRequest(HttpRequestEvent),
+    PaperOpen(PaperOpenEvent),
 }
 
-/// Implemented by typed event structs for compile-time safety
-pub trait TypedEvent: Serialize + Send + 'static {
-    fn event_type(&self) -> &'static str;
+#[derive(Debug, Clone, Serialize)]
+pub struct SearchEvent {
+    pub query: String,
+    pub search_type: String,
+    pub result_count: usize,
+    pub league_filter: Option<String>,
+    pub year_filter: Option<String>,
+    pub team_filter: Option<String>,
+    pub content_type_filter: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ListLeaguesEvent {
+    pub result_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ListYearsEvent {
+    pub league: Option<String>,
+    pub team: Option<String>,
+    pub result_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ListTeamsEvent {
+    pub hint: Option<String>,
+    pub result_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ListPapersEvent {
+    pub league: Option<String>,
+    pub year: Option<String>,
+    pub team: Option<String>,
+    pub result_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GetAbstractEvent {
+    pub paper: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GetTableOfContentsEvent {
+    pub paper: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GetSectionEvent {
+    pub paper: String,
+    pub content_seq: Option<u32>,
+    pub include_children: bool,
+    pub items_returned: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GetParagraphEvent {
+    pub paper: String,
+    pub content_seq: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GetTableEvent {
+    pub paper: String,
+    pub content_seq: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GetImageEvent {
+    pub paper: String,
+    pub content_seq: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GetTdpContentsEvent {
+    pub league: String,
+    pub year: String,
+    pub team: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct HttpRequestEvent {
+    pub method: String,
+    pub path: String,
+    pub status: u16,
+    pub duration_ms: u64,
+    pub ip: Option<String>,
+    pub user_agent: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PaperOpenEvent {
+    pub paper_id: String,
+    pub referrer: Option<String>,
+}
+```
+
+### Event Helper Methods
+
+`Event` provides helper methods so listeners don't need to repeat logic:
+
+```rust
+impl Event {
+    /// Returns the event type as a string (for SQLite storage)
+    pub fn event_type(&self) -> &'static str {
+        match self {
+            Event::Search(_) => "search",
+            Event::ListLeagues(_) => "list_leagues",
+            // ...
+        }
+    }
+}
+```
+
+### EventListener Trait
+
+```rust
 /// Implemented by all event consumers
 #[async_trait]
 pub trait EventListener: Send + Sync {
-    async fn on_event(&self, event: &Event) -> Result<(), EventListenerError>;
+    async fn on_event(&self, source: &EventSource, event: &Event) -> Result<(), EventListenerError>;
     fn name(&self) -> &str;
 }
 ```
+
+Listeners receive both `source` and `event` as separate arguments (source is not part of the event -- it's delivery context).
 
 ### EventDispatcher
 
@@ -74,19 +200,16 @@ impl EventDispatcher {
     pub fn new() -> Self;
     pub fn register(&mut self, listener: Arc<dyn EventListener>);
 
-    /// Serialize typed event to Value, then spawn a task per listener
-    pub fn dispatch(&self, source: EventSource, event: impl TypedEvent) {
-        let payload = serde_json::to_value(&event).unwrap();
-        let event = Arc::new(Event {
-            source: source.as_str().to_string(),
-            event_type: event.event_type().to_string(),
-            payload,
-        });
+    /// Spawn a task per listener (fire-and-forget)
+    pub fn dispatch(&self, source: EventSource, event: Event) {
+        let event = Arc::new(event);
+        let source = Arc::new(source);
         for listener in &self.listeners {
             let listener = listener.clone();
             let event = event.clone();
+            let source = source.clone();
             tokio::spawn(async move {
-                if let Err(e) = listener.on_event(&event).await {
+                if let Err(e) = listener.on_event(&source, &event).await {
                     tracing::warn!("Event listener '{}' failed: {}", listener.name(), e);
                 }
             });
@@ -100,27 +223,7 @@ Key properties:
 - Each listener gets its own `tokio::spawn` -- one slow/failing listener cannot block others
 - Errors are logged and swallowed (fire-and-forget)
 - Empty `listeners` vec means dispatch is a no-op (replaces the old `EventSource::Dev` skip logic)
-
-### Typed Event Structs (14 total)
-
-All live in `event_processing/src/events.rs`. Each implements `Serialize` + `TypedEvent`.
-
-| Struct | event_type | Fields |
-|--------|-----------|--------|
-| `SearchEvent` | `"search"` | query, search_type, result_count, league_filter, year_filter, team_filter, content_type_filter |
-| `ListLeaguesEvent` | `"list_leagues"` | result_count |
-| `ListYearsEvent` | `"list_years"` | league, team, result_count |
-| `ListTeamsEvent` | `"list_teams"` | hint, result_count |
-| `ListPapersEvent` | `"list_papers"` | league, year, team, result_count |
-| `GetAbstractEvent` | `"get_abstract"` | paper |
-| `GetTableOfContentsEvent` | `"get_table_of_contents"` | paper |
-| `GetSectionEvent` | `"get_section"` | paper, content_seq, include_children, items_returned |
-| `GetParagraphEvent` | `"get_paragraph"` | paper, content_seq |
-| `GetTableEvent` | `"get_table"` | paper, content_seq |
-| `GetImageEvent` | `"get_image"` | paper, content_seq |
-| `GetTdpContentsEvent` | `"get_tdp_contents"` | league, year, team |
-| `HttpRequestEvent` | `"http_request"` | method, path, status, duration_ms, ip, user_agent |
-| `PaperOpenEvent` | `"paper_open"` | paper_id, referrer |
+- No serialization in the dispatcher -- events flow as typed data
 
 ### SQLite Listener
 
@@ -134,9 +237,10 @@ pub struct SqliteListener {
 impl EventListener for SqliteListener {
     fn name(&self) -> &str { "sqlite" }
 
-    async fn on_event(&self, event: &Event) -> Result<(), EventListenerError> {
+    async fn on_event(&self, source: &EventSource, event: &Event) -> Result<(), EventListenerError> {
+        let event_type = event.event_type().to_string();
+        let payload = serde_json::to_string(event).unwrap(); // serialize at this boundary
         // INSERT INTO events (source, event_type, payload) VALUES (?, ?, ?)
-        // payload serialized to string at this boundary
     }
 }
 ```
@@ -157,19 +261,19 @@ pub struct TelegramListener {
 impl EventListener for TelegramListener {
     fn name(&self) -> &str { "telegram" }
 
-    async fn on_event(&self, event: &Event) -> Result<(), EventListenerError> {
-        let message = self.format_message(event);
+    async fn on_event(&self, source: &EventSource, event: &Event) -> Result<(), EventListenerError> {
+        let message = self.format_message(source, event);
         // POST https://api.telegram.org/bot{token}/sendMessage
         // { "chat_id": self.chat_id, "text": message }
     }
 }
 ```
 
-`format_message` matches on `event.event_type`:
-- Search events: show query, search type, result count, filters
-- Content access events: show which paper/section was accessed
-- List events: show what was listed and any filters
-- Unknown event types: skip silently (return `Ok(())`)
+`format_message` pattern-matches on the `Event` enum:
+- `Event::Search(e)` -> show query, search type, result count, filters
+- `Event::GetAbstract(e)` -> show which paper's abstract was accessed
+- `Event::PaperOpen(e)` -> show paper_id and referrer
+- Events the Telegram listener doesn't care about -> return `Ok(())` silently
 
 ### Configuration
 
@@ -243,13 +347,13 @@ pub async fn search(
     source: EventSource,
 ) -> anyhow::Result<SearchResult> {
     // ...
-    dispatcher.dispatch(source, SearchEvent {
+    dispatcher.dispatch(source, Event::Search(SearchEvent {
         query: args.query,
         search_type: search_type_str,
         result_count: search_result.chunks.len(),
         league_filter: args.league_filter,
         // ...
-    });
+    }));
 }
 ```
 
@@ -259,7 +363,7 @@ pub async fn search(
 - `api::activity` module (`log_activity` function, `EventSource` enum -- both move to `event_processing`)
 - `ActivityConfig` from `data_access::config`
 - `load_activity_client` from `configuration::helpers`
-- `MockActivityClient` usage in api tests (replaced by a mock `EventDispatcher` or a test `EventListener`)
+- `MockActivityClient` usage in api tests (replaced by a test `EventListener`)
 
 ## Dependency Graph Changes
 
@@ -271,9 +375,9 @@ configuration -> data_access (for ActivitySqliteClient)
 
 After:
 ```
-api -> event_processing (for EventDispatcher, EventSource, typed events)
+api -> event_processing (for EventDispatcher, EventSource, Event enum)
 configuration -> event_processing (for building the dispatcher)
-event_processing is self-contained (owns trait, dispatcher, all listeners)
+event_processing is self-contained (owns enum, dispatcher, all listeners)
 data_access no longer has any activity-related code
 ```
 
@@ -281,21 +385,19 @@ data_access no longer has any activity-related code
 
 - **EventDispatcher**: unit test with a mock listener that records received events
 - **SqliteListener**: unit test with `:memory:` SQLite (same pattern as today)
-- **TelegramListener**: unit test that verifies HTTP request format (mock HTTP or just test `format_message`)
-- **Typed events**: verify each implements `TypedEvent` and serializes correctly
-- **Handler integration**: mock `EventListener` registered on a real dispatcher, verify correct typed event is dispatched
+- **TelegramListener**: unit test that verifies message formatting per event variant (test `format_message` directly)
+- **Handler integration**: test listener registered on a real dispatcher, verify correct event variant is dispatched
 - **CLI activity tool**: still works via `SqliteListener::query_events` directly
 
 ## Migration
 
 1. Create `event_processing` crate, add to workspace
-2. Implement core types: `Event`, `TypedEvent`, `EventListener`, `EventSource`, `EventDispatcher`
-3. Implement typed event structs
-4. Implement `SqliteListener` (port from `data_access::activity`)
-5. Implement `TelegramListener`
-6. Add config types and `build_event_dispatcher` to `configuration`
-7. Update `api` handlers to use dispatcher + typed events
-8. Update `mcp` and `web` `AppState` and wiring
-9. Update CLI `activity` tool to use `SqliteListener` directly
-10. Remove old `data_access::activity` module and `api::activity` module
-11. Update `config.toml`, `config.docker.toml`, `CLAUDE.md`
+2. Implement core types: `Event` enum, `EventSource`, `EventListener` trait, `EventDispatcher`
+3. Implement `SqliteListener` (port from `data_access::activity`)
+4. Implement `TelegramListener`
+5. Add config types and `build_event_dispatcher` to `configuration`
+6. Update `api` handlers to use dispatcher + `Event` enum
+7. Update `mcp` and `web` `AppState` and wiring
+8. Update CLI `activity` tool to use `SqliteListener` directly
+9. Remove old `data_access::activity` module and `api::activity` module
+10. Update `config.toml`, `config.docker.toml`, `CLAUDE.md`
