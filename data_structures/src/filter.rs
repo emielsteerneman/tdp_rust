@@ -25,7 +25,7 @@ pub struct Filter {
 impl Filter {
     pub fn add_team(&mut self, team: TeamName) {
         let teams = self.teams.get_or_insert_with(HashSet::new);
-        teams.insert(team.name_pretty);
+        teams.insert(team.name);
     }
 
     pub fn add_league(&mut self, league: League) {
@@ -56,7 +56,7 @@ impl Filter {
 
     pub fn matches_tdp_name(&self, tdp_name: &TDPName) -> bool {
         if let Some(teams) = &self.teams {
-            if !teams.contains(&tdp_name.team_name.name_pretty) {
+            if !teams.contains(&tdp_name.team_name.name) {
                 return false;
             }
         }

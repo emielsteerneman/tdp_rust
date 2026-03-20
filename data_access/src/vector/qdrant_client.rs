@@ -223,7 +223,7 @@ impl VectorClient for QdrantClient {
         // League Year Team
         payload.insert(Self::KEY_LEAGUE.into(), chunk.league.name().into());
         payload.insert(Self::KEY_YEAR.into(), (chunk.year as i64).into());
-        payload.insert(Self::KEY_TEAM.into(), chunk.team.name_pretty.into());
+        payload.insert(Self::KEY_TEAM.into(), chunk.team.name.into());
         payload.insert(Self::KEY_LYTI.into(), chunk.league_year_team_idx.into());
         // Structure
         payload.insert(

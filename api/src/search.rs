@@ -162,8 +162,8 @@ mod tests {
         assert!(filter.leagues.as_ref().unwrap().contains(&League::SoccerMidSize));
         assert!(filter.years.as_ref().unwrap().contains(&2021));
         assert!(filter.years.as_ref().unwrap().contains(&2024));
-        assert!(filter.teams.as_ref().unwrap().contains("RoboTeam Twente"));
-        assert!(filter.teams.as_ref().unwrap().contains("TIGERs Mannheim"));
+        assert!(filter.teams.as_ref().unwrap().contains("RoboTeam_Twente"));
+        assert!(filter.teams.as_ref().unwrap().contains("TIGERs_Mannheim"));
         assert!(
             filter
                 .league_year_team_indexes
