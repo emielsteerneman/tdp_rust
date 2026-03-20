@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
     let embed_client = configuration::helpers::load_any_embed_client(&config);
     let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
-    let activity_client = configuration::helpers::load_activity_client(&config);
+    let dispatcher = configuration::helpers::build_event_dispatcher(&config);
 
     metadata_client.print_analytics().await?;
 
@@ -66,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
         leagues,
     );
 
-    let state = AppState::new(metadata_client.clone(), Arc::new(searcher), activity_client);
+    let state = AppState::new(metadata_client.clone(), Arc::new(searcher), dispatcher);
     let server = AppServer::new(state);
 
     // The MCP service is Clone — both routers share the same underlying factory.

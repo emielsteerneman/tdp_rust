@@ -10,8 +10,8 @@ pub async fn list_leagues_handler(
 ) -> Result<Json<ApiResponse<Vec<data_structures::file::League>>>, ApiError> {
     let leagues = api::list_leagues::list_leagues(
         state.metadata_client.clone(),
-        state.activity_client.clone(),
-        api::activity::EventSource::Web,
+        &state.dispatcher,
+        event_processing::EventSource::Web,
     )
     .await
     .map_err(|e| ApiError::from(e))?;

@@ -13,8 +13,8 @@ pub async fn get_abstract_handler(
     let result = api::get_abstract::get_abstract(
         state.metadata_client.clone(),
         args,
-        state.activity_client.clone(),
-        api::activity::EventSource::Web,
+        &state.dispatcher,
+        event_processing::EventSource::Web,
     )
     .await
     .map_err(|e| ApiError::from(e))?;

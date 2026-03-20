@@ -12,8 +12,8 @@ pub async fn list_papers_handler(
     let papers = api::list_papers::list_papers(
         state.metadata_client.clone(),
         api::paper_filter::PaperFilter::default(),
-        state.activity_client.clone(),
-        api::activity::EventSource::Web,
+        &state.dispatcher,
+        event_processing::EventSource::Web,
     )
     .await
     .map_err(|e| ApiError::from(e))?;
@@ -42,13 +42,11 @@ pub async fn get_paper_handler(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
-    api::activity::log_activity(
-        state.activity_client.clone(),
-        api::activity::EventSource::Web,
-        "paper_open",
-        serde_json::json!({
-            "paper_id": lyti,
-            "referrer": referrer,
+    state.dispatcher.dispatch(
+        event_processing::EventSource::Web,
+        event_processing::Event::PaperOpen(event_processing::PaperOpenEvent {
+            paper_id: lyti,
+            referrer,
         }),
     );
 
