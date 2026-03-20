@@ -16,8 +16,8 @@ pub async fn get_paragraph_handler(
     let result = api::get_paragraph::get_paragraph(
         state.metadata_client.clone(),
         args,
-        state.activity_client.clone(),
-        api::activity::EventSource::Web,
+        &state.dispatcher,
+        event_processing::EventSource::Web,
     )
     .await
     .map_err(|e| ApiError::from(e))?;

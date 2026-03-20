@@ -68,7 +68,7 @@ pub async fn start_repl(
                 // println!("\n[{}] Score: N/A", i + 1); // Qdrant search results from trait don't include score yet
                 println!(
                     "\n[{i:2}] {score:.4} - {} - {} - {}",
-                    chunk.league.name_pretty, chunk.team.name_pretty, chunk.year
+                    chunk.league.name_pretty(), chunk.team.name_pretty, chunk.year
                 );
                 println!("{}", chunk.text);
             }

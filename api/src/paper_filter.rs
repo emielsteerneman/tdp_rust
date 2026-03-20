@@ -23,7 +23,7 @@ impl PaperFilter {
         if let Some(ref league_str) = self.league {
             let league = League::try_from(league_str.as_str())
                 .map_err(|e| ApiError::Argument("league".to_string(), e.to_string()))?;
-            if paper.league.name != league.name {
+            if paper.league != league {
                 return Ok(false);
             }
         }
@@ -61,19 +61,19 @@ mod tests {
     fn test_papers() -> Vec<TDPName> {
         vec![
             TDPName::new(
-                League::new("soccer".to_string(), "smallsize".to_string(), None),
+                League::SoccerSmallSize,
                 2019,
                 TeamName::from_pretty("RoboTeam Twente"),
                 None,
             ),
             TDPName::new(
-                League::new("soccer".to_string(), "smallsize".to_string(), None),
+                League::SoccerSmallSize,
                 2020,
                 TeamName::from_pretty("Er-Force"),
                 None,
             ),
             TDPName::new(
-                League::new("soccer".to_string(), "midsize".to_string(), None),
+                League::SoccerMidSize,
                 2019,
                 TeamName::from_pretty("TIGERs Mannheim"),
                 None,

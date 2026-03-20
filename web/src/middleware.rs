@@ -39,17 +39,15 @@ pub async fn activity_logging(
 
     let status = response.status().as_u16();
 
-    api::activity::log_activity(
-        state.activity_client.clone(),
-        api::activity::EventSource::Web,
-        "http_request",
-        serde_json::json!({
-            "method": method,
-            "path": path,
-            "status": status,
-            "duration_ms": duration_ms,
-            "ip": ip,
-            "user_agent": user_agent,
+    state.dispatcher.dispatch(
+        event_processing::EventSource::Web,
+        event_processing::Event::HttpRequest(event_processing::HttpRequestEvent {
+            method,
+            path,
+            status,
+            duration_ms,
+            ip,
+            user_agent,
         }),
     );
 

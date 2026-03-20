@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
 use data_access::metadata::MetadataClient;
 use data_processing::text::match_terms;
 use data_structures::file::TeamName;
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, ListTeamsEvent};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use crate::activity::{EventSource, log_activity};
 use crate::error::ApiError;
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
@@ -19,7 +19,7 @@ pub struct ListTeamsArgs {
 pub async fn list_teams(
     metadata_client: Arc<dyn MetadataClient>,
     args: ListTeamsArgs,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<Vec<TeamName>, ApiError> {
     let mut teams = metadata_client
@@ -36,13 +36,11 @@ pub async fn list_teams(
             .collect();
     }
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "list_teams",
-        serde_json::json!({
-            "hint": args.hint,
-            "result_count": teams.len(),
+        Event::ListTeams(ListTeamsEvent {
+            hint: args.hint.clone(),
+            result_count: teams.len(),
         }),
     );
 
@@ -56,7 +54,8 @@ mod tests {
     use std::sync::Arc;
 
     use super::{ListTeamsArgs, list_teams};
-    use crate::activity::EventSource;
+    use event_processing::dispatcher::EventDispatcher;
+    use event_processing::EventSource;
 
     #[tokio::test]
     async fn test_list_teams() -> Result<(), Box<dyn std::error::Error>> {
@@ -79,7 +78,7 @@ mod tests {
         let teams = list_teams(
             client.clone(),
             ListTeamsArgs { hint: None },
-            None,
+            &EventDispatcher::new(),
             EventSource::Web,
         )
         .await?;
@@ -90,7 +89,7 @@ mod tests {
             ListTeamsArgs {
                 hint: Some("robo".to_string()),
             },
-            None,
+            &EventDispatcher::new(),
             EventSource::Web,
         )
         .await?;

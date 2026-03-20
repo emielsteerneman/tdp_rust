@@ -1,4 +1,3 @@
-pub mod activity;
 pub mod error;
 pub mod get_abstract;
 pub mod get_image;

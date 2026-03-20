@@ -44,7 +44,7 @@ impl TDPName {
     pub fn get_filename(&self) -> String {
         let filename = format!(
             "{}__{}__{}__{}",
-            self.league.name, self.year, self.team_name.name, self.index
+            self.league.name(), self.year, self.team_name.name, self.index
         );
         filename
     }
@@ -81,15 +81,15 @@ impl TryFrom<&str> for TDPName {
 
 #[cfg(test)]
 mod tests {
-    use crate::file::TDPName;
+    use crate::file::{League, TDPName};
 
     #[test]
     pub fn test_basic() {
         let filename = "soccer_smallsize__2019__RoboTeam_Twente__1.pdf";
         let tdp_name: TDPName = filename.try_into().unwrap();
 
-        assert_eq!(tdp_name.league.name, "soccer_smallsize");
-        assert_eq!(tdp_name.league.name_pretty, "Soccer SmallSize");
+        assert_eq!(tdp_name.league, League::SoccerSmallSize);
+        assert_eq!(tdp_name.league.name_pretty(), "Soccer SmallSize");
         assert_eq!(tdp_name.year, 2019);
         assert_eq!(tdp_name.team_name.name, "RoboTeam_Twente");
         assert_eq!(tdp_name.team_name.name_pretty, "RoboTeam Twente");
@@ -98,19 +98,12 @@ mod tests {
 
     #[test]
     pub fn test_deserialize() {
-        let json = r#"{"league": {"league_major": "industrial", "league_minor": "logistics", "league_sub": null, "name": "industrial_logistics", "name_pretty": "Industrial Logistics"}, "team_name": {"name": "Carologistics", "name_pretty": "Carologistics"}, "year": 2019, "index": 0}"#;
+        let json = r#"{"league": "industrial_atwork", "team_name": {"name": "Carologistics", "name_pretty": "Carologistics"}, "year": 2019, "index": 0}"#;
 
         let tdp_name: TDPName = serde_json::from_str(json).unwrap();
 
-        println!("{}", tdp_name.league.name);
-        println!("{}", tdp_name.league.name_pretty);
-        println!("{}", tdp_name.year);
-        println!("{}", tdp_name.team_name.name);
-        println!("{}", tdp_name.team_name.name_pretty);
-        println!("{}", tdp_name.index);
-
-        assert_eq!(tdp_name.league.name, "industrial_logistics");
-        assert_eq!(tdp_name.league.name_pretty, "Industrial Logistics");
+        assert_eq!(tdp_name.league, League::IndustrialAtwork);
+        assert_eq!(tdp_name.league.name_pretty(), "Industrial @Work");
         assert_eq!(tdp_name.year, 2019);
         assert_eq!(tdp_name.team_name.name, "Carologistics");
         assert_eq!(tdp_name.team_name.name_pretty, "Carologistics");

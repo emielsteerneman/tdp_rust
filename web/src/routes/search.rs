@@ -12,8 +12,8 @@ pub async fn search_handler(
     let result = api::search::search(
         &state.searcher,
         args,
-        state.activity_client.clone(),
-        api::activity::EventSource::Web,
+        &state.dispatcher,
+        event_processing::EventSource::Web,
     )
     .await
     .map_err(|e| ApiError::internal_server_error(e.to_string()))?;

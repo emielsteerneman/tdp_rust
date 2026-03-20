@@ -9,7 +9,7 @@ pub struct Filter {
     #[schemars(description = "An optional list of team names on which to filter results")]
     pub teams: Option<HashSet<String>>,
     #[schemars(description = "An optional list of leagues on which to filter results")]
-    pub leagues: Option<HashSet<String>>,
+    pub leagues: Option<HashSet<League>>,
     #[schemars(description = "An optional list of years on which to filter results")]
     pub years: Option<HashSet<u32>>,
     #[schemars(
@@ -30,7 +30,7 @@ impl Filter {
 
     pub fn add_league(&mut self, league: League) {
         let leagues = self.leagues.get_or_insert_with(HashSet::new);
-        leagues.insert(league.name_pretty);
+        leagues.insert(league);
     }
 
     pub fn add_year(&mut self, year: u32) {
@@ -61,7 +61,7 @@ impl Filter {
             }
         }
         if let Some(leagues) = &self.leagues {
-            if !leagues.contains(&tdp_name.league.name_pretty) {
+            if !leagues.contains(&tdp_name.league) {
                 return false;
             }
         }

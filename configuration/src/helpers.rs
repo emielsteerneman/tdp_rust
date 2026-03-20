@@ -1,10 +1,12 @@
 use super::AppConfig;
 use data_access::{
-    activity::{ActivityClient, ActivitySqliteClient},
     embed::{EmbedClient, FastembedClient, OpenAIClient},
     metadata::{MetadataClient, SqliteClient},
     vector::{QdrantClient, VectorClient},
 };
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::listeners::sqlite::SqliteListener;
+use event_processing::listeners::telegram::TelegramListener;
 use std::sync::Arc;
 use tracing::info;
 
@@ -56,18 +58,25 @@ pub fn load_any_metadata_client(config: &AppConfig) -> Arc<dyn MetadataClient + 
     metadata_client
 }
 
-pub fn load_activity_client(
-    config: &AppConfig,
-) -> Option<Arc<dyn ActivityClient + Send + Sync>> {
-    if let Some(activity_config) = &config.data_access.activity {
-        if let Some(sqlite_cfg) = &activity_config.sqlite {
-            info!(
-                "Using SQLite Activity with file: {}",
-                sqlite_cfg.filename
-            );
-            return Some(Arc::new(ActivitySqliteClient::new(sqlite_cfg.clone())));
+pub fn build_event_dispatcher(config: &AppConfig) -> Arc<EventDispatcher> {
+    let mut dispatcher = EventDispatcher::new();
+
+    if let Some(ref ep_config) = config.event_processing {
+        if let Some(ref activity_config) = ep_config.activity {
+            if let Some(ref sqlite_cfg) = activity_config.sqlite {
+                info!("Registering SQLite event listener: {}", sqlite_cfg.filename);
+                match SqliteListener::new(sqlite_cfg) {
+                    Ok(listener) => dispatcher.register(Arc::new(listener)),
+                    Err(e) => tracing::error!("Failed to create SQLite event listener: {}", e),
+                }
+            }
+        }
+
+        if let Some(ref telegram_cfg) = ep_config.telegram {
+            info!("Registering Telegram event listener");
+            dispatcher.register(Arc::new(TelegramListener::new(telegram_cfg)));
         }
     }
-    info!("No activity client configured, activity logging disabled");
-    None
+
+    Arc::new(dispatcher)
 }

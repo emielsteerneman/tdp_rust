@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
 use data_access::metadata::MetadataClient;
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, GetAbstractEvent};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use crate::activity::{EventSource, log_activity};
 use crate::error::ApiError;
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
@@ -19,7 +19,7 @@ pub struct GetAbstractArgs {
 pub async fn get_abstract(
     metadata_client: Arc<dyn MetadataClient>,
     args: GetAbstractArgs,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<String, ApiError> {
     let abstract_text = metadata_client
@@ -27,12 +27,10 @@ pub async fn get_abstract(
         .await
         .map_err(|e| ApiError::Internal(e.to_string()))?;
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "get_abstract",
-        serde_json::json!({
-            "paper": args.paper,
+        Event::GetAbstract(GetAbstractEvent {
+            paper: args.paper.clone(),
         }),
     );
 
@@ -63,7 +61,7 @@ mod tests {
             paper: "soccer_smallsize__2024__RoboTeam_Twente__0".to_string(),
         };
 
-        let result = get_abstract(client, args, None, EventSource::Dev)
+        let result = get_abstract(client, args, &EventDispatcher::new(), EventSource::Web)
             .await
             .unwrap();
 

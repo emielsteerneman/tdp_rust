@@ -49,7 +49,7 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<search::SearchArgs>,
     ) -> Result<CallToolResult, McpError> {
-        match search::search(&self.state.searcher, args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match search::search(&self.state.searcher, args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(result) => {
                 let compact = CompactSearchResult {
                     query: result.query,
@@ -80,7 +80,7 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<list_teams::ListTeamsArgs>,
     ) -> Result<CallToolResult, McpError> {
-        match list_teams::list_teams(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match list_teams::list_teams(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(teams) => {
                 let names: Vec<&str> = teams.iter().map(|t| t.name_pretty.as_str()).collect();
                 match serde_json::to_string_pretty(&names) {
@@ -96,9 +96,9 @@ impl AppServer {
         description = "List all RoboCup leagues that have TDPs in the database. League names can be used as filters in the search tool. Examples: 'Soccer SmallSize', 'Soccer Humanoid AdultSize', 'Rescue Robot'."
     )]
     pub async fn list_leagues(&self) -> Result<CallToolResult, McpError> {
-        match list_leagues::list_leagues(self.state.metadata_client.clone(), self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match list_leagues::list_leagues(self.state.metadata_client.clone(), &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(leagues) => {
-                let names: Vec<&str> = leagues.iter().map(|l| l.name_pretty.as_str()).collect();
+                let names: Vec<&str> = leagues.iter().map(|l| l.name_pretty()).collect();
                 match serde_json::to_string_pretty(&names) {
                     Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
                     Err(e) => Err(McpError::internal_error(e.to_string(), None)),
@@ -115,7 +115,7 @@ impl AppServer {
         &self,
         Parameters(filter): Parameters<paper_filter::PaperFilter>,
     ) -> Result<CallToolResult, McpError> {
-        match list_years::list_years(self.state.metadata_client.clone(), filter, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match list_years::list_years(self.state.metadata_client.clone(), filter, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(years) => match serde_json::to_string_pretty(&years) {
                 Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
                 Err(e) => Err(McpError::internal_error(e.to_string(), None)),
@@ -131,7 +131,7 @@ impl AppServer {
         &self,
         Parameters(filter): Parameters<paper_filter::PaperFilter>,
     ) -> Result<CallToolResult, McpError> {
-        match list_papers::list_papers(self.state.metadata_client.clone(), filter, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match list_papers::list_papers(self.state.metadata_client.clone(), filter, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(papers) => {
                 let lytis: Vec<String> = papers.iter().map(|p| p.get_filename()).collect();
                 match serde_json::to_string_pretty(&lytis) {
@@ -150,7 +150,7 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<get_tdp_contents::GetTdpContentsArgs>,
     ) -> Result<CallToolResult, McpError> {
-        match get_tdp_contents::get_tdp_contents(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match get_tdp_contents::get_tdp_contents(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(markdown) => Ok(CallToolResult::success(vec![Content::text(markdown)])),
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
@@ -163,7 +163,7 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<get_table_of_contents::GetTableOfContentsArgs>,
     ) -> Result<CallToolResult, McpError> {
-        match get_table_of_contents::get_table_of_contents(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match get_table_of_contents::get_table_of_contents(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
@@ -176,7 +176,7 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<get_section::GetSectionArgs>,
     ) -> Result<CallToolResult, McpError> {
-        match get_section::get_section(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match get_section::get_section(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(result) => {
                 let markdown = render_section_as_markdown(&result);
                 Ok(CallToolResult::success(vec![Content::text(markdown)]))
@@ -193,7 +193,7 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<get_abstract::GetAbstractArgs>,
     ) -> Result<CallToolResult, McpError> {
-        match get_abstract::get_abstract(self.state.metadata_client.clone(), args, self.state.activity_client.clone(), api::activity::EventSource::Mcp).await {
+        match get_abstract::get_abstract(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }

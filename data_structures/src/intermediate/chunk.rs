@@ -17,7 +17,7 @@ pub struct ChunkMetadata {
     pub source_id: Option<String>,
 }
 
-#[derive(Clone, Default, Serialize)]
+#[derive(Clone, Serialize)]
 pub struct Chunk {
     pub dense_embedding: Vec<f32>,
     pub sparse_embedding: HashMap<u32, f32>,

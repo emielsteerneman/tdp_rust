@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
 use data_access::metadata::MetadataClient;
 use data_structures::file::League;
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, ListLeaguesEvent};
 
-use crate::activity::{EventSource, log_activity};
 use crate::error::ApiError;
 
 pub async fn list_leagues(
     metadata_client: Arc<dyn MetadataClient>,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<Vec<League>, ApiError> {
     let leagues = metadata_client
@@ -17,12 +17,10 @@ pub async fn list_leagues(
         .await
         .map_err(|err| ApiError::Internal(err.to_string()))?;
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "list_leagues",
-        serde_json::json!({
-            "result_count": leagues.len(),
+        Event::ListLeagues(ListLeaguesEvent {
+            result_count: leagues.len(),
         }),
     );
 
@@ -33,10 +31,11 @@ pub async fn list_leagues(
 mod tests {
     use data_access::metadata::MockMetadataClient;
     use data_structures::file::League;
+    use event_processing::dispatcher::EventDispatcher;
+    use event_processing::EventSource;
     use std::sync::Arc;
 
     use super::list_leagues;
-    use crate::activity::EventSource;
 
     #[tokio::test]
     async fn test_list_leagues() -> Result<(), Box<dyn std::error::Error>> {
@@ -45,20 +44,20 @@ mod tests {
         client.expect_load_leagues().returning(|| {
             Box::pin(async move {
                 Ok(vec![
-                    League::new("soccer".to_string(), "smallsize".to_string(), None),
-                    League::new("soccer".to_string(), "midsize".to_string(), None),
-                    League::new("rescue".to_string(), "simulation".to_string(), None),
+                    League::SoccerSmallSize,
+                    League::SoccerMidSize,
+                    League::RescueRobot,
                 ])
             })
         });
 
         let client = Arc::new(client);
 
-        let leagues = list_leagues(client.clone(), None, EventSource::Web).await?;
+        let leagues = list_leagues(client.clone(), &EventDispatcher::new(), EventSource::Web).await?;
         assert_eq!(leagues.len(), 3);
-        assert_eq!(leagues[0].name, "soccer_smallsize");
-        assert_eq!(leagues[1].name, "soccer_midsize");
-        assert_eq!(leagues[2].name, "rescue_simulation");
+        assert_eq!(leagues[0].name(), "soccer_smallsize");
+        assert_eq!(leagues[1].name(), "soccer_midsize");
+        assert_eq!(leagues[2].name(), "rescue_robot");
 
         Ok(())
     }

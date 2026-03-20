@@ -12,8 +12,8 @@ pub async fn list_teams_handler(
     let teams = api::list_teams::list_teams(
         state.metadata_client.clone(),
         args,
-        state.activity_client.clone(),
-        api::activity::EventSource::Web,
+        &state.dispatcher,
+        event_processing::EventSource::Web,
     )
     .await
     .map_err(|e| ApiError::from(e))?;

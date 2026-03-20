@@ -1,17 +1,17 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
 use data_access::metadata::MetadataClient;
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, ListYearsEvent};
 
-use crate::activity::{EventSource, log_activity};
 use crate::error::ApiError;
 use crate::paper_filter::PaperFilter;
 
 pub async fn list_years(
     metadata_client: Arc<dyn MetadataClient>,
     filter: PaperFilter,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<Vec<u32>, ApiError> {
     let papers = metadata_client
@@ -23,14 +23,12 @@ pub async fn list_years(
     let years: BTreeSet<u32> = filtered.iter().map(|tdp| tdp.year).collect();
     let result: Vec<u32> = years.into_iter().collect();
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "list_years",
-        serde_json::json!({
-            "league": filter.league,
-            "team": filter.team,
-            "result_count": result.len(),
+        Event::ListYears(ListYearsEvent {
+            league: filter.league.clone(),
+            team: filter.team.clone(),
+            result_count: result.len(),
         }),
     );
 
@@ -44,7 +42,8 @@ mod tests {
     use std::sync::Arc;
 
     use super::list_years;
-    use crate::activity::EventSource;
+    use event_processing::dispatcher::EventDispatcher;
+    use event_processing::EventSource;
     use crate::paper_filter::PaperFilter;
 
     #[tokio::test]
@@ -55,25 +54,25 @@ mod tests {
             Box::pin(async move {
                 Ok(vec![
                     TDPName::new(
-                        League::new("soccer".to_string(), "smallsize".to_string(), None),
+                        League::SoccerSmallSize,
                         2019,
                         TeamName::from_pretty("RoboTeam Twente"),
                         None,
                     ),
                     TDPName::new(
-                        League::new("soccer".to_string(), "smallsize".to_string(), None),
+                        League::SoccerSmallSize,
                         2020,
                         TeamName::from_pretty("Er-Force"),
                         None,
                     ),
                     TDPName::new(
-                        League::new("soccer".to_string(), "midsize".to_string(), None),
+                        League::SoccerMidSize,
                         2019,
                         TeamName::from_pretty("TIGERs Mannheim"),
                         None,
                     ),
                     TDPName::new(
-                        League::new("soccer".to_string(), "midsize".to_string(), None),
+                        League::SoccerMidSize,
                         2021,
                         TeamName::from_pretty("Delft Mercurians"),
                         None,
@@ -84,7 +83,7 @@ mod tests {
 
         let client = Arc::new(client);
 
-        let years = list_years(client.clone(), PaperFilter::default(), None, EventSource::Web).await?;
+        let years = list_years(client.clone(), PaperFilter::default(), &EventDispatcher::new(), EventSource::Web).await?;
         assert_eq!(years.len(), 3);
         assert_eq!(years, vec![2019, 2020, 2021]);
 

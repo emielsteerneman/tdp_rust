@@ -11,14 +11,12 @@ use tracing::info;
 use crate::metadata::{MetadataClient, MetadataClientError};
 
 pub struct SqliteClient {
-    config: SqliteConfig,
     conn: Arc<Mutex<Connection>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct SqliteConfig {
     pub filename: String,
-    pub run: String,
 }
 
 impl SqliteClient {
@@ -30,7 +28,6 @@ impl SqliteClient {
             .expect("Failed to set WAL mode");
 
         let client = Self {
-            config,
             conn: Arc::new(Mutex::new(conn)),
         };
 
@@ -45,18 +42,13 @@ impl SqliteClient {
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS idf_index (
-                word TEXT NOT NULL,
-                run TEXT NOT NULL,
+                word TEXT NOT NULL UNIQUE,
                 idx INTEGER NOT NULL,
-                idf REAL NOT NULL,
-                UNIQUE(word, run)
+                idf REAL NOT NULL
             )",
             [],
         )
         .expect("Failed to create table idf_index");
-
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_run ON idf_index (run)", [])
-            .expect("Failed to create index on idf_index (run)");
     }
 
     fn ensure_database_paper_v2(&self) {
@@ -65,7 +57,6 @@ impl SqliteClient {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS paper (
                 lyti TEXT PRIMARY KEY,
-                run TEXT NOT NULL,
                 league TEXT NOT NULL,
                 year INTEGER NOT NULL,
                 team TEXT NOT NULL,
@@ -123,7 +114,6 @@ impl MetadataClient for SqliteClient {
         map: IDF,
     ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
         let conn = self.conn.clone();
-        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
@@ -134,18 +124,18 @@ impl MetadataClient for SqliteClient {
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 {
-                    // Clear existing entries for this run_id to ensure overwrite
-                    tx.execute("DELETE FROM idf_index WHERE run = ?1", params![run])
+                    // Clear existing entries to ensure overwrite
+                    tx.execute("DELETE FROM idf_index", [])
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     let mut stmt = tx
                         .prepare(
-                            "INSERT INTO idf_index (word, run, idx, idf) VALUES (?1, ?2, ?3, ?4)",
+                            "INSERT INTO idf_index (word, idx, idf) VALUES (?1, ?2, ?3)",
                         )
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     for (word, (idx, idf)) in map.iter() {
-                        stmt.execute(params![word, run, idx, idf])
+                        stmt.execute(params![word, idx, idf])
                             .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     }
                 }
@@ -164,19 +154,18 @@ impl MetadataClient for SqliteClient {
         &'a self,
     ) -> Pin<Box<dyn Future<Output = Result<IDF, MetadataClientError>> + Send + 'a>> {
         let conn = self.conn.clone();
-        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT word, idx, idf FROM idf_index WHERE run = ?1")
+                    .prepare("SELECT word, idx, idf FROM idf_index")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 info!("Retrieving IDF from sqlite database..");
                 let rows = stmt
-                    .query_map(params![run], |row| {
+                    .query_map([], |row| {
                         Ok((
                             row.get::<_, String>(0)?,
                             row.get::<_, u32>(1)?,
@@ -211,18 +200,17 @@ impl MetadataClient for SqliteClient {
         >,
     > {
         let conn = self.conn.clone();
-        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT lyti FROM paper WHERE run = ?1")
+                    .prepare("SELECT lyti FROM paper")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
-                    .query_map(params![run], |row| {
+                    .query_map([], |row| {
                         let lyti: String = row.get(0)?;
                         Ok(lyti)
                     })
@@ -253,18 +241,17 @@ impl MetadataClient for SqliteClient {
         >,
     > {
         let conn = self.conn.clone();
-        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT DISTINCT team FROM paper WHERE run = ?1")
+                    .prepare("SELECT DISTINCT team FROM paper")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
-                    .query_map(params![run], |row| {
+                    .query_map([], |row| {
                         let team: String = row.get(0)?;
                         Ok(team)
                     })
@@ -293,18 +280,17 @@ impl MetadataClient for SqliteClient {
         >,
     > {
         let conn = self.conn.clone();
-        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT DISTINCT league FROM paper WHERE run = ?1")
+                    .prepare("SELECT DISTINCT league FROM paper")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
-                    .query_map(params![run], |row| {
+                    .query_map([], |row| {
                         let league: String = row.get(0)?;
                         Ok(league)
                     })
@@ -331,7 +317,6 @@ impl MetadataClient for SqliteClient {
         tdp_name: data_structures::file::TDPName,
     ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>> {
         let conn = self.conn.clone();
-        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
@@ -339,11 +324,11 @@ impl MetadataClient for SqliteClient {
                 let lyti = tdp_name.get_filename();
 
                 let mut stmt = conn
-                    .prepare("SELECT raw_markdown FROM paper WHERE run = ?1 AND lyti = ?2")
+                    .prepare("SELECT raw_markdown FROM paper WHERE lyti = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let markdown: String = stmt
-                    .query_row(params![run, lyti], |row| row.get(0))
+                    .query_row(params![lyti], |row| row.get(0))
                     .map_err(|e| match e {
                         rusqlite::Error::QueryReturnedNoRows => {
                             MetadataClientError::NotFound(lyti.clone())
@@ -362,7 +347,6 @@ impl MetadataClient for SqliteClient {
         &'a self,
     ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
         let conn = self.conn.clone();
-        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
@@ -370,23 +354,23 @@ impl MetadataClient for SqliteClient {
 
                 let tdp_count: i64 = conn
                     .query_row(
-                        "SELECT COUNT(*) FROM paper WHERE run = ?1",
-                        params![run],
+                        "SELECT COUNT(*) FROM paper",
+                        [],
                         |row| row.get(0),
                     )
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let idf_count: i64 = conn
                     .query_row(
-                        "SELECT COUNT(*) FROM idf_index WHERE run = ?1",
-                        params![run],
+                        "SELECT COUNT(*) FROM idf_index",
+                        [],
                         |row| row.get(0),
                     )
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 info!(
-                    "Analytics for run '{}': {} TDPs, {} IDF entries",
-                    run, tdp_count, idf_count
+                    "Analytics: {} TDPs, {} IDF entries",
+                    tdp_count, idf_count
                 );
 
                 Ok(())
@@ -401,13 +385,12 @@ impl MetadataClient for SqliteClient {
         tdp: MarkdownTDP,
     ) -> Pin<Box<dyn Future<Output = Result<(), MetadataClientError>> + Send + 'a>> {
         let conn = self.conn.clone();
-        let run = self.config.run.clone();
 
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
                 let mut conn = conn.lock().unwrap();
                 let lyti = tdp.name.get_filename();
-                let league = &tdp.name.league.name_pretty;
+                let league = tdp.name.league.name();
                 let year = tdp.name.year;
                 let team = &tdp.name.team_name.name_pretty;
                 let idx = tdp.name.index;
@@ -432,8 +415,8 @@ impl MetadataClient for SqliteClient {
 
                     // Insert paper
                     tx.execute(
-                        "INSERT INTO paper (lyti, run, league, year, team, idx, title, abstract_text, urls_json, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-                        params![lyti, run, league, year, team, idx, title, abstract_text, urls_json, raw_markdown],
+                        "INSERT INTO paper (lyti, league, year, team, idx, title, abstract_text, urls_json, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                        params![lyti, league, year, team, idx, title, abstract_text, urls_json, raw_markdown],
                     )
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
@@ -702,91 +685,53 @@ mod tests {
             .as_nanos();
         let db_filename = format!("test_idf_{}.db", timestamp);
 
-        let run_1 = "run_1";
-        let run_2 = "run_2";
-
-        // Setup client 1
-        let config_1 = SqliteConfig {
+        let config = SqliteConfig {
             filename: db_filename.clone(),
-            run: run_1.to_string(),
         };
-        let client_1 = SqliteClient::new(config_1);
+        let client = SqliteClient::new(config);
 
-        // 1. Store map for run_1
-        let mut map_1 = IDF::new();
-        map_1.insert("apple".to_string(), (1, 1.0));
-        map_1.insert("banana".to_string(), (2, 2.0));
+        // 1. Store and load IDF
+        let mut map = IDF::new();
+        map.insert("apple".to_string(), (1, 1.0));
+        map.insert("banana".to_string(), (2, 2.0));
 
-        client_1
-            .store_idf(map_1.clone())
+        client
+            .store_idf(map.clone())
             .await
-            .expect("Failed to store map 1");
+            .expect("Failed to store map");
 
-        // 2. Load map for run_1
-        let loaded_map_1 = client_1.load_idf().await.expect("Failed to load map 1");
-        assert_eq!(
-            map_1, loaded_map_1,
-            "Loaded map 1 should match stored map 1"
-        );
+        let loaded_map = client.load_idf().await.expect("Failed to load map");
+        assert_eq!(map, loaded_map, "Loaded map should match stored map");
 
-        // 3. Store map for run_2
-        let config_2 = SqliteConfig {
-            filename: db_filename.clone(),
-            run: run_2.to_string(),
-        };
-        let client_2 = SqliteClient::new(config_2);
-
-        let mut map_2 = IDF::new();
-        map_2.insert("cherry".to_string(), (3, 3.0));
-
-        client_2
-            .store_idf(map_2.clone())
-            .await
-            .expect("Failed to store map 2");
-
-        // 4. Load map for run_2 and verify run_1 is untouched
-        let loaded_map_2 = client_2.load_idf().await.expect("Failed to load map 2");
-        assert_eq!(
-            map_2, loaded_map_2,
-            "Loaded map 2 should match stored map 2"
-        );
-
-        let loaded_map_1_again = client_1.load_idf().await.expect("Failed to reload map 1");
-        assert_eq!(
-            map_1, loaded_map_1_again,
-            "Map 1 should persist after storing map 2"
-        );
-
-        // 5. Overwrite run_1
-        let mut map_1_new = IDF::new();
-        map_1_new.insert("apple".to_string(), (1, 1.5)); // Updated value
-        map_1_new.insert("date".to_string(), (4, 4.0)); // New value
+        // 2. Overwrite with new data
+        let mut map_new = IDF::new();
+        map_new.insert("apple".to_string(), (1, 1.5)); // Updated value
+        map_new.insert("date".to_string(), (4, 4.0)); // New value
         // "banana" is removed
 
-        client_1
-            .store_idf(map_1_new.clone())
+        client
+            .store_idf(map_new.clone())
             .await
-            .expect("Failed to overwrite map 1");
+            .expect("Failed to overwrite map");
 
-        // 6. Verify overwrite
-        let loaded_map_1_new = client_1
+        // 3. Verify overwrite
+        let loaded_map_new = client
             .load_idf()
             .await
-            .expect("Failed to load overwritten map 1");
+            .expect("Failed to load overwritten map");
         assert_eq!(
-            map_1_new, loaded_map_1_new,
-            "Map 1 should match the new map after overwrite"
+            map_new, loaded_map_new,
+            "Map should match the new map after overwrite"
         );
 
         // Ensure "banana" is gone
         assert!(
-            !loaded_map_1_new.contains_key("banana"),
+            !loaded_map_new.contains_key("banana"),
             "Old keys should be removed on overwrite"
         );
 
-        // 7. Cleanup
-        drop(client_1);
-        drop(client_2);
+        // 4. Cleanup
+        drop(client);
         fs::remove_file(&db_filename).expect("Failed to delete database file");
         let _ = fs::remove_file(format!("{}-wal", db_filename));
         let _ = fs::remove_file(format!("{}-shm", db_filename));
@@ -804,7 +749,6 @@ mod tests {
 
         let config = SqliteConfig {
             filename: db_filename.to_string(),
-            run: "my_run".to_string(),
         };
         let client = SqliteClient::new(config);
 
@@ -827,11 +771,9 @@ mod tests {
             .unwrap()
             .as_nanos();
         let db_filename = format!("test_teams_{}.db", timestamp);
-        let run = "test_run";
 
         let config = SqliteConfig {
             filename: db_filename.clone(),
-            run: run.to_string(),
         };
         let client = SqliteClient::new(config);
 
@@ -839,16 +781,16 @@ mod tests {
         {
             let conn = client.conn.lock().unwrap();
             conn.execute(
-                "INSERT INTO paper (lyti, run, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params!["soccer_smallsize__2019__RoboTeam_Twente__1", run, "Soccer SmallSize", 2019, "RoboTeam Twente", 1, "# Test markdown 1"],
+                "INSERT INTO paper (lyti, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params!["soccer_smallsize__2019__RoboTeam_Twente__1", "Soccer SmallSize", 2019, "RoboTeam Twente", 1, "# Test markdown 1"],
             ).unwrap();
             conn.execute(
-                "INSERT INTO paper (lyti, run, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params!["soccer_smallsize__2019__Tigers_Mannheim__1", run, "Soccer SmallSize", 2019, "Tigers Mannheim", 1, "# Test markdown 2"],
+                "INSERT INTO paper (lyti, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params!["soccer_smallsize__2019__Tigers_Mannheim__1", "Soccer SmallSize", 2019, "Tigers Mannheim", 1, "# Test markdown 2"],
             ).unwrap();
             conn.execute(
-                "INSERT INTO paper (lyti, run, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params!["soccer_midsize__2020__RoboTeam_Twente__1", run, "Soccer MidSize", 2020, "RoboTeam Twente", 1, "# Test markdown 3"],
+                "INSERT INTO paper (lyti, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params!["soccer_midsize__2020__RoboTeam_Twente__1", "Soccer MidSize", 2020, "RoboTeam Twente", 1, "# Test markdown 3"],
             ).unwrap();
         }
 
@@ -862,7 +804,7 @@ mod tests {
         // Test load_leagues
         let leagues = client.load_leagues().await.expect("Failed to load leagues");
         assert_eq!(leagues.len(), 2);
-        let league_names: Vec<String> = leagues.iter().map(|l| l.name_pretty.clone()).collect();
+        let league_names: Vec<String> = leagues.iter().map(|l| l.name_pretty().to_string()).collect();
         assert!(league_names.contains(&"Soccer SmallSize".to_string()));
         assert!(league_names.contains(&"Soccer MidSize".to_string()));
 
@@ -892,11 +834,9 @@ mod tests {
             .unwrap()
             .as_nanos();
         let db_filename = format!("test_paper_{}.db", timestamp);
-        let run = "test_run";
 
         let config = SqliteConfig {
             filename: db_filename.clone(),
-            run: run.to_string(),
         };
         let client = SqliteClient::new(config);
 

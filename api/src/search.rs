@@ -1,16 +1,13 @@
-use std::sync::Arc;
-
-use data_access::activity::ActivityClient;
 use data_processing::search::Searcher;
 use data_structures::{
     embed_type::EmbedType,
     file::{League, LeagueParseError, TeamName},
     filter::Filter,
 };
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, SearchEvent};
 use schemars::JsonSchema;
 use serde::Deserialize;
-
-use crate::activity::{EventSource, log_activity};
 
 #[derive(thiserror::Error, Debug)]
 pub enum SearchError {
@@ -107,7 +104,7 @@ impl SearchArgs {
 pub async fn search(
     searcher: &Searcher,
     args: SearchArgs,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> anyhow::Result<data_structures::intermediate::SearchResult> {
     let search_type_str = format!("{:?}", args.search_type);
@@ -120,18 +117,16 @@ pub async fn search(
         )
         .await?;
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "search",
-        serde_json::json!({
-            "query": args.query,
-            "search_type": search_type_str,
-            "result_count": search_result.chunks.len(),
-            "league_filter": args.league_filter,
-            "year_filter": args.year_filter,
-            "team_filter": args.team_filter,
-            "content_type_filter": args.content_type_filter,
+        Event::Search(SearchEvent {
+            query: args.query.clone(),
+            search_type: search_type_str,
+            result_count: search_result.chunks.len(),
+            league_filter: args.league_filter.clone(),
+            year_filter: args.year_filter.clone(),
+            team_filter: args.team_filter.clone(),
+            content_type_filter: args.content_type_filter.clone(),
         }),
     );
 
@@ -147,7 +142,7 @@ mod tests {
         let args = SearchArgs {
             query: "test".to_string(),
             limit: Some(10),
-            league_filter: Some("Soccer Smallsize, Soccer Humanoid".to_string()),
+            league_filter: Some("Soccer SmallSize, Soccer MidSize".to_string()),
             year_filter: Some("2021, 2024".to_string()),
             team_filter: Some("RoboTeam Twente, TIGERs Mannheim".to_string()),
             lyti_filter: Some("rescue_simulation_infrastructure__2012__UvA_Rescue__0".to_string()),
@@ -162,9 +157,9 @@ mod tests {
                 .leagues
                 .as_ref()
                 .unwrap()
-                .contains("Soccer SmallSize")
+                .contains(&League::SoccerSmallSize)
         );
-        assert!(filter.leagues.as_ref().unwrap().contains("Soccer Humanoid"));
+        assert!(filter.leagues.as_ref().unwrap().contains(&League::SoccerMidSize));
         assert!(filter.years.as_ref().unwrap().contains(&2021));
         assert!(filter.years.as_ref().unwrap().contains(&2024));
         assert!(filter.teams.as_ref().unwrap().contains("RoboTeam Twente"));
@@ -191,7 +186,7 @@ mod tests {
         let result = args.to_filter();
         assert!(matches!(result, Err(SearchError::YearParseError(_))));
 
-        // Test invalid league separator
+        // Test invalid league name
         let args = SearchArgs {
             league_filter: Some("InvalidLeague".to_string()),
             ..Default::default()
@@ -200,11 +195,11 @@ mod tests {
         assert!(matches!(
             result,
             Err(SearchError::LeagueParseError(
-                LeagueParseError::BadSeparator()
+                LeagueParseError::Unknown(_)
             ))
         ));
 
-        // Test invalid league field count
+        // Test another invalid league name (was previously BadFieldCount)
         let args = SearchArgs {
             league_filter: Some("soccer_smallsize_extra_field".to_string()),
             ..Default::default()
@@ -213,7 +208,7 @@ mod tests {
         assert!(matches!(
             result,
             Err(SearchError::LeagueParseError(
-                LeagueParseError::BadFieldCount(4)
+                LeagueParseError::Unknown(_)
             ))
         ));
 

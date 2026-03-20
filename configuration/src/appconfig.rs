@@ -1,6 +1,8 @@
 use config::{Config as ConfigLoader, File, FileFormat};
 use data_access::config::DataAccessConfig;
 use data_processing::config::DataProcessingConfig;
+use event_processing::listeners::sqlite::SqliteListenerConfig;
+use event_processing::listeners::telegram::TelegramConfig;
 use serde::Deserialize;
 use std::{fs::canonicalize, path::Path};
 use tracing::info;
@@ -9,6 +11,18 @@ use tracing::info;
 pub struct AppConfig {
     pub data_access: DataAccessConfig,
     pub data_processing: DataProcessingConfig,
+    pub event_processing: Option<EventProcessingConfig>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct EventProcessingConfig {
+    pub activity: Option<ActivityListenerConfig>,
+    pub telegram: Option<TelegramConfig>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ActivityListenerConfig {
+    pub sqlite: Option<SqliteListenerConfig>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -37,27 +51,6 @@ impl AppConfig {
                 .separator("__"),
         );
 
-        // Initial build to extract the data_acces.run variable
-        let temp_config = builder
-            .clone()
-            .build()
-            .map_err(|e| ConfigError::Load(Box::new(e)))?;
-
-        if let Ok(run) = temp_config.get_string("data_access.run") {
-            info!("Spreading global run: {}", run);
-
-            if temp_config.get_table("data_access.vector.qdrant").is_ok() {
-                builder = builder
-                    .set_default("data_access.vector.qdrant.run", run.clone())
-                    .map_err(|e| ConfigError::Load(Box::new(e)))?;
-            }
-            if temp_config.get_table("data_access.metadata.sqlite").is_ok() {
-                builder = builder
-                    .set_default("data_access.metadata.sqlite.run", run)
-                    .map_err(|e| ConfigError::Load(Box::new(e)))?;
-            }
-        }
-
         let config_loader = builder
             .build()
             .map_err(|e| ConfigError::Load(Box::new(e)))?;
@@ -83,7 +76,6 @@ mod tests {
             file,
             r#"
 [data_access]
-run = "test_run"
 
 [data_access.embed.openai]
 model_name = "text-embedding-3-small"
@@ -99,7 +91,6 @@ tdps_markdown_root = "some_root"
 
         let config = AppConfig::load_from_file(file.path())?;
 
-        assert_eq!(config.data_access.run, "test_run");
         assert_eq!(
             config.data_access.embed.openai.as_ref().unwrap().model_name,
             "text-embedding-3-small"
@@ -110,13 +101,12 @@ tdps_markdown_root = "some_root"
     }
 
     #[test]
-    fn test_config_spreading() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_full_config() -> Result<(), Box<dyn std::error::Error>> {
         let mut file = NamedTempFile::new()?;
         writeln!(
             file,
             r#"
 [data_access]
-run = "test_run"
 
 [data_access.embed.openai]
 model_name = "text-embedding-3-small"
@@ -139,51 +129,13 @@ tdps_markdown_root = "some_root"
 
         let config = AppConfig::load_from_file(file.path())?;
 
-        assert_eq!(config.data_access.run, "test_run");
         assert_eq!(
-            config.data_access.vector.qdrant.as_ref().unwrap().run,
-            "test_run"
+            config.data_access.vector.qdrant.as_ref().unwrap().url,
+            "http://localhost:6334"
         );
         assert_eq!(
-            config.data_access.metadata.sqlite.as_ref().unwrap().run,
-            "test_run"
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_config_override() -> Result<(), Box<dyn std::error::Error>> {
-        let mut file = NamedTempFile::new()?;
-        writeln!(
-            file,
-            r#"
-[data_access]
-run = "global_run"
-
-[data_access.embed.fastembed]
-model_name = "BGEBaseENV15Q"
-
-[data_access.vector.qdrant]
-url = "http://localhost:6334"
-embedding_size = 1536
-run = "local_override"
-
-[data_access.metadata.sqlite]
-filename = "metadata.db"
-
-[data_processing]
-tdps_markdown_root = "some_root"
-"#
-        )?;
-
-        let config = AppConfig::load_from_file(file.path())?;
-
-        assert_eq!(config.data_access.run, "global_run");
-        // Other fields should still get the global run via spreading
-        assert_eq!(
-            config.data_access.vector.qdrant.as_ref().unwrap().run,
-            "local_override"
+            config.data_access.metadata.sqlite.as_ref().unwrap().filename,
+            "metadata.db"
         );
 
         Ok(())

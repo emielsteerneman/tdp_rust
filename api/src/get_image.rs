@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use data_access::activity::ActivityClient;
 use data_access::metadata::MetadataClient;
 use data_structures::content::ContentType;
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::{Event, EventSource, GetImageEvent};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
-use crate::activity::{EventSource, log_activity};
 use crate::error::ApiError;
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
@@ -22,7 +22,7 @@ pub struct GetImageArgs {
 pub async fn get_image(
     metadata_client: Arc<dyn MetadataClient>,
     args: GetImageArgs,
-    activity_client: Option<Arc<dyn ActivityClient + Send + Sync>>,
+    dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<String, ApiError> {
     let item = metadata_client
@@ -42,13 +42,11 @@ pub async fn get_image(
 
     let path = item.image_path.unwrap_or_default();
 
-    log_activity(
-        activity_client,
+    dispatcher.dispatch(
         source,
-        "get_image",
-        serde_json::json!({
-            "paper": args.paper,
-            "content_seq": args.content_seq,
+        Event::GetImage(GetImageEvent {
+            paper: args.paper.clone(),
+            content_seq: args.content_seq,
         }),
     );
 
@@ -88,7 +86,7 @@ mod tests {
             content_seq: 1,
         };
 
-        let result = get_image(client, args, None, EventSource::Dev)
+        let result = get_image(client, args, &EventDispatcher::new(), EventSource::Web)
             .await
             .unwrap();
 
@@ -123,7 +121,7 @@ mod tests {
             content_seq: 0,
         };
 
-        let result = get_image(client, args, None, EventSource::Dev).await;
+        let result = get_image(client, args, &EventDispatcher::new(), EventSource::Web).await;
         assert!(result.is_err());
     }
 }

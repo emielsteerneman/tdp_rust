@@ -13,6 +13,8 @@ pub fn tdp_to_chunks(tdp: &MarkdownTDP) -> Vec<Chunk> {
                 let splits = split_text(&item.body, MAX_CHUNK_CHARS, OVERLAP_CHARS);
                 for (chunk_seq, text) in splits.into_iter().enumerate() {
                     chunks.push(Chunk {
+                        dense_embedding: vec![],
+                        sparse_embedding: std::collections::HashMap::new(),
                         league_year_team_idx: tdp.name.get_filename(),
                         league: tdp.name.league.clone(),
                         year: tdp.name.year,
@@ -23,7 +25,6 @@ pub fn tdp_to_chunks(tdp: &MarkdownTDP) -> Vec<Chunk> {
                         title: item.title.clone(),
                         image_path: None,
                         text,
-                        ..Default::default()
                     });
                 }
             }
@@ -34,6 +35,8 @@ pub fn tdp_to_chunks(tdp: &MarkdownTDP) -> Vec<Chunk> {
                     item.body.clone()
                 };
                 chunks.push(Chunk {
+                    dense_embedding: vec![],
+                    sparse_embedding: std::collections::HashMap::new(),
                     league_year_team_idx: tdp.name.get_filename(),
                     league: tdp.name.league.clone(),
                     year: tdp.name.year,
@@ -44,12 +47,13 @@ pub fn tdp_to_chunks(tdp: &MarkdownTDP) -> Vec<Chunk> {
                     title: item.title.clone(),
                     image_path: None,
                     text,
-                    ..Default::default()
                 });
             }
             ContentType::Image => {
                 let text = item.title.clone();
                 chunks.push(Chunk {
+                    dense_embedding: vec![],
+                    sparse_embedding: std::collections::HashMap::new(),
                     league_year_team_idx: tdp.name.get_filename(),
                     league: tdp.name.league.clone(),
                     year: tdp.name.year,
@@ -60,7 +64,6 @@ pub fn tdp_to_chunks(tdp: &MarkdownTDP) -> Vec<Chunk> {
                     title: item.title.clone(),
                     image_path: item.image_path.clone(),
                     text,
-                    ..Default::default()
                 });
             }
         }
