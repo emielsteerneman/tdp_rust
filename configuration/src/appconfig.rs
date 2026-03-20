@@ -1,6 +1,8 @@
 use config::{Config as ConfigLoader, File, FileFormat};
 use data_access::config::DataAccessConfig;
 use data_processing::config::DataProcessingConfig;
+use event_processing::listeners::sqlite::SqliteListenerConfig;
+use event_processing::listeners::telegram::TelegramConfig;
 use serde::Deserialize;
 use std::{fs::canonicalize, path::Path};
 use tracing::info;
@@ -9,6 +11,18 @@ use tracing::info;
 pub struct AppConfig {
     pub data_access: DataAccessConfig,
     pub data_processing: DataProcessingConfig,
+    pub event_processing: Option<EventProcessingConfig>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct EventProcessingConfig {
+    pub activity: Option<ActivityListenerConfig>,
+    pub telegram: Option<TelegramConfig>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ActivityListenerConfig {
+    pub sqlite: Option<SqliteListenerConfig>,
 }
 
 #[derive(thiserror::Error, Debug)]

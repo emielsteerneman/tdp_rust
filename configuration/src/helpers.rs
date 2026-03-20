@@ -5,6 +5,9 @@ use data_access::{
     metadata::{MetadataClient, SqliteClient},
     vector::{QdrantClient, VectorClient},
 };
+use event_processing::dispatcher::EventDispatcher;
+use event_processing::listeners::sqlite::SqliteListener;
+use event_processing::listeners::telegram::TelegramListener;
 use std::sync::Arc;
 use tracing::info;
 
@@ -70,4 +73,27 @@ pub fn load_activity_client(
     }
     info!("No activity client configured, activity logging disabled");
     None
+}
+
+pub fn build_event_dispatcher(config: &AppConfig) -> Arc<EventDispatcher> {
+    let mut dispatcher = EventDispatcher::new();
+
+    if let Some(ref ep_config) = config.event_processing {
+        if let Some(ref activity_config) = ep_config.activity {
+            if let Some(ref sqlite_cfg) = activity_config.sqlite {
+                info!("Registering SQLite event listener: {}", sqlite_cfg.filename);
+                match SqliteListener::new(sqlite_cfg) {
+                    Ok(listener) => dispatcher.register(Arc::new(listener)),
+                    Err(e) => tracing::error!("Failed to create SQLite event listener: {}", e),
+                }
+            }
+        }
+
+        if let Some(ref telegram_cfg) = ep_config.telegram {
+            info!("Registering Telegram event listener");
+            dispatcher.register(Arc::new(TelegramListener::new(telegram_cfg)));
+        }
+    }
+
+    Arc::new(dispatcher)
 }
