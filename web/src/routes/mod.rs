@@ -11,7 +11,7 @@ mod teams;
 mod years;
 
 use axum::middleware;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::{ServeDir, ServeFile};
@@ -28,7 +28,7 @@ pub fn create_router(state: AppState) -> Router {
     let api_routes = Router::new()
         .route("/api/search", get(search::search_handler))
         .route("/api/papers", get(papers::list_papers_handler))
-        .route("/api/papers/{id}", get(papers::get_paper_handler))
+        .route("/api/papers/{id}/open", post(papers::paper_open_handler))
         .route("/api/papers/{id}/toc", get(table_of_contents::get_table_of_contents_handler))
         .route("/api/papers/{id}/paragraph/{seq}", get(paragraph::get_paragraph_handler))
         .route("/api/papers/{id}/table/{seq}", get(table::get_table_handler))

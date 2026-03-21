@@ -11,6 +11,9 @@ export const load: PageLoad = async ({ params, fetch }) => {
 
   const rawMarkdown = await response.text();
 
+  // Fire-and-forget beacon to track paper opens
+  fetch(`/api/papers/${encodeURIComponent(lyti)}/open`, { method: 'POST' });
+
   return {
     rawMarkdown,
     lyti
