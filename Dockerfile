@@ -21,6 +21,7 @@ COPY configuration ./configuration
 COPY data_access ./data_access
 COPY data_processing ./data_processing
 COPY data_structures ./data_structures
+COPY event_processing ./event_processing
 COPY mcp ./mcp
 COPY tools ./tools
 COPY web ./web
