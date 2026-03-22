@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use api::{get_abstract, get_section, get_table_of_contents, get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search};
+use api::{get_abstract, get_section, get_table_of_contents, get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search, suggestion};
 use data_structures::content::ContentType;
 use data_structures::intermediate::{BreadcrumbEntry, SectionResult};
 use rmcp::handler::server::router::tool::ToolRouter;
@@ -195,6 +195,25 @@ impl AppServer {
     ) -> Result<CallToolResult, McpError> {
         match get_abstract::get_abstract(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Submit a suggestion or feedback message about the TDP search system. Use this to report issues, request features, or suggest improvements. The message is free-form text (max 2000 characters)."
+    )]
+    pub async fn submit_suggestion(
+        &self,
+        Parameters(args): Parameters<suggestion::SuggestionArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match suggestion::submit_suggestion(
+            args,
+            &self.state.dispatcher,
+            event_processing::EventSource::Mcp,
+        )
+        .await
+        {
+            Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }
