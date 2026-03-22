@@ -89,7 +89,7 @@ Other prerequisites:
 Follow this pattern to keep both interfaces in sync:
 
 1. **Add typed event** in `event_processing/src/lib.rs` — add a struct and `Event` enum variant.
-2. **Add handler** in `api/src/<name>.rs` — takes typed args + clients + `&EventDispatcher` + `EventSource`, calls `dispatcher.dispatch(source, Event::Variant(...))`.
+2. **Add handler** in `api/src/<name>.rs` — takes typed args + clients + `&EventDispatcher` + `EventSource`, calls `dispatcher.dispatch(source, Event::Variant(...))`. Not all handlers need a client (e.g., `suggestion` only needs the dispatcher).
 3. **MCP**: add a `#[tool(...)]` method in `mcp/src/server.rs` that calls the api handler with `&self.state.dispatcher, EventSource::Mcp`.
 4. **Web**: add a route file `web/src/routes/<name>.rs` calling the api handler with `&state.dispatcher, EventSource::Web`, then register it in `web/src/routes/mod.rs`.
 
