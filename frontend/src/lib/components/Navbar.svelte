@@ -21,8 +21,11 @@
 				<SearchBar compact={true} initialValue={currentQuery} />
 			</div>
 
-			<!-- Theme Toggle -->
-			<div class="flex-shrink-0">
+			<!-- Right side: Suggestions link + Theme Toggle -->
+			<div class="flex-shrink-0 flex items-center space-x-4">
+				<a href="/suggestions" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
+					Suggestions
+				</a>
 				<ThemeToggle />
 			</div>
 		</div>
