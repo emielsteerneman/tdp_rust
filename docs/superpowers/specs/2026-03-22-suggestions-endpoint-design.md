@@ -75,3 +75,7 @@ Register in `web/src/routes/mod.rs`.
 | `mcp/src/server.rs` | Add `submit_suggestion` tool method |
 | `web/src/routes/suggestion.rs` | New file: POST handler |
 | `web/src/routes/mod.rs` | Register route |
+| `frontend/src/lib/api.ts` | Add `submitSuggestion` function |
+| `frontend/src/routes/suggestions/+page.svelte` | New file: suggestions form page |
+| `frontend/src/lib/components/Navbar.svelte` | Add link to suggestions page |
+| `CLAUDE.md` | Document the new endpoint |
