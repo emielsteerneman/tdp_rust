@@ -35,9 +35,10 @@ pub struct SuggestionArgs {
 }
 ```
 
-- Validates message is non-empty
+- Trims whitespace, then validates message is non-empty
+- Caps message at 2000 characters (Telegram Bot API limit is 4096; leave room for formatting)
 - Dispatches `Event::Suggestion(SuggestionEvent { message })`
-- Returns a simple success acknowledgement string
+- Returns `String` acknowledgement on success, `ApiError` on validation failure
 
 Register as `pub mod suggestion;` in `api/src/lib.rs`.
 
@@ -68,7 +69,7 @@ Register in `web/src/routes/mod.rs`.
 
 | File | Change |
 |------|--------|
-| `event_processing/src/lib.rs` | Add `SuggestionEvent` struct + `Event::Suggestion` variant |
+| `event_processing/src/lib.rs` | Add `SuggestionEvent` struct + `Event::Suggestion` variant + update existing tests |
 | `api/src/suggestion.rs` | New file: handler + args |
 | `api/src/lib.rs` | Add `pub mod suggestion;` |
 | `mcp/src/server.rs` | Add `submit_suggestion` tool method |
