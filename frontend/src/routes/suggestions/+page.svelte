@@ -7,7 +7,7 @@
 
 	const maxLength = 2000;
 	let charCount = $derived(message.length);
-	let canSubmit = $derived(message.trim().length > 0 && message.length <= maxLength && status !== 'submitting');
+	let canSubmit = $derived(message.trim().length > 0 && message.length <= maxLength && (status as string) !== 'submitting');
 
 	async function handleSubmit() {
 		if (!canSubmit) return;
