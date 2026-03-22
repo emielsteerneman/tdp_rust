@@ -9,7 +9,7 @@ papers from RoboCup teams and exposes them via a hybrid semantic+keyword search 
 - CLI tools for corpus initialization and offline analysis
 
 ## Architecture
-Cargo workspace with 11 crates organized in layers:
+Cargo workspace organized in layers:
 - `data_structures` — shared domain types, no I/O
 - `data_access` — trait-defined storage abstractions (EmbedClient, VectorClient, MetadataClient)
 - `data_processing` — chunking, IDF computation, hybrid search orchestration (`Searcher`)
