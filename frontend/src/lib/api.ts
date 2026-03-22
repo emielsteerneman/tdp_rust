@@ -95,3 +95,10 @@ export async function listLeagues(fetchFn?: FetchFn): Promise<League[]> {
 export async function listYears(fetchFn?: FetchFn): Promise<number[]> {
 	return fetchApi<number[]>('/years', fetchFn);
 }
+
+export async function submitSuggestion(message: string, fetchFn?: FetchFn): Promise<string> {
+	return fetchApi<string>('/suggestion', fetchFn, {
+		method: 'POST',
+		body: JSON.stringify({ message })
+	});
+}
