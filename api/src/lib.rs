@@ -13,3 +13,4 @@ pub mod list_years;
 pub mod paper_filter;
 pub mod paper_navigation;
 pub mod search;
+pub mod suggestion;
