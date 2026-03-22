@@ -124,6 +124,11 @@ pub struct PaperOpenEvent {
     pub referrer: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct SuggestionEvent {
+    pub message: String,
+}
+
 // ---------------------------------------------------------------------------
 // Event enum
 // ---------------------------------------------------------------------------
@@ -145,6 +150,7 @@ pub enum Event {
     GetTdpContents(GetTdpContentsEvent),
     HttpRequest(HttpRequestEvent),
     PaperOpen(PaperOpenEvent),
+    Suggestion(SuggestionEvent),
 }
 
 impl Event {
@@ -164,6 +170,7 @@ impl Event {
             Event::GetTdpContents(_) => "get_tdp_contents",
             Event::HttpRequest(_) => "http_request",
             Event::PaperOpen(_) => "paper_open",
+            Event::Suggestion(_) => "suggestion",
         }
     }
 }
@@ -230,6 +237,7 @@ mod tests {
             (Event::GetTdpContents(GetTdpContentsEvent { league: "l".into(), year: "y".into(), team: "t".into() }), "get_tdp_contents"),
             (Event::HttpRequest(HttpRequestEvent { method: "GET".into(), path: "/".into(), status: 200, duration_ms: 10, ip: None, user_agent: "ua".into() }), "http_request"),
             (Event::PaperOpen(PaperOpenEvent { paper_id: "p".into(), referrer: None }), "paper_open"),
+            (Event::Suggestion(SuggestionEvent { message: "test suggestion".into() }), "suggestion"),
         ];
 
         for (event, expected) in cases {
@@ -270,6 +278,7 @@ mod tests {
             Event::ListLeagues(ListLeaguesEvent { result_count: 5 }),
             Event::GetAbstract(GetAbstractEvent { paper: "test_paper".into() }),
             Event::PaperOpen(PaperOpenEvent { paper_id: "id".into(), referrer: Some("https://example.com".into()) }),
+            Event::Suggestion(SuggestionEvent { message: "improve search".into() }),
         ];
 
         for event in events {

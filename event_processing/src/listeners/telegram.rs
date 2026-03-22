@@ -87,6 +87,7 @@ impl TelegramListener {
                 let referrer = e.referrer.as_deref().unwrap_or("direct");
                 Some(format!("[{src}] Paper opened: {} (from {referrer})", e.paper_id))
             }
+            Event::Suggestion(e) => Some(format!("[{src}] Suggestion: {}", e.message)),
             // Noisy events — skip
             Event::ListLeagues(_)
             | Event::ListYears(_)
