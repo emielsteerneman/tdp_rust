@@ -7,6 +7,8 @@ use event_processing::{Event, EventSource, GetTeamInfoEvent};
 use schemars::JsonSchema;
 use serde::Deserialize;
 
+use crate::error::ApiError;
+
 #[derive(Debug, Deserialize, JsonSchema)]
 pub struct GetTeamInfoArgs {
     #[schemars(description = "Team name (e.g. 'TIGERs Mannheim' or 'TIGERs_Mannheim')")]
@@ -18,13 +20,13 @@ pub async fn get_team_info(
     args: GetTeamInfoArgs,
     dispatcher: &EventDispatcher,
     source: EventSource,
-) -> anyhow::Result<Vec<TeamMetadataEntry>> {
+) -> Result<Vec<TeamMetadataEntry>, ApiError> {
     let team_name = TeamName::new(args.team.trim());
 
     let entries = team_registry
         .get_team_metadata(&team_name.name)
         .await
-        .map_err(|e| anyhow::anyhow!("{}", e))?;
+        .map_err(|e| ApiError::Internal(e.to_string()))?;
 
     dispatcher.dispatch(
         source,
