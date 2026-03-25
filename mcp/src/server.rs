@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use api::{get_abstract, get_section, get_table_of_contents, get_tdp_contents, list_leagues, list_papers, list_teams, list_years, paper_filter, search, suggestion};
+use api::{get_abstract, get_section, get_table_of_contents, get_tdp_contents, get_team_info, list_leagues, list_papers, list_teams, list_years, paper_filter, search, suggestion};
 use data_structures::content::ContentType;
 use data_structures::intermediate::{BreadcrumbEntry, SectionResult};
 use rmcp::handler::server::router::tool::ToolRouter;
@@ -195,6 +195,30 @@ impl AppServer {
     ) -> Result<CallToolResult, McpError> {
         match get_abstract::get_abstract(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Get a team's website, code repositories, and other metadata. Use after finding relevant TDPs to discover the team's source code and online presence. A team may have multiple entries for the same key (e.g. multiple GitHub repos)."
+    )]
+    pub async fn get_team_info(
+        &self,
+        Parameters(args): Parameters<get_team_info::GetTeamInfoArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        let registry = self.state.team_registry.as_ref()
+            .ok_or_else(|| McpError::internal_error("Team registry not configured".to_string(), None))?;
+
+        match get_team_info::get_team_info(
+            registry.clone(),
+            args,
+            &self.state.dispatcher,
+            event_processing::EventSource::Mcp,
+        ).await {
+            Ok(entries) => match serde_json::to_string_pretty(&entries) {
+                Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
+                Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+            },
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }

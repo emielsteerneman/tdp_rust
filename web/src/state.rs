@@ -1,4 +1,5 @@
 use data_access::metadata::MetadataClient;
+use data_access::teams::TeamRegistryClient;
 use data_processing::search::Searcher;
 use event_processing::dispatcher::EventDispatcher;
 use std::sync::Arc;
@@ -9,6 +10,7 @@ pub struct AppState {
     pub searcher: Arc<Searcher>,
     pub dispatcher: Arc<EventDispatcher>,
     pub tdps_markdown_root: String,
+    pub team_registry: Option<Arc<dyn TeamRegistryClient + Send + Sync>>,
 }
 
 impl AppState {
@@ -17,12 +19,14 @@ impl AppState {
         searcher: Arc<Searcher>,
         dispatcher: Arc<EventDispatcher>,
         tdps_markdown_root: String,
+        team_registry: Option<Arc<dyn TeamRegistryClient + Send + Sync>>,
     ) -> Self {
         Self {
             metadata_client,
             searcher,
             dispatcher,
             tdps_markdown_root,
+            team_registry,
         }
     }
 }
