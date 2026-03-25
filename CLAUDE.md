@@ -73,6 +73,11 @@ filename = "data/activity.db"
 # [event_processing.telegram]
 # bot_token = "123456:ABC-DEF..."
 # chat_id = "987654321"
+
+# Optional: Team registry for team metadata (websites, repos, social links)
+# [data_access.teams.sqlite]
+# filename = "data/teams.db"
+# master_password = "your-secret-here"  # only consumed on first DB init
 ```
 
 Other prerequisites:
