@@ -10,6 +10,9 @@ use crate::teams::{TeamMetadataEntry, TeamRegistryClient, TeamRegistryError};
 
 type HmacSha256 = Hmac<Sha256>;
 
+const CONFIG_KEY_SALT: &str = "salt";
+const CONFIG_KEY_MASTER_HASH: &str = "master_hash";
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct TeamsSqliteConfig {
     pub filename: String,
@@ -46,12 +49,11 @@ impl TeamsSqliteClient {
         )
         .expect("Failed to create tables");
 
-        // Load or generate salt
         let salt: String = {
             let existing: Option<String> = conn
                 .query_row(
-                    "SELECT value FROM config WHERE key = 'salt'",
-                    [],
+                    "SELECT value FROM config WHERE key = ?1",
+                    params![CONFIG_KEY_SALT],
                     |row| row.get(0),
                 )
                 .ok();
@@ -62,20 +64,19 @@ impl TeamsSqliteClient {
                 let bytes: [u8; 32] = rand::random();
                 let s = hex::encode(bytes);
                 conn.execute(
-                    "INSERT INTO config (key, value) VALUES ('salt', ?1)",
-                    params![s],
+                    "INSERT INTO config (key, value) VALUES (?1, ?2)",
+                    params![CONFIG_KEY_SALT, s],
                 )
                 .expect("Failed to store salt");
                 s
             }
         };
 
-        // If master_password provided and no master_hash stored yet, store it
         if let Some(ref pw) = config.master_password {
             let has_hash: bool = conn
                 .query_row(
-                    "SELECT COUNT(*) FROM config WHERE key = 'master_hash'",
-                    [],
+                    "SELECT COUNT(*) FROM config WHERE key = ?1",
+                    params![CONFIG_KEY_MASTER_HASH],
                     |row| row.get::<_, i64>(0),
                 )
                 .unwrap_or(0)
@@ -84,8 +85,8 @@ impl TeamsSqliteClient {
             if !has_hash {
                 let hash = Self::compute_hmac(&salt, pw);
                 conn.execute(
-                    "INSERT INTO config (key, value) VALUES ('master_hash', ?1)",
-                    params![hash],
+                    "INSERT INTO config (key, value) VALUES (?1, ?2)",
+                    params![CONFIG_KEY_MASTER_HASH, hash],
                 )
                 .expect("Failed to store master_hash");
             }
@@ -97,21 +98,18 @@ impl TeamsSqliteClient {
         }
     }
 
-    /// HMAC-SHA256(salt, message) returned as a lowercase hex string.
-    pub fn compute_hmac(salt: &str, message: &str) -> String {
+    fn compute_hmac(salt: &str, message: &str) -> String {
         let mut mac = HmacSha256::new_from_slice(salt.as_bytes())
             .expect("HMAC accepts any key size");
         mac.update(message.as_bytes());
         hex::encode(mac.finalize().into_bytes())
     }
 
-    /// First 16 characters of HMAC(salt, team_name).
-    pub fn compute_team_code(salt: &str, team_name: &str) -> String {
+    fn compute_team_code(salt: &str, team_name: &str) -> String {
         Self::compute_hmac(salt, team_name)[..16].to_string()
     }
 
-    /// Constant-time equality check.
-    pub fn constant_time_eq(a: &str, b: &str) -> bool {
+    fn constant_time_eq(a: &str, b: &str) -> bool {
         a.as_bytes().ct_eq(b.as_bytes()).into()
     }
 }
@@ -128,7 +126,7 @@ impl TeamRegistryClient for TeamsSqliteClient {
             })?;
 
             let mut stmt = conn
-                .prepare(
+                .prepare_cached(
                     "SELECT key, value, updated_at FROM team_metadata \
                      WHERE team_name = ?1 ORDER BY id",
                 )
@@ -211,8 +209,8 @@ impl TeamRegistryClient for TeamsSqliteClient {
 
             let master_hash: Option<String> = conn
                 .query_row(
-                    "SELECT value FROM config WHERE key = 'master_hash'",
-                    [],
+                    "SELECT value FROM config WHERE key = ?1",
+                    params![CONFIG_KEY_MASTER_HASH],
                     |row| row.get(0),
                 )
                 .ok();

@@ -90,7 +90,7 @@ pub async fn update_team_info(
     dispatcher.dispatch(
         source,
         Event::UpdateTeamInfo(UpdateTeamInfoEvent {
-            team: team_name.name.clone(),
+            team: team_name.name,
             entries: entries_for_event,
         }),
     );

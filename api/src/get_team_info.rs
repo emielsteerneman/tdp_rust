@@ -31,7 +31,7 @@ pub async fn get_team_info(
     dispatcher.dispatch(
         source,
         Event::GetTeamInfo(GetTeamInfoEvent {
-            team: team_name.name.clone(),
+            team: team_name.name,
         }),
     );
 

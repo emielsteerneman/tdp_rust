@@ -22,10 +22,7 @@ pub async fn get_team_info_handler(
         event_processing::EventSource::Web,
     )
     .await
-    .map_err(|e| match e {
-        api::error::ApiError::Internal(_) => ApiError::internal_server_error(e.to_string()),
-        _ => ApiError::internal_server_error(e.to_string()),
-    })?;
+    .map_err(|e| ApiError::internal_server_error(e.to_string()))?;
 
     Ok(Json(ApiResponse::new(entries)))
 }
