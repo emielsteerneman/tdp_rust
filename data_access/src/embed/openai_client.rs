@@ -115,6 +115,9 @@ impl EmbedClient for OpenAIClient {
                     .collect::<Vec<Vec<f32>>>();
 
                 embeddings.extend(batch_embeddings);
+
+                // Rate-limit: wait between batches to avoid hitting OpenAI TPM limits
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
 
             Ok(embeddings)
