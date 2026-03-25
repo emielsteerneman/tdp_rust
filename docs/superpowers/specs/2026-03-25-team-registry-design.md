@@ -64,11 +64,10 @@ The `id` column is internal to SQLite and not exposed.
 ```rust
 pub enum TeamRegistryError {
     Internal(String),
-    NotFound(String),
 }
 ```
 
-Auth and validation failures are handled at the API handler level, not in the storage trait. The trait returns `NotFound` if the team has no entries, `Internal` for DB errors.
+Auth and validation failures are handled at the API handler level, not in the storage trait. The trait returns `Ok(vec![])` for teams with no entries — there is no distinction between "team has no metadata" and "team doesn't exist," since teams are defined by the TDP corpus, not the registry.
 
 ### Authentication
 
@@ -174,7 +173,13 @@ Only registered when team registry is configured:
 
 - `GET /api/team-registry/:name` — returns team metadata as JSON array of `{ key, value, updated_at }` objects. HTTP 200 always (empty array if no entries).
 - `POST /api/team-registry/:name` — accepts `{ code: "...", entries: [{ key: "...", value: "..." }, ...] }`. Returns HTTP 200 on success, 403 on auth failure, 400 on validation failure.
-- Static page at `/teams/edit` — simple form: paste team name + code, edit key-value pairs, submit
+- Static page at `/teams/edit` — load-then-edit flow:
+  1. Enter team name + code, click "Load"
+  2. Page fetches `GET /api/team-registry/:name` and populates the form with existing entries
+  3. User edits, adds, or removes entries inline
+  4. Submit sends the full current set via `POST`
+
+  This keeps the backend simple (full replace) while letting users update a single field without re-entering everything.
 
 The `/api/team-registry/` prefix avoids collision with the existing `/api/teams` route used by `list_teams`.
 
