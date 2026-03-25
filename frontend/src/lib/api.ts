@@ -102,3 +102,25 @@ export async function submitSuggestion(message: string, fetchFn?: FetchFn): Prom
 		body: JSON.stringify({ message })
 	});
 }
+
+export interface TeamMetadataEntry {
+	key: string;
+	value: string;
+	updated_at: string;
+}
+
+export async function getTeamInfo(name: string, fetchFn?: FetchFn): Promise<TeamMetadataEntry[]> {
+	return fetchApi<TeamMetadataEntry[]>(`/team-registry/${encodeURIComponent(name)}`, fetchFn);
+}
+
+export async function updateTeamInfo(
+	name: string,
+	code: string,
+	entries: { key: string; value: string }[],
+	fetchFn?: FetchFn
+): Promise<string> {
+	return fetchApi<string>(`/team-registry/${encodeURIComponent(name)}`, fetchFn, {
+		method: 'POST',
+		body: JSON.stringify({ code, entries })
+	});
+}
