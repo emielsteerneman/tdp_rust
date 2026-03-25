@@ -129,6 +129,17 @@ pub struct SuggestionEvent {
     pub message: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct GetTeamInfoEvent {
+    pub team: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UpdateTeamInfoEvent {
+    pub team: String,
+    pub entries: Vec<(String, String)>,
+}
+
 // ---------------------------------------------------------------------------
 // Event enum
 // ---------------------------------------------------------------------------
@@ -151,6 +162,8 @@ pub enum Event {
     HttpRequest(HttpRequestEvent),
     PaperOpen(PaperOpenEvent),
     Suggestion(SuggestionEvent),
+    GetTeamInfo(GetTeamInfoEvent),
+    UpdateTeamInfo(UpdateTeamInfoEvent),
 }
 
 impl Event {
@@ -171,6 +184,8 @@ impl Event {
             Event::HttpRequest(_) => "http_request",
             Event::PaperOpen(_) => "paper_open",
             Event::Suggestion(_) => "suggestion",
+            Event::GetTeamInfo(_) => "get_team_info",
+            Event::UpdateTeamInfo(_) => "update_team_info",
         }
     }
 }
@@ -238,6 +253,8 @@ mod tests {
             (Event::HttpRequest(HttpRequestEvent { method: "GET".into(), path: "/".into(), status: 200, duration_ms: 10, ip: None, user_agent: "ua".into() }), "http_request"),
             (Event::PaperOpen(PaperOpenEvent { paper_id: "p".into(), referrer: None }), "paper_open"),
             (Event::Suggestion(SuggestionEvent { message: "test suggestion".into() }), "suggestion"),
+            (Event::GetTeamInfo(GetTeamInfoEvent { team: "t".into() }), "get_team_info"),
+            (Event::UpdateTeamInfo(UpdateTeamInfoEvent { team: "t".into(), entries: vec![] }), "update_team_info"),
         ];
 
         for (event, expected) in cases {

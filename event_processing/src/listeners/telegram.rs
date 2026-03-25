@@ -93,7 +93,9 @@ impl TelegramListener {
             | Event::ListYears(_)
             | Event::ListTeams(_)
             | Event::ListPapers(_)
-            | Event::HttpRequest(_) => None,
+            | Event::HttpRequest(_)
+            | Event::GetTeamInfo(_)
+            | Event::UpdateTeamInfo(_) => None,
         }
     }
 }
