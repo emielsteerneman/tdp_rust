@@ -114,13 +114,13 @@ export async function getTeamInfo(name: string, fetchFn?: FetchFn): Promise<Team
 }
 
 export async function updateTeamInfo(
-	name: string,
+	team: string,
 	code: string,
 	entries: { key: string; value: string }[],
 	fetchFn?: FetchFn
 ): Promise<string> {
-	return fetchApi<string>(`/team-registry/${encodeURIComponent(name)}`, fetchFn, {
+	return fetchApi<string>('/team-registry', fetchFn, {
 		method: 'POST',
-		body: JSON.stringify({ code, entries })
+		body: JSON.stringify({ team, code, entries })
 	});
 }
