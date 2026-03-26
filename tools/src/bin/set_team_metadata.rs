@@ -5,7 +5,11 @@ async fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().collect();
 
     let team_input = get_arg(&args, "--team")
-        .ok_or_else(|| anyhow::anyhow!("Usage: generate_team_code --team \"Team Name\""))?;
+        .ok_or_else(|| anyhow::anyhow!("Usage: set_team_metadata --team \"Team Name\" --key \"key\" --value \"value\""))?;
+    let key = get_arg(&args, "--key")
+        .ok_or_else(|| anyhow::anyhow!("--key is required"))?;
+    let value = get_arg(&args, "--value")
+        .ok_or_else(|| anyhow::anyhow!("--value is required"))?;
 
     let config_path = "config.toml";
     let config = configuration::AppConfig::load_from_file(config_path)
@@ -24,10 +28,21 @@ async fn main() -> anyhow::Result<()> {
             "Team registry not configured. Add [data_access.teams.sqlite] to config.toml"
         ))?;
 
-    let code = registry.generate_team_code(&team.name).await
+    // Load existing entries, upsert the key, write back
+    let existing = registry.get_team_metadata(&team.name).await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    println!("Code for {}: {}", team.name, code);
+    let mut entries: Vec<(String, String)> = existing
+        .into_iter()
+        .filter(|e| e.key != key)
+        .map(|e| (e.key, e.value))
+        .collect();
+    entries.push((key.clone(), value.clone()));
+
+    registry.set_team_metadata(&team.name, entries).await
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
+
+    println!("Set {}={} for {}", key, value, team.name);
 
     Ok(())
 }
