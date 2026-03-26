@@ -215,9 +215,16 @@ impl AppServer {
             &self.state.dispatcher,
             event_processing::EventSource::Mcp,
         ).await {
-            Ok(entries) => match serde_json::to_string_pretty(&entries) {
-                Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
-                Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+            Ok(entries) => {
+                if entries.is_empty() {
+                    Ok(CallToolResult::success(vec![Content::text("No metadata found for this team.")]))
+                } else {
+                    let text = entries.iter()
+                        .map(|e| format!("{}: {}", e.key, e.value))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    Ok(CallToolResult::success(vec![Content::text(text)]))
+                }
             },
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
