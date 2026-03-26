@@ -56,6 +56,15 @@ pub struct FrontMatter {
     pub abstract_text: Option<String>,
 }
 
+/// Summary metadata for a paper: title, authors, institutions, and URLs.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct PaperInfo {
+    pub title: String,
+    pub authors: Vec<Author>,
+    pub institutions: Vec<String>,
+    pub urls: Vec<String>,
+}
+
 // ---------------------------------------------------------------------------
 // ContentItem & TocEntry
 // ---------------------------------------------------------------------------

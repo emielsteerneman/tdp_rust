@@ -3,6 +3,7 @@
 	import type { PageData } from './$types';
 	import { preprocessMarkdown, extractHeadings, slugifyHeading } from '$lib/markdown';
 	import TableOfContents from '$lib/components/TableOfContents.svelte';
+	import TeamInfoSidebar from '$lib/components/TeamInfoSidebar.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -76,4 +77,12 @@
 			</div>
 		</div>
 	</div>
+
+	<TeamInfoSidebar
+		teamName={data.teamPrettyName}
+		leagueMachine={data.leagueMachine}
+		year={data.year}
+		paperUrls={data.paperInfo?.urls ?? []}
+		entries={data.teamEntries}
+	/>
 </div>

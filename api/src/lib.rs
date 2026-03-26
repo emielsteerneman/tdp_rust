@@ -1,5 +1,6 @@
 pub mod error;
 pub mod get_abstract;
+pub mod get_paper_info;
 pub mod get_image;
 pub mod get_paragraph;
 pub mod get_section;

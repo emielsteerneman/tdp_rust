@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use api::{get_abstract, get_section, get_table_of_contents, get_tdp_contents, get_team_info, list_leagues, list_papers, list_teams, list_years, paper_filter, search, suggestion};
+use api::{get_abstract, get_paper_info, get_section, get_table_of_contents, get_tdp_contents, get_team_info, list_leagues, list_papers, list_teams, list_years, paper_filter, search, suggestion};
 use data_structures::content::ContentType;
 use data_structures::intermediate::{BreadcrumbEntry, SectionResult};
 use rmcp::handler::server::router::tool::ToolRouter;
@@ -195,6 +195,41 @@ impl AppServer {
     ) -> Result<CallToolResult, McpError> {
         match get_abstract::get_abstract(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Get metadata about a paper: title, authors with affiliations, institutions, and URLs found in the paper. Requires the paper lyti identifier. Useful for finding a team's university, website URLs mentioned in their paper, and who wrote it."
+    )]
+    pub async fn get_paper_info(
+        &self,
+        Parameters(args): Parameters<get_paper_info::GetPaperInfoArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match get_paper_info::get_paper_info(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
+            Ok(info) => {
+                let mut lines = vec![format!("Title: {}", info.title)];
+
+                if !info.authors.is_empty() {
+                    let author_strs: Vec<String> = info.authors.iter().map(|a| {
+                        match &a.affiliation {
+                            Some(aff) if !aff.is_empty() => format!("{} ({})", a.name, aff),
+                            _ => a.name.clone(),
+                        }
+                    }).collect();
+                    lines.push(format!("Authors: {}", author_strs.join(", ")));
+                }
+
+                if !info.institutions.is_empty() {
+                    lines.push(format!("Institutions: {}", info.institutions.join(", ")));
+                }
+
+                if !info.urls.is_empty() {
+                    lines.push(format!("URLs: {}", info.urls.join(", ")));
+                }
+
+                Ok(CallToolResult::success(vec![Content::text(lines.join("\n"))]))
+            },
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }

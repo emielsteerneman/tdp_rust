@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use data_structures::IDF;
-use data_structures::content::{ContentItem, ContentType, MarkdownTDP, TocEntry};
+use data_structures::content::{Author, ContentItem, ContentType, MarkdownTDP, PaperInfo, TocEntry};
 use rusqlite::{Connection, params};
 use serde::Deserialize;
 use tracing::info;
@@ -661,6 +661,71 @@ impl MetadataClient for SqliteClient {
                         "Abstract not found for lyti: {}",
                         lyti
                     ))
+                })
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
+    fn load_paper_info<'a>(
+        &'a self,
+        lyti: String,
+    ) -> Pin<Box<dyn Future<Output = Result<PaperInfo, MetadataClientError>> + Send + 'a>> {
+        let conn = self.conn.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = conn.lock().unwrap();
+
+                // Load title, urls from paper table
+                let (title, urls_json): (Option<String>, Option<String>) = conn
+                    .query_row(
+                        "SELECT title, urls_json FROM paper WHERE lyti = ?1",
+                        params![lyti],
+                        |row| Ok((row.get(0)?, row.get(1)?)),
+                    )
+                    .map_err(|e| match e {
+                        rusqlite::Error::QueryReturnedNoRows => {
+                            MetadataClientError::NotFound(format!("Paper not found: {}", lyti))
+                        }
+                        _ => MetadataClientError::Internal(e.to_string()),
+                    })?;
+
+                let urls: Vec<String> = urls_json
+                    .and_then(|j| serde_json::from_str(&j).ok())
+                    .unwrap_or_default();
+
+                // Load authors from author table
+                let mut stmt = conn
+                    .prepare("SELECT name, affiliation FROM author WHERE lyti = ?1")
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let authors: Vec<Author> = stmt
+                    .query_map(params![lyti], |row| {
+                        Ok(Author {
+                            name: row.get(0)?,
+                            affiliation: row.get(1)?,
+                        })
+                    })
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+                    .filter_map(|r| r.ok())
+                    .collect();
+
+                // Derive institutions from author affiliations
+                let mut institutions: Vec<String> = authors
+                    .iter()
+                    .filter_map(|a| a.affiliation.clone())
+                    .filter(|a| !a.is_empty())
+                    .collect();
+                institutions.sort();
+                institutions.dedup();
+
+                Ok(PaperInfo {
+                    title: title.unwrap_or_default(),
+                    authors,
+                    institutions,
+                    urls,
                 })
             })
             .await

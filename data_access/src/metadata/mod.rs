@@ -2,7 +2,7 @@ use std::pin::Pin;
 mod sqlite_client;
 use data_structures::{
     IDF,
-    content::{ContentItem, MarkdownTDP, TocEntry},
+    content::{ContentItem, MarkdownTDP, PaperInfo, TocEntry},
     file::{League, TDPName, TeamName},
 };
 use mockall::automock;
@@ -80,5 +80,10 @@ pub trait MetadataClient: Send + Sync {
         start_seq: u32,
         end_seq_exclusive: u32,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ContentItem>, MetadataClientError>> + Send + 'a>>;
+
+    fn load_paper_info<'a>(
+        &'a self,
+        lyti: String,
+    ) -> Pin<Box<dyn Future<Output = Result<PaperInfo, MetadataClientError>> + Send + 'a>>;
 
 }

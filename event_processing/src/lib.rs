@@ -71,6 +71,11 @@ pub struct GetAbstractEvent {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct GetPaperInfoEvent {
+    pub paper: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct GetTableOfContentsEvent {
     pub paper: String,
 }
@@ -153,6 +158,7 @@ pub enum Event {
     ListTeams(ListTeamsEvent),
     ListPapers(ListPapersEvent),
     GetAbstract(GetAbstractEvent),
+    GetPaperInfo(GetPaperInfoEvent),
     GetTableOfContents(GetTableOfContentsEvent),
     GetSection(GetSectionEvent),
     GetParagraph(GetParagraphEvent),
@@ -175,6 +181,7 @@ impl Event {
             Event::ListTeams(_) => "list_teams",
             Event::ListPapers(_) => "list_papers",
             Event::GetAbstract(_) => "get_abstract",
+            Event::GetPaperInfo(_) => "get_paper_info",
             Event::GetTableOfContents(_) => "get_table_of_contents",
             Event::GetSection(_) => "get_section",
             Event::GetParagraph(_) => "get_paragraph",
@@ -244,6 +251,7 @@ mod tests {
             (Event::ListTeams(ListTeamsEvent { hint: None, result_count: 1 }), "list_teams"),
             (Event::ListPapers(ListPapersEvent { league: None, year: None, team: None, result_count: 0 }), "list_papers"),
             (Event::GetAbstract(GetAbstractEvent { paper: "p".into() }), "get_abstract"),
+            (Event::GetPaperInfo(GetPaperInfoEvent { paper: "p".into() }), "get_paper_info"),
             (Event::GetTableOfContents(GetTableOfContentsEvent { paper: "p".into() }), "get_table_of_contents"),
             (Event::GetSection(GetSectionEvent { paper: "p".into(), content_seq: 1, include_children: false, items_returned: 0 }), "get_section"),
             (Event::GetParagraph(GetParagraphEvent { paper: "p".into(), content_seq: 1 }), "get_paragraph"),
@@ -294,6 +302,7 @@ mod tests {
         let events = vec![
             Event::ListLeagues(ListLeaguesEvent { result_count: 5 }),
             Event::GetAbstract(GetAbstractEvent { paper: "test_paper".into() }),
+            Event::GetPaperInfo(GetPaperInfoEvent { paper: "test_paper".into() }),
             Event::PaperOpen(PaperOpenEvent { paper_id: "id".into(), referrer: Some("https://example.com".into()) }),
             Event::Suggestion(SuggestionEvent { message: "improve search".into() }),
         ];

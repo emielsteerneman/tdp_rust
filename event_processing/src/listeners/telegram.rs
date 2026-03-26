@@ -59,6 +59,9 @@ impl TelegramListener {
             Event::GetAbstract(e) => {
                 Some(format!("[{src}] Get abstract: {}", e.paper))
             }
+            Event::GetPaperInfo(e) => {
+                Some(format!("[{src}] Get paper info: {}", e.paper))
+            }
             Event::GetTableOfContents(e) => {
                 Some(format!("[{src}] Get table of contents: {}", e.paper))
             }

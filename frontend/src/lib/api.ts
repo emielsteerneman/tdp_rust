@@ -109,6 +109,17 @@ export interface TeamMetadataEntry {
 	updated_at: string;
 }
 
+export interface PaperInfo {
+	title: string;
+	authors: { name: string; affiliation: string | null }[];
+	institutions: string[];
+	urls: string[];
+}
+
+export async function getPaperInfo(lyti: string, fetchFn?: FetchFn): Promise<PaperInfo> {
+	return fetchApi<PaperInfo>(`/papers/${encodeURIComponent(lyti)}/info`, fetchFn);
+}
+
 export async function getTeamInfo(name: string, fetchFn?: FetchFn): Promise<TeamMetadataEntry[]> {
 	return fetchApi<TeamMetadataEntry[]>(`/team-registry/${encodeURIComponent(name)}`, fetchFn);
 }
