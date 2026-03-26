@@ -1,3 +1,28 @@
+<script>
+	const guides = [
+		{ title: 'Claude Desktop', href: 'https://modelcontextprotocol.io/quickstart/user', source: 'modelcontextprotocol.io' },
+		{ title: 'Claude Code', href: 'https://docs.anthropic.com/en/docs/claude-code/mcp', source: 'docs.anthropic.com' },
+		{ title: 'Cursor', href: 'https://docs.cursor.com/context/model-context-protocol', source: 'docs.cursor.com' },
+		{ title: 'Windsurf', href: 'https://docs.windsurf.com/windsurf/cascade/mcp', source: 'docs.windsurf.com' },
+		{ title: 'Gemini CLI', href: 'https://geminicli.com/docs/tools/mcp-server/', source: 'geminicli.com' },
+		{ title: 'OpenAI Codex', href: 'https://developers.openai.com/codex/mcp', source: 'developers.openai.com' },
+		{ title: 'Mistral Le Chat', href: 'https://mistral.ai/news/le-chat-mcp-connectors-memories', source: 'mistral.ai' },
+	];
+
+	const features = [
+		{ title: 'Search', desc: 'Hybrid semantic + keyword search across 2000+ papers' },
+		{ title: 'Read full papers', desc: 'Access complete paper contents, sections, and abstracts' },
+		{ title: 'Browse teams, leagues & years', desc: 'List and filter the entire RoboCup TDP corpus' },
+		{ title: 'Natural language', desc: 'Just ask your AI — "What approaches do teams use for ball detection?"' },
+	];
+
+	const prompts = [
+		'What vision systems do RoboCup Small Size League teams use?',
+		'Compare the motion planning approaches of TIGERs Mannheim and RoboTeam Twente',
+		'Show me the latest papers from the Humanoid league',
+	];
+</script>
+
 <svelte:head>
 	<title>Connect your AI — TDP Browser</title>
 </svelte:head>
@@ -30,76 +55,18 @@
 				Each AI client has its own way of adding MCP servers. Follow your client's guide and use the URL above.
 			</p>
 			<div class="space-y-3">
-				<a href="https://modelcontextprotocol.io/quickstart/user" target="_blank" rel="noopener noreferrer"
-					class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Claude Desktop</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">modelcontextprotocol.io</p>
-					</div>
-					<svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-					</svg>
-				</a>
-				<a href="https://docs.anthropic.com/en/docs/claude-code/mcp" target="_blank" rel="noopener noreferrer"
-					class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Claude Code</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">docs.anthropic.com</p>
-					</div>
-					<svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-					</svg>
-				</a>
-				<a href="https://docs.cursor.com/context/model-context-protocol" target="_blank" rel="noopener noreferrer"
-					class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Cursor</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">docs.cursor.com</p>
-					</div>
-					<svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-					</svg>
-				</a>
-				<a href="https://docs.windsurf.com/windsurf/cascade/mcp" target="_blank" rel="noopener noreferrer"
-					class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Windsurf</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">docs.windsurf.com</p>
-					</div>
-					<svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-					</svg>
-				</a>
-				<a href="https://geminicli.com/docs/tools/mcp-server/" target="_blank" rel="noopener noreferrer"
-					class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Gemini CLI</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">geminicli.com</p>
-					</div>
-					<svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-					</svg>
-				</a>
-				<a href="https://developers.openai.com/codex/mcp" target="_blank" rel="noopener noreferrer"
-					class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">OpenAI Codex</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">developers.openai.com</p>
-					</div>
-					<svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-					</svg>
-				</a>
-			<a href="https://mistral.ai/news/le-chat-mcp-connectors-memories" target="_blank" rel="noopener noreferrer"
-					class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Mistral Le Chat</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">mistral.ai</p>
-					</div>
-					<svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-					</svg>
-				</a>
+				{#each guides as guide}
+					<a href={guide.href} target="_blank" rel="noopener noreferrer"
+						class="flex items-center justify-between px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
+						<div>
+							<p class="text-sm font-medium text-gray-900 dark:text-gray-100">{guide.title}</p>
+							<p class="text-xs text-gray-500 dark:text-gray-400">{guide.source}</p>
+						</div>
+						<svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+						</svg>
+					</a>
+				{/each}
 			</div>
 		</div>
 
@@ -107,42 +74,17 @@
 		<div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 shadow-sm mb-6">
 			<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">What you get</h2>
 			<div class="space-y-3">
-				<div class="flex items-start gap-3">
-					<svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Search</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">Hybrid semantic + keyword search across 2000+ papers</p>
+				{#each features as feature}
+					<div class="flex items-start gap-3">
+						<svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+						</svg>
+						<div>
+							<p class="text-sm font-medium text-gray-900 dark:text-gray-100">{feature.title}</p>
+							<p class="text-xs text-gray-500 dark:text-gray-400">{feature.desc}</p>
+						</div>
 					</div>
-				</div>
-				<div class="flex items-start gap-3">
-					<svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Read full papers</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">Access complete paper contents, sections, and abstracts</p>
-					</div>
-				</div>
-				<div class="flex items-start gap-3">
-					<svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Browse teams, leagues & years</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">List and filter the entire RoboCup TDP corpus</p>
-					</div>
-				</div>
-				<div class="flex items-start gap-3">
-					<svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-					</svg>
-					<div>
-						<p class="text-sm font-medium text-gray-900 dark:text-gray-100">Natural language</p>
-						<p class="text-xs text-gray-500 dark:text-gray-400">Just ask your AI — "What approaches do teams use for ball detection?"</p>
-					</div>
-				</div>
+				{/each}
 			</div>
 		</div>
 
@@ -153,18 +95,12 @@
 				Once connected, try asking your AI something like:
 			</p>
 			<ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-				<li class="flex items-start gap-2">
-					<span class="text-blue-500 mt-0.5">→</span>
-					<span>"What vision systems do RoboCup Small Size League teams use?"</span>
-				</li>
-				<li class="flex items-start gap-2">
-					<span class="text-blue-500 mt-0.5">→</span>
-					<span>"Compare the motion planning approaches of TIGERs Mannheim and RoboTeam Twente"</span>
-				</li>
-				<li class="flex items-start gap-2">
-					<span class="text-blue-500 mt-0.5">→</span>
-					<span>"Show me the latest papers from the Humanoid league"</span>
-				</li>
+				{#each prompts as prompt}
+					<li class="flex items-start gap-2">
+						<span class="text-blue-500 mt-0.5">→</span>
+						<span>"{prompt}"</span>
+					</li>
+				{/each}
 			</ul>
 		</div>
 	</div>
