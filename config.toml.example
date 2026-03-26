@@ -32,5 +32,11 @@ filename = "data/metadata.db"
 [data_access.activity.sqlite]
 filename = "data/activity.db"
 
+# Optional: Team registry for team metadata (websites, repos, social links)
+# [data_access.teams.sqlite]
+# filename = "data/teams.db"
+# master_password = "your-secret-here"  # only consumed on first DB init
+# salt = "shared-secret-salt"           # optional: set to share team codes across instances
+
 [data_processing]
 tdps_markdown_root = "/path/to/tdps_markdown/"

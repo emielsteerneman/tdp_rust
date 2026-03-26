@@ -17,6 +17,7 @@ const CONFIG_KEY_MASTER_HASH: &str = "master_hash";
 pub struct TeamsSqliteConfig {
     pub filename: String,
     pub master_password: Option<String>,
+    pub salt: Option<String>,
 }
 
 pub struct TeamsSqliteClient {
@@ -49,7 +50,16 @@ impl TeamsSqliteClient {
         )
         .expect("Failed to create tables");
 
-        let salt: String = {
+        let salt: String = if let Some(ref s) = config.salt {
+            // Use configured salt, store/update it in the DB
+            conn.execute(
+                "INSERT OR REPLACE INTO config (key, value) VALUES (?1, ?2)",
+                params![CONFIG_KEY_SALT, s],
+            )
+            .expect("Failed to store salt");
+            s.clone()
+        } else {
+            // Fall back to DB-stored or auto-generated salt
             let existing: Option<String> = conn
                 .query_row(
                     "SELECT value FROM config WHERE key = ?1",
@@ -245,6 +255,7 @@ mod tests {
         TeamsSqliteClient::new(TeamsSqliteConfig {
             filename: ":memory:".to_string(),
             master_password: Some("test-master-pw".to_string()),
+            salt: None,
         })
     }
 
@@ -401,6 +412,7 @@ mod tests {
             let client = TeamsSqliteClient::new(TeamsSqliteConfig {
                 filename: db_path_str.clone(),
                 master_password: None,
+                salt: None,
             });
             client.generate_team_code("TeamA").await.unwrap()
         };
@@ -409,6 +421,7 @@ mod tests {
             let client = TeamsSqliteClient::new(TeamsSqliteConfig {
                 filename: db_path_str,
                 master_password: None,
+                salt: None,
             });
             client.generate_team_code("TeamA").await.unwrap()
         };

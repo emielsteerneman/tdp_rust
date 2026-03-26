@@ -41,6 +41,7 @@ services:
         condition: service_healthy
     volumes:
       - ./data/activity_docker:/app/activity_data
+      - ./data/teams_docker:/app/teams_data
     environment:
       - RUST_LOG=debug
       # Override config settings via TDP_* environment variables
@@ -61,6 +62,7 @@ services:
         condition: service_healthy
     volumes:
       - ./data/activity_docker:/app/activity_data
+      - ./data/teams_docker:/app/teams_data
       - ${TDP_MARKDOWN_ROOT:?Set TDP_MARKDOWN_ROOT in .env}:/data/tdps_markdown:ro
     # environment:
       # Override config settings via TDP_* environment variables

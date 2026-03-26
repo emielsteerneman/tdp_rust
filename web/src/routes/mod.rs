@@ -40,8 +40,8 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/leagues", get(leagues::list_leagues_handler))
         .route("/api/years", get(years::list_years_handler))
         .route("/api/suggestion", post(suggestion::submit_suggestion_handler))
-        .route("/api/team-registry/{name}", get(team_registry::get_team_info_handler)
-            .post(team_registry::update_team_info_handler))
+        .route("/api/team-registry/{name}", get(team_registry::get_team_info_handler))
+        .route("/api/team-registry", post(team_registry::update_team_info_handler))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             crate::middleware::activity_logging,

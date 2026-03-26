@@ -10,6 +10,7 @@ use crate::error::ApiError;
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateTeamInfoArgs {
+    pub team: String,
     pub code: String,
     pub entries: Vec<UpdateEntry>,
 }
@@ -22,12 +23,11 @@ pub struct UpdateEntry {
 
 pub async fn update_team_info(
     team_registry: Arc<dyn TeamRegistryClient + Send + Sync>,
-    team: &str,
     args: UpdateTeamInfoArgs,
     dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> Result<String, ApiError> {
-    let team_name = TeamName::new(team.trim());
+    let team_name = TeamName::new(args.team.trim());
 
     // Validate entries
     if args.entries.len() > 50 {
@@ -112,6 +112,7 @@ mod tests {
         Arc::new(TeamsSqliteClient::new(TeamsSqliteConfig {
             filename: ":memory:".to_string(),
             master_password: Some(master_pw.to_string()),
+            salt: None,
         }))
     }
 
@@ -134,11 +135,12 @@ mod tests {
         let dispatcher = make_dispatcher();
 
         let args = UpdateTeamInfoArgs {
+            team: "TeamA".to_string(),
             code: "any".to_string(),
             entries: make_entries(51),
         };
 
-        let result = update_team_info(registry, "TeamA", args, &dispatcher, EventSource::Web).await;
+        let result = update_team_info(registry, args, &dispatcher, EventSource::Web).await;
 
         match result {
             Err(ApiError::Argument(field, _)) => assert_eq!(field, "entries"),
@@ -153,6 +155,7 @@ mod tests {
 
         let long_key = "a".repeat(65);
         let args = UpdateTeamInfoArgs {
+            team: "TeamA".to_string(),
             code: "any".to_string(),
             entries: vec![UpdateEntry {
                 key: long_key,
@@ -160,7 +163,7 @@ mod tests {
             }],
         };
 
-        let result = update_team_info(registry, "TeamA", args, &dispatcher, EventSource::Web).await;
+        let result = update_team_info(registry, args, &dispatcher, EventSource::Web).await;
 
         match result {
             Err(ApiError::Argument(field, _)) => assert_eq!(field, "key"),
@@ -174,6 +177,7 @@ mod tests {
         let dispatcher = make_dispatcher();
 
         let args = UpdateTeamInfoArgs {
+            team: "TeamA".to_string(),
             code: "any".to_string(),
             entries: vec![UpdateEntry {
                 key: "invalid-key".to_string(),
@@ -181,7 +185,7 @@ mod tests {
             }],
         };
 
-        let result = update_team_info(registry, "TeamA", args, &dispatcher, EventSource::Web).await;
+        let result = update_team_info(registry, args, &dispatcher, EventSource::Web).await;
 
         match result {
             Err(ApiError::Argument(field, _)) => assert_eq!(field, "key"),
@@ -196,6 +200,7 @@ mod tests {
 
         let long_value = "a".repeat(2049);
         let args = UpdateTeamInfoArgs {
+            team: "TeamA".to_string(),
             code: "any".to_string(),
             entries: vec![UpdateEntry {
                 key: "valid_key".to_string(),
@@ -203,7 +208,7 @@ mod tests {
             }],
         };
 
-        let result = update_team_info(registry, "TeamA", args, &dispatcher, EventSource::Web).await;
+        let result = update_team_info(registry, args, &dispatcher, EventSource::Web).await;
 
         match result {
             Err(ApiError::Argument(field, _)) => assert_eq!(field, "value"),
@@ -217,6 +222,7 @@ mod tests {
         let dispatcher = make_dispatcher();
 
         let args = UpdateTeamInfoArgs {
+            team: "TeamA".to_string(),
             code: "wrong_code".to_string(),
             entries: vec![UpdateEntry {
                 key: "valid_key".to_string(),
@@ -224,7 +230,7 @@ mod tests {
             }],
         };
 
-        let result = update_team_info(registry, "TeamA", args, &dispatcher, EventSource::Web).await;
+        let result = update_team_info(registry, args, &dispatcher, EventSource::Web).await;
 
         match result {
             Err(ApiError::Forbidden(_)) => {}
@@ -239,6 +245,7 @@ mod tests {
         let dispatcher = make_dispatcher();
 
         let args = UpdateTeamInfoArgs {
+            team: "TeamA".to_string(),
             code: master_pw.to_string(),
             entries: vec![
                 UpdateEntry {
@@ -253,7 +260,7 @@ mod tests {
         };
 
         let result =
-            update_team_info(registry.clone(), "TeamA", args, &dispatcher, EventSource::Web).await;
+            update_team_info(registry.clone(), args, &dispatcher, EventSource::Web).await;
 
         assert!(result.is_ok(), "Expected Ok, got {:?}", result);
 

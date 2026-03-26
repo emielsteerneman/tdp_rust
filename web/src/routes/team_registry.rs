@@ -29,7 +29,6 @@ pub async fn get_team_info_handler(
 
 pub async fn update_team_info_handler(
     State(state): State<AppState>,
-    Path(name): Path<String>,
     Json(args): Json<api::update_team_info::UpdateTeamInfoArgs>,
 ) -> Result<Json<ApiResponse<String>>, ApiError> {
     let registry = state.team_registry.as_ref()
@@ -37,7 +36,6 @@ pub async fn update_team_info_handler(
 
     let result = api::update_team_info::update_team_info(
         registry.clone(),
-        &name,
         args,
         &state.dispatcher,
         event_processing::EventSource::Web,
