@@ -47,6 +47,19 @@
 		<div class="max-w-4xl mx-auto px-4 py-6 sm:py-8">
 			<!-- Paper Content -->
 			<div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
+				<div class="flex justify-end mb-4">
+					<a
+						href="/pdfs/{data.lyti}.pdf"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+						onclick={() => {
+							fetch(`/api/papers/${encodeURIComponent(data.lyti)}/pdf-open`, { method: 'POST' }).catch(() => {});
+						}}
+					>
+						View Original PDF
+					</a>
+				</div>
 				<article
 					class="prose prose-gray dark:prose-invert prose-sm sm:prose-base max-w-none
 						prose-headings:font-bold prose-headings:scroll-mt-24
@@ -60,21 +73,6 @@
 				</article>
 			</div>
 
-			<!-- Actions -->
-			<div class="flex justify-center">
-				<button
-					disabled
-					class="relative px-4 sm:px-6 py-2 sm:py-3 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg font-medium cursor-not-allowed group text-sm sm:text-base"
-					title="Coming soon"
-				>
-					View Original PDF
-					<span
-						class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none"
-					>
-						Coming soon
-					</span>
-				</button>
-			</div>
 		</div>
 	</div>
 

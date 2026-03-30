@@ -10,6 +10,7 @@ pub struct AppState {
     pub searcher: Arc<Searcher>,
     pub dispatcher: Arc<EventDispatcher>,
     pub tdps_markdown_root: String,
+    pub tdps_pdf_root: String,
     pub team_registry: Option<Arc<dyn TeamRegistryClient + Send + Sync>>,
 }
 
@@ -19,6 +20,7 @@ impl AppState {
         searcher: Arc<Searcher>,
         dispatcher: Arc<EventDispatcher>,
         tdps_markdown_root: String,
+        tdps_pdf_root: String,
         team_registry: Option<Arc<dyn TeamRegistryClient + Send + Sync>>,
     ) -> Self {
         Self {
@@ -26,6 +28,7 @@ impl AppState {
             searcher,
             dispatcher,
             tdps_markdown_root,
+            tdps_pdf_root,
             team_registry,
         }
     }

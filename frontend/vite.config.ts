@@ -14,6 +14,10 @@ export default defineConfig({
 			'/tdps': {
 				target: 'http://localhost:50000',
 				changeOrigin: true
+			},
+			'/pdfs': {
+				target: 'http://localhost:50000',
+				changeOrigin: true
 			}
 		}
 	}

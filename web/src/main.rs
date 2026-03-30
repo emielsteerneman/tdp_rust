@@ -73,6 +73,7 @@ async fn main() -> anyhow::Result<()> {
         Arc::new(searcher),
         dispatcher,
         config.data_processing.tdps_markdown_root.clone(),
+        config.data_processing.tdps_pdf_root.clone(),
         team_registry,
     );
 

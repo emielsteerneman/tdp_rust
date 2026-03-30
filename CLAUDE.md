@@ -80,6 +80,7 @@ filename = "data/metadata.db"
 
 [data_processing]
 tdps_markdown_root = "/path/to/tdps_markdown/"
+tdps_pdf_root = "/path/to/tdps_pdf/"
 
 [event_processing.activity.sqlite]
 filename = "data/activity.db"
@@ -98,6 +99,7 @@ filename = "data/activity.db"
 Other prerequisites:
 - **Qdrant** must be running at the configured URL before starting `mcp` or `web` (use `docker-compose up qdrant`)
 - **TDP markdown files** must exist at `tdps_markdown_root` before running `initialize`
+- **TDP PDF files** must exist at `tdps_pdf_root` for the "View Original PDF" button to work
 - **Static files**: the web server expects `./static/`; for local dev symlink: `ln -s frontend/build static`
 - **Embed model ↔ Qdrant size must match**: if you change the embed model, update `embedding_size` and re-run `initialize`
 

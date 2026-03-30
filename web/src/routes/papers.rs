@@ -41,3 +41,17 @@ pub async fn paper_open_handler(
 
     StatusCode::NO_CONTENT
 }
+
+pub async fn pdf_open_handler(
+    State(state): State<AppState>,
+    Path(lyti): Path<String>,
+) -> StatusCode {
+    state.dispatcher.dispatch(
+        event_processing::EventSource::Web,
+        event_processing::Event::PdfOpen(event_processing::PdfOpenEvent {
+            paper_id: lyti,
+        }),
+    );
+
+    StatusCode::NO_CONTENT
+}

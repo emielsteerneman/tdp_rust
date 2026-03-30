@@ -86,6 +86,7 @@ api_key = "sk-..."
 
 [data_processing]
 tdps_markdown_root = "some_root"
+tdps_pdf_root = "some_pdf_root"
 "#
         )?;
 
@@ -96,6 +97,7 @@ tdps_markdown_root = "some_root"
             "text-embedding-3-small"
         );
         assert_eq!(config.data_processing.tdps_markdown_root, "some_root");
+        assert_eq!(config.data_processing.tdps_pdf_root, "some_pdf_root");
 
         Ok(())
     }
@@ -124,6 +126,7 @@ filename = "metadata.db"
 
 [data_processing]
 tdps_markdown_root = "some_root"
+tdps_pdf_root = "some_pdf_root"
 "#
         )?;
 

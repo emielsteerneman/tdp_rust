@@ -4,6 +4,7 @@ mod leagues;
 mod paper_info;
 mod papers;
 mod paragraph;
+mod pdfs;
 mod search;
 mod table;
 mod table_of_contents;
@@ -32,6 +33,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/search", get(search::search_handler))
         .route("/api/papers", get(papers::list_papers_handler))
         .route("/api/papers/{id}/open", post(papers::paper_open_handler))
+        .route("/api/papers/{id}/pdf-open", post(papers::pdf_open_handler))
         .route("/api/papers/{id}/toc", get(table_of_contents::get_table_of_contents_handler))
         .route("/api/papers/{id}/paragraph/{seq}", get(paragraph::get_paragraph_handler))
         .route("/api/papers/{id}/table/{seq}", get(table::get_table_handler))
@@ -53,6 +55,11 @@ pub fn create_router(state: AppState) -> Router {
     // TDP file routes (no activity logging, static file serving)
     let tdps_routes = Router::new()
         .route("/tdps/{*path}", get(tdps::serve_tdps_file))
+        .with_state(state.clone());
+
+    // PDF file routes (no activity logging, static file serving)
+    let pdfs_routes = Router::new()
+        .route("/pdfs/{*path}", get(pdfs::serve_pdf_file))
         .with_state(state);
 
     // Serve static frontend files with SPA fallback
@@ -65,6 +72,7 @@ pub fn create_router(state: AppState) -> Router {
     Router::new()
         .merge(api_routes)
         .merge(tdps_routes)
+        .merge(pdfs_routes)
         .fallback_service(static_files)
         .layer(cors)
 }

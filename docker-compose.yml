@@ -60,6 +60,7 @@ services:
     volumes:
       - ./data/activity_docker:/app/activity_data
       - ${TDP_MARKDOWN_ROOT:?Set TDP_MARKDOWN_ROOT in .env}:/data/tdps_markdown:ro
+      - ${TDP_PDF_ROOT:?Set TDP_PDF_ROOT in .env}:/data/tdps_pdf:ro
     # environment:
       # Override config settings via TDP_* environment variables
       # Example: TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-proj-...

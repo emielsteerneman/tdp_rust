@@ -130,6 +130,11 @@ pub struct PaperOpenEvent {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct PdfOpenEvent {
+    pub paper_id: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct SuggestionEvent {
     pub message: String,
 }
@@ -167,6 +172,7 @@ pub enum Event {
     GetTdpContents(GetTdpContentsEvent),
     HttpRequest(HttpRequestEvent),
     PaperOpen(PaperOpenEvent),
+    PdfOpen(PdfOpenEvent),
     Suggestion(SuggestionEvent),
     GetTeamInfo(GetTeamInfoEvent),
     UpdateTeamInfo(UpdateTeamInfoEvent),
@@ -190,6 +196,7 @@ impl Event {
             Event::GetTdpContents(_) => "get_tdp_contents",
             Event::HttpRequest(_) => "http_request",
             Event::PaperOpen(_) => "paper_open",
+            Event::PdfOpen(_) => "pdf_open",
             Event::Suggestion(_) => "suggestion",
             Event::GetTeamInfo(_) => "get_team_info",
             Event::UpdateTeamInfo(_) => "update_team_info",
@@ -260,6 +267,7 @@ mod tests {
             (Event::GetTdpContents(GetTdpContentsEvent { league: "l".into(), year: "y".into(), team: "t".into() }), "get_tdp_contents"),
             (Event::HttpRequest(HttpRequestEvent { method: "GET".into(), path: "/".into(), status: 200, duration_ms: 10, ip: None, user_agent: "ua".into() }), "http_request"),
             (Event::PaperOpen(PaperOpenEvent { paper_id: "p".into(), referrer: None }), "paper_open"),
+            (Event::PdfOpen(PdfOpenEvent { paper_id: "p".into() }), "pdf_open"),
             (Event::Suggestion(SuggestionEvent { message: "test suggestion".into() }), "suggestion"),
             (Event::GetTeamInfo(GetTeamInfoEvent { team: "t".into() }), "get_team_info"),
             (Event::UpdateTeamInfo(UpdateTeamInfoEvent { team: "t".into(), entries: vec![] }), "update_team_info"),
@@ -304,6 +312,7 @@ mod tests {
             Event::GetAbstract(GetAbstractEvent { paper: "test_paper".into() }),
             Event::GetPaperInfo(GetPaperInfoEvent { paper: "test_paper".into() }),
             Event::PaperOpen(PaperOpenEvent { paper_id: "id".into(), referrer: Some("https://example.com".into()) }),
+            Event::PdfOpen(PdfOpenEvent { paper_id: "test_paper".into() }),
             Event::Suggestion(SuggestionEvent { message: "improve search".into() }),
         ];
 

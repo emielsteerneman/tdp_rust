@@ -90,6 +90,9 @@ impl TelegramListener {
                 let referrer = e.referrer.as_deref().unwrap_or("direct");
                 Some(format!("[{src}] Paper opened: {} (from {referrer})", e.paper_id))
             }
+            Event::PdfOpen(e) => {
+                Some(format!("[{src}] PDF opened: {}", e.paper_id))
+            }
             Event::Suggestion(e) => Some(format!("[{src}] Suggestion: {}", e.message)),
             // Noisy events — skip
             Event::ListLeagues(_)
@@ -257,6 +260,21 @@ mod tests {
         assert!(msg.contains("Paper opened"));
         assert!(msg.contains("my_paper"));
         assert!(msg.contains("from https://google.com"));
+    }
+
+    #[test]
+    fn format_pdf_open() {
+        let listener = make_listener();
+        let event = Event::PdfOpen(PdfOpenEvent {
+            paper_id: "soccer_smallsize__2024__RoboTeam__0".into(),
+        });
+
+        let msg = listener
+            .format_message(&EventSource::Web, &event)
+            .unwrap();
+        assert!(msg.contains("[web]"));
+        assert!(msg.contains("PDF opened"));
+        assert!(msg.contains("soccer_smallsize__2024__RoboTeam__0"));
     }
 
     #[test]
