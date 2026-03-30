@@ -9,15 +9,10 @@
 # All environment variable keys use the TDP_ prefix and __ (double underscore) to separate nested levels
 
 [data_access]
-run = "dev"
 
 [data_access.embed.openai]
 model_name = "text-embedding-3-small"
 api_key = ""  # Add your OpenAI API key here or override via TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY
-
-# FastEmbed as alternative (local, no API key needed)
-[data_access.embed.fastembed]
-model_name = "BGEBaseENV15Q"
 
 # Qdrant vector database (gRPC endpoint — use port 6334, not 6333)
 [data_access.vector.qdrant]
@@ -28,10 +23,6 @@ embedding_size = 1536  # must match the embed model's output dimension — chang
 [data_access.metadata.sqlite]
 filename = "data/metadata.db"
 
-# SQLite activity/logging database
-[data_access.activity.sqlite]
-filename = "data/activity.db"
-
 # Optional: Team registry for team metadata (websites, repos, social links)
 # [data_access.teams.sqlite]
 # filename = "data/teams.db"
@@ -40,3 +31,12 @@ filename = "data/activity.db"
 
 [data_processing]
 tdps_markdown_root = "/path/to/tdps_markdown/"
+
+# SQLite activity/logging database
+[event_processing.activity.sqlite]
+filename = "data/activity.db"
+
+# Optional: Telegram notifications
+# [event_processing.telegram]
+# bot_token = ""
+# chat_id = ""
