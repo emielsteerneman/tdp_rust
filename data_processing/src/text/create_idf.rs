@@ -69,7 +69,14 @@ pub fn create_idf(texts: &[&str], min_counts: &[u32; 3]) -> IDF {
     // =================================================== */
 
     for i in 0..3 {
-        for (word, doc_count) in doc_counts[i].drain() {
+        // Sort words before assigning IDs so the mapping is deterministic.
+        // Without this, HashMap::drain() yields arbitrary order and the IDs
+        // change across runs, breaking any sparse vectors built with a
+        // previous ID assignment.
+        let mut entries: Vec<(String, u32)> = doc_counts[i].drain().collect();
+        entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+
+        for (word, doc_count) in entries {
             let id = id_factory;
             id_factory += 1;
 

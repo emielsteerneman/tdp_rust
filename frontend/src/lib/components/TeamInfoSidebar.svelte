@@ -42,6 +42,15 @@
 		return value.startsWith('http://') || value.startsWith('https://');
 	}
 
+	function looksLikeUrl(value: string): boolean {
+		return isUrl(value) || /^[a-zA-Z0-9][\w.-]+\.[a-z]{2,}(\/|$)/.test(value);
+	}
+
+	function ensureProtocol(url: string): string {
+		if (url.startsWith('http://') || url.startsWith('https://')) return url;
+		return `https://${url}`;
+	}
+
 	function displayUrl(url: string): string {
 		return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 	}
@@ -126,14 +135,14 @@
 
 			<div class="space-y-1.5">
 				{#each grouped.primary as entry}
-					{@render linkItem(entry.value, entry.key, labelFor(entry.key))}
+					{@render linkItem(ensureProtocol(entry.value), entry.key, labelFor(entry.key))}
 				{/each}
 				{#each grouped.social as entry}
-					{@render linkItem(entry.value, entry.key, labelFor(entry.key))}
+					{@render linkItem(ensureProtocol(entry.value), entry.key, labelFor(entry.key))}
 				{/each}
 				{#each grouped.other as entry}
-					{#if isUrl(entry.value)}
-						{@render linkItem(entry.value, entry.key, labelFor(entry.key))}
+					{#if looksLikeUrl(entry.value)}
+						{@render linkItem(ensureProtocol(entry.value), entry.key, labelFor(entry.key))}
 					{:else}
 						{@render textItem(entry.key, entry.value)}
 					{/if}

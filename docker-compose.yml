@@ -15,8 +15,6 @@ services:
     ports:
       - "6333:6333"    # REST API
       - "6334:6334"    # gRPC
-    volumes:
-      - qdrant_storage:/qdrant/storage
     environment:
       QDRANT_ALLOW_RECOVERY_MODE: "true"
     healthcheck:
@@ -41,7 +39,6 @@ services:
         condition: service_healthy
     volumes:
       - ./data/activity_docker:/app/activity_data
-      - ./data/teams_docker:/app/teams_data
     environment:
       - RUST_LOG=debug
       # Override config settings via TDP_* environment variables
@@ -62,13 +59,9 @@ services:
         condition: service_healthy
     volumes:
       - ./data/activity_docker:/app/activity_data
-      - ./data/teams_docker:/app/teams_data
       - ${TDP_MARKDOWN_ROOT:?Set TDP_MARKDOWN_ROOT in .env}:/data/tdps_markdown:ro
     # environment:
       # Override config settings via TDP_* environment variables
       # Example: TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-proj-...
     restart: unless-stopped
 
-volumes:
-  qdrant_storage:
-    driver: local

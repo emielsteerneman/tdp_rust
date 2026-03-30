@@ -1,5 +1,6 @@
 .PHONY: qdrant-restart web ui docker docker-logs docker-down init clean
-.PHONY: activity activity-docker repl search search-text search-table search-image create-idf mcp leagues
+.PHONY: activity activity-docker repl search search-text search-table search-image mcp leagues
+.PHONY: rebuild-index smoke-test
 
 # --- Services ---
 
@@ -36,9 +37,6 @@ docker-down:
 init:
 	cargo run --release -p tools --bin initialize
 
-create-idf:
-	cargo run -p tools --bin create_idf
-
 repl:
 	cargo run -p tools --bin repl
 
@@ -62,8 +60,11 @@ activity-docker:
 
 # --- Utilities ---
 
-clean: qdrant-restart
-	rm -rf data && mkdir data
+rebuild-index:
+	./scripts/rebuild_index.sh
+
+smoke-test:
+	cargo run -p tools --bin smoke_test
 
 leagues:
 	@curl -s http://localhost:50000/api/leagues | python3 -m json.tool

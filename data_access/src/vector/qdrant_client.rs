@@ -218,12 +218,23 @@ impl VectorClient for QdrantClient {
         let id = chunk.to_uuid();
         let point_id: PointId = id.to_string().into();
 
+        let league_value = chunk.league.name().to_string();
+        let team_value = chunk.team.name.clone();
+        debug_assert!(
+            !league_value.contains(' '),
+            "League stored in Qdrant must be machine name (no spaces), got: {league_value}"
+        );
+        debug_assert!(
+            !team_value.contains(' '),
+            "Team stored in Qdrant must be machine name (no spaces), got: {team_value}"
+        );
+
         let mut payload: HashMap<String, Value> = HashMap::new();
 
-        // League Year Team
-        payload.insert(Self::KEY_LEAGUE.into(), chunk.league.name().into());
+        // League Year Team — always machine names (e.g. "soccer_smallsize", "RoboTeam_Twente")
+        payload.insert(Self::KEY_LEAGUE.into(), league_value.into());
         payload.insert(Self::KEY_YEAR.into(), (chunk.year as i64).into());
-        payload.insert(Self::KEY_TEAM.into(), chunk.team.name.into());
+        payload.insert(Self::KEY_TEAM.into(), team_value.into());
         payload.insert(Self::KEY_LYTI.into(), chunk.league_year_team_idx.into());
         // Structure
         payload.insert(

@@ -10,15 +10,10 @@
 # All environment variable keys use the TDP_ prefix and __ (double underscore) to separate nested levels
 
 [data_access]
-run = "my_run"
 
 [data_access.embed.openai]
 model_name = "text-embedding-3-small"
 api_key = ""  # Add your OpenAI API key here or override via TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY
-
-# FastEmbed as fallback (local, no API key needed)
-[data_access.embed.fastembed]
-model_name = "BGEBaseENV15Q"
 
 # Qdrant vector database
 # When using docker-compose: connects via Docker network (service name)
@@ -27,13 +22,24 @@ model_name = "BGEBaseENV15Q"
 url = "http://qdrant:6334"    # gRPC endpoint (use port 6334, not 6333)
 embedding_size = 1536        # Fixed with pre-filled snapshot
 
-# SQLite metadata database (mounted volume)
+# SQLite metadata database (baked into image)
 [data_access.metadata.sqlite]
 filename = "/app/data/metadata.db"
 
-# SQLite activity/logging database (mounted volume)
-[data_access.activity.sqlite]
-filename = "/app/data/activity.db"
+# Team registry (baked into image)
+[data_access.teams.sqlite]
+filename = "/app/data/teams.db"
+master_password = ""  # Only consumed on first DB init
+salt = ""
 
 [data_processing]
 tdps_markdown_root = "/data/tdps_markdown"
+
+# SQLite activity/logging database (persisted via Docker volume)
+[event_processing.activity.sqlite]
+filename = "/app/activity_data/activity.db"
+
+# Optional: Telegram notifications
+# [event_processing.telegram]
+# bot_token = ""
+# chat_id = ""
