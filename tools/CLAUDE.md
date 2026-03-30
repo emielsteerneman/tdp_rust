@@ -3,8 +3,8 @@ CLI binaries for data management, search, and analytics.
 
 ## Binaries
 - `initialize` — full ingestion pipeline: load markdown → chunk → embed → store in Qdrant + SQLite.
-- `create_idf` — compute and store IDF statistics (currently hardcoded to soccer_smallsize).
 - `search_by_sentence` — CLI search with `--mode` (dense/sparse/hybrid) and `--type` (text/table/image) flags.
+- `smoke_test` — end-to-end verification: searches every (league, year) combo across sparse/dense/hybrid against live Qdrant.
 - `activity` — query event database: `summary`, `recent`, `agents` subcommands.
 - `generate_team_code` — generate HMAC auth code for a team.
 - `set_team_metadata` — upsert team metadata: `--team "Name" --key "key" --value "value"`.

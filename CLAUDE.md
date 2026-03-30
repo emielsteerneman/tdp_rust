@@ -27,9 +27,9 @@ markdown files → data_processing (parse, chunk, embed) → data_access (store 
 - `api` — Shared async handlers used by both `mcp` and `web`. This is where business logic lives.
 - `mcp` — MCP server (rmcp framework). Thin wrapper that calls `api` handlers. Dual ports: open (:50001) and OAuth (:50002).
 - `web` — Axum HTTP server (:50000). Thin wrapper that calls `api` handlers. Serves the frontend SPA.
-- `tools` — CLI binaries: `initialize`, `create_idf`, `search_by_sentence`, `activity`, `generate_team_code`, `set_team_metadata`.
+- `tools` — CLI binaries: `initialize`, `search_by_sentence`, `smoke_test`, `activity`, `generate_team_code`, `set_team_metadata`.
 - `frontend/` — SvelteKit static SPA. Talks to `web` via `/api/*` endpoints.
-- `scripts/` — Qdrant maintenance shell scripts.
+- `scripts/` — Qdrant maintenance and index rebuild shell scripts.
 - `docs/` — Architecture diagrams and planning docs.
 
 ## Key Conventions
@@ -52,8 +52,14 @@ cargo test
 cd frontend && npm install && npm run dev
 npm run build             # -> frontend/build/
 
-# Docker (full stack, requires qdrant.snapshot in repo root)
-docker-compose up
+# Docker (full stack, requires qdrant.snapshot + data/metadata.db + data/teams.db)
+docker compose up --build
+
+# Rebuild index from scratch (teardown → reindex → snapshot → docker rebuild)
+make rebuild-index
+
+# Smoke test: verify search works across all leagues, years, and search types
+make smoke-test
 ```
 
 ## Local Setup Prerequisites
@@ -108,3 +114,4 @@ When debugging issues, investigate the root cause before suggesting fixes. Don't
 - Integration tests: `testcontainers` spins up a real Qdrant Docker container (`qdrant/qdrant:v1.16`)
 - Config tests: `tempfile` with temporary TOML files
 - Integration tests require Docker to be available; they are NOT `#[ignore]`-gated
+- Smoke test (`make smoke-test`): end-to-end test that searches every (league, year) combo across all search types against a live Qdrant instance

@@ -14,7 +14,7 @@ Rust workspace with the following crates:
 | `mcp` | Binary | MCP (Model Context Protocol) server for LLM integration |
 | `frontend` | SvelteKit | Web UI with Tailwind CSS |
 | `api` | Library | Shared business logic (search, list, filter) |
-| `data_access` | Library | Trait-based clients: Qdrant, SQLite, OpenAI, FastEmbed |
+| `data_access` | Library | Trait-based clients: Qdrant, SQLite, OpenAI |
 | `data_processing` | Library | Chunking, embedding, IDF, search orchestration |
 | `data_structures` | Library | Shared types (TDPName, League, Chunk, ContentItem, Filter) |
 | `configuration` | Library | Config loading and client initialization |
@@ -114,12 +114,12 @@ make init
 # or: cargo run --release -p tools --bin initialize
 ```
 
-### create_idf
+### smoke_test
 
-Recomputes the IDF (inverse document frequency) map from existing chunks without re-embedding.
+End-to-end verification: searches every (league, year) combination across all three search types (sparse, dense, hybrid) against a live Qdrant instance. Run after reindexing to catch filter mismatches or embedding alignment issues.
 
 ```
-cargo run -p tools --bin create_idf
+make smoke-test
 ```
 
 ### repl
@@ -172,7 +172,7 @@ make activity ARGS="agents --since 2025-06-01"
 | Target | Description |
 |---|---|
 | `make init` | Initialize database (parse, embed, index) |
-| `make create-idf` | Recompute IDF map |
+| `make smoke-test` | End-to-end search verification across all leagues/years |
 | `make repl` | Interactive search REPL |
 | `make search "query"` | Search for a query |
 | `make activity ARGS="..."` | Run the activity analytics CLI |
@@ -182,10 +182,11 @@ make activity ARGS="agents --since 2025-06-01"
 | Target | Description |
 |---|---|
 | `make qdrant-restart` | Restart Qdrant Docker container |
+| `make qdrant-snapshot` | Create Qdrant snapshot for Docker image |
+| `make rebuild-index` | Full teardown → reindex → snapshot → Docker rebuild |
 | `make docker` | Build and start all services via Docker Compose |
 | `make docker-logs` | Follow Docker Compose logs |
 | `make docker-down` | Stop Docker Compose |
-| `make clean` | Restart Qdrant and delete SQLite databases |
 | `make leagues` | Quick API test: list all leagues |
 
 ## MCP Server
@@ -200,9 +201,9 @@ The MCP server exposes TDP search functionality to LLMs. Available tools:
 - `get_tdp_contents` - Retrieve full markdown of a specific paper
 - `get_table_of_contents` - Get the structured table of contents of a paper
 - `get_abstract` - Get a paper's abstract
-- `get_paragraph` - Get a specific content item by sequence number
-- `get_table` - Get a specific table by sequence number
-- `get_image` - Get a specific image caption and path by sequence number
+- `get_section` - Get a specific section by content sequence number
+- `get_paper_info` - Get paper metadata (team, league, year, authors)
+- `get_team_info` - Get team metadata (website, GitHub, socials)
 
 ```
 cargo run -p mcp
@@ -214,6 +215,6 @@ All interactions (searches, paper opens, list operations) are logged to `data/ac
 
 Configure in `config.toml`:
 ```toml
-[data_access.activity.sqlite]
+[event_processing.activity.sqlite]
 filename = "data/activity.db"
 ```
