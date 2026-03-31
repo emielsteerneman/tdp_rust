@@ -7,7 +7,7 @@ export interface TocHeading {
 /**
  * Transform custom TDP markdown into standard markdown.
  */
-export function preprocessMarkdown(raw: string, lyti: string): string {
+export function preprocessMarkdown(raw: string, paper_lyt: string): string {
   const lines = raw.split('\n');
   const output: string[] = [];
 
@@ -281,7 +281,7 @@ export function preprocessMarkdown(raw: string, lyti: string): string {
           const alt = pendingImageCaption ?? filename;
           const caption = pendingImageCaption;
           output.push(`<figure style="text-align: center;">`);
-          output.push(`<img src="/tdps/${lyti}/${filename}" alt="${alt}" />`);
+          output.push(`<img src="/tdps/${paper_lyt}/${filename}" alt="${alt}" />`);
           if (caption) {
             output.push(`<figcaption>${caption}</figcaption>`);
           }

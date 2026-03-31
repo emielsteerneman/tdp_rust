@@ -48,8 +48,8 @@ export async function search(params: SearchParams, fetchFn?: FetchFn): Promise<S
 	if (params.team_filter) {
 		searchParams.append('team_filter', params.team_filter);
 	}
-	if (params.lyti_filter) {
-		searchParams.append('lyti_filter', params.lyti_filter);
+	if (params.paper_lyt_filter) {
+		searchParams.append('paper_lyt_filter', params.paper_lyt_filter);
 	}
 	if (params.content_type_filter) {
 		searchParams.append('content_type_filter', params.content_type_filter);
@@ -116,8 +116,8 @@ export interface PaperInfo {
 	urls: string[];
 }
 
-export async function getPaperInfo(lyti: string, fetchFn?: FetchFn): Promise<PaperInfo> {
-	return fetchApi<PaperInfo>(`/papers/${encodeURIComponent(lyti)}/info`, fetchFn);
+export async function getPaperInfo(paper_lyt: string, fetchFn?: FetchFn): Promise<PaperInfo> {
+	return fetchApi<PaperInfo>(`/papers/${encodeURIComponent(paper_lyt)}/info`, fetchFn);
 }
 
 export async function getTeamInfo(name: string, fetchFn?: FetchFn): Promise<TeamMetadataEntry[]> {

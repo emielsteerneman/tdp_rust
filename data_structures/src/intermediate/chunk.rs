@@ -22,7 +22,7 @@ pub struct Chunk {
     pub dense_embedding: Vec<f32>,
     pub sparse_embedding: HashMap<u32, f32>,
     // Filter
-    pub league_year_team_idx: String,
+    pub paper_lyt: String,
     pub league: League,
     pub year: u32,
     pub team: TeamName,
@@ -40,7 +40,7 @@ impl Chunk {
         static ZERO_NAMESPACE: Uuid = Uuid::from_bytes([0u8; 16]);
         let s = format!(
             "{}__{}__{}",
-            self.league_year_team_idx.clone(),
+            self.paper_lyt.clone(),
             self.content_seq,
             self.chunk_seq
         );

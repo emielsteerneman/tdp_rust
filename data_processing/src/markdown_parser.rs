@@ -493,7 +493,7 @@ mod tests {
     use data_structures::content::ContentType;
 
     fn make_name() -> TDPName {
-        TDPName::try_from("soccer_smallsize__2024__RoboTeam_Twente__0").unwrap()
+        TDPName::try_from("soccer_smallsize__2024__RoboTeam_Twente").unwrap()
     }
 
     #[test]

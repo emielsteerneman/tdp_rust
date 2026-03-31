@@ -17,7 +17,7 @@ struct CompactSearchResult {
 
 #[derive(Serialize)]
 struct CompactChunk {
-    lyti: String,
+    paper_lyt: String,
     content_seq: u32,
     title: String,
     content_type: String,
@@ -54,7 +54,7 @@ impl AppServer {
                 let compact = CompactSearchResult {
                     query: result.query,
                     results: result.chunks.into_iter().map(|c| CompactChunk {
-                        lyti: c.league_year_team_idx,
+                        paper_lyt: c.paper_lyt,
                         content_seq: c.content_seq,
                         title: c.title,
                         content_type: c.content_type,
@@ -125,7 +125,7 @@ impl AppServer {
     }
 
     #[tool(
-        description = "List papers in the database with optional filters. Returns lyti identifiers (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0') for matching TDPs. Always use at least one filter to avoid returning all 2000+ papers. Examples: filter by league='Soccer SmallSize' and year=2024 to see that year's teams, or team='TIGERs Mannheim' to see all their papers."
+        description = "List papers in the database with optional filters. Returns paper_lyt identifiers (e.g. 'soccer_smallsize__2024__RoboTeam_Twente') for matching TDPs. Always use at least one filter to avoid returning all 2000+ papers. Examples: filter by league='Soccer SmallSize' and year=2024 to see that year's teams, or team='TIGERs Mannheim' to see all their papers."
     )]
     pub async fn list_papers(
         &self,
@@ -133,8 +133,8 @@ impl AppServer {
     ) -> Result<CallToolResult, McpError> {
         match list_papers::list_papers(self.state.metadata_client.clone(), filter, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(papers) => {
-                let lytis: Vec<String> = papers.iter().map(|p| p.get_filename()).collect();
-                match serde_json::to_string_pretty(&lytis) {
+                let paper_lyts: Vec<String> = papers.iter().map(|p| p.get_paper_lyt()).collect();
+                match serde_json::to_string_pretty(&paper_lyts) {
                     Ok(response) => Ok(CallToolResult::success(vec![Content::text(response)])),
                     Err(e) => Err(McpError::internal_error(e.to_string(), None)),
                 }
@@ -157,7 +157,7 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Get the table of contents for a specific paper. Returns all content items (paragraphs, tables, images) with sequence numbers, types, and titles. Use the paper's lyti identifier (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0'). Call this first to understand paper structure, then use get_section with a content_seq to retrieve specific content."
+        description = "Get the table of contents for a specific paper. Returns all content items (paragraphs, tables, images) with sequence numbers, types, and titles. Use the paper's paper_lyt identifier (e.g. 'soccer_smallsize__2024__RoboTeam_Twente'). Call this first to understand paper structure, then use get_section with a content_seq to retrieve specific content."
     )]
     pub async fn get_table_of_contents(
         &self,
@@ -170,7 +170,7 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Get a section from a paper with its breadcrumb path. Returns the section content and optionally all subsections. Set include_children=false to retrieve just a single content item (paragraph, table, or image). Requires the paper lyti and content_seq from search results or get_table_of_contents."
+        description = "Get a section from a paper with its breadcrumb path. Returns the section content and optionally all subsections. Set include_children=false to retrieve just a single content item (paragraph, table, or image). Requires the paper paper_lyt and content_seq from search results or get_table_of_contents."
     )]
     pub async fn get_section(
         &self,
@@ -187,7 +187,7 @@ impl AppServer {
 
 
     #[tool(
-        description = "Get the abstract of a paper. Requires the paper lyti identifier. Returns the abstract text — useful for quick paper overview before diving into specific sections."
+        description = "Get the abstract of a paper. Requires the paper paper_lyt identifier. Returns the abstract text — useful for quick paper overview before diving into specific sections."
     )]
     pub async fn get_abstract(
         &self,
@@ -200,7 +200,7 @@ impl AppServer {
     }
 
     #[tool(
-        description = "Get metadata about a paper: title, authors with affiliations, institutions, and URLs found in the paper. Requires the paper lyti identifier. Useful for finding a team's university, website URLs mentioned in their paper, and who wrote it."
+        description = "Get metadata about a paper: title, authors with affiliations, institutions, and URLs found in the paper. Requires the paper paper_lyt identifier. Useful for finding a team's university, website URLs mentioned in their paper, and who wrote it."
     )]
     pub async fn get_paper_info(
         &self,
@@ -338,7 +338,7 @@ impl ServerHandler for AppServer {
 ## Context
 RoboCup is an international scientific initiative for autonomous robots. Teams compete across leagues including Soccer (SmallSize, MiddleSize, Humanoid, Standard Platform), Rescue (Robot, Simulation), @Home, Industrial, and Junior leagues. Each year, teams publish a Team Description Paper (TDP) — a ~10-page technical paper describing their innovations.
 
-A **lyti** (League-Year-Team-Index) is the unique paper identifier used across all tools, e.g. `soccer_smallsize__2024__RoboTeam_Twente__0`.
+A **paper_lyt** (League-Year-Team) is the unique paper identifier used across all tools, e.g. `soccer_smallsize__2024__RoboTeam_Twente`.
 
 ## Research workflow
 1. Start broad: search without league filters to find relevant work across all leagues

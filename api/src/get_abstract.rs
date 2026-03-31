@@ -11,7 +11,7 @@ use crate::error::ApiError;
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 pub struct GetAbstractArgs {
     #[schemars(
-        description = "The lyti identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0')"
+        description = "The paper_lyt identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente')"
     )]
     pub paper: String,
 }
@@ -50,7 +50,7 @@ mod tests {
         let expected_clone = expected.clone();
 
         mock.expect_load_paper_abstract()
-            .withf(|lyti| lyti == "soccer_smallsize__2024__RoboTeam_Twente__0")
+            .withf(|lyti| lyti == "soccer_smallsize__2024__RoboTeam_Twente")
             .returning(move |_| {
                 let e = expected_clone.clone();
                 Box::pin(std::future::ready(Ok(e)))
@@ -58,7 +58,7 @@ mod tests {
 
         let client = Arc::new(mock);
         let args = GetAbstractArgs {
-            paper: "soccer_smallsize__2024__RoboTeam_Twente__0".to_string(),
+            paper: "soccer_smallsize__2024__RoboTeam_Twente".to_string(),
         };
 
         let result = get_abstract(client, args, &EventDispatcher::new(), EventSource::Web)

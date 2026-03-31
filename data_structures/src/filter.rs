@@ -13,9 +13,9 @@ pub struct Filter {
     #[schemars(description = "An optional list of years on which to filter results")]
     pub years: Option<HashSet<u32>>,
     #[schemars(
-        description = "An optional list of league_year_team_index on which to filter results"
+        description = "An optional list of paper_lyt identifiers on which to filter results"
     )]
-    pub league_year_team_indexes: Option<HashSet<String>>,
+    pub paper_lyts: Option<HashSet<String>>,
     #[schemars(
         description = "An optional list of content types on which to filter results (text, table, image)"
     )]
@@ -39,14 +39,12 @@ impl Filter {
     }
 
     pub fn add_tdp(&mut self, tdp_name: TDPName) {
-        self.add_league_year_team_index(tdp_name.get_filename());
+        self.add_paper_lyt(tdp_name.get_paper_lyt());
     }
 
-    pub fn add_league_year_team_index(&mut self, league_year_team_index: String) {
-        let league_year_team_indexes = self
-            .league_year_team_indexes
-            .get_or_insert_with(HashSet::new);
-        league_year_team_indexes.insert(league_year_team_index);
+    pub fn add_paper_lyt(&mut self, paper_lyt: String) {
+        let paper_lyts = self.paper_lyts.get_or_insert_with(HashSet::new);
+        paper_lyts.insert(paper_lyt);
     }
 
     pub fn add_content_type(&mut self, content_type: String) {
@@ -70,12 +68,11 @@ impl Filter {
                 return false;
             }
         }
-        if let Some(indexes) = &self.league_year_team_indexes {
-            if !indexes.contains(&tdp_name.get_filename()) {
+        if let Some(paper_lyts) = &self.paper_lyts {
+            if !paper_lyts.contains(&tdp_name.get_paper_lyt()) {
                 return false;
             }
         }
         true
     }
-
 }

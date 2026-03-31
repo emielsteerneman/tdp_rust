@@ -11,7 +11,7 @@ use crate::error::ApiError;
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 pub struct GetTableOfContentsArgs {
     #[schemars(
-        description = "The lyti identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0')"
+        description = "The paper_lyt identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente')"
     )]
     pub paper: String,
 }
@@ -75,7 +75,7 @@ mod tests {
         let entries_clone = entries.clone();
 
         mock.expect_load_toc()
-            .withf(|lyti| lyti == "soccer_smallsize__2024__RoboTeam_Twente__0")
+            .withf(|lyti| lyti == "soccer_smallsize__2024__RoboTeam_Twente")
             .returning(move |_| {
                 let e = entries_clone.clone();
                 Box::pin(std::future::ready(Ok(e)))
@@ -83,7 +83,7 @@ mod tests {
 
         let client = Arc::new(mock);
         let args = GetTableOfContentsArgs {
-            paper: "soccer_smallsize__2024__RoboTeam_Twente__0".to_string(),
+            paper: "soccer_smallsize__2024__RoboTeam_Twente".to_string(),
         };
 
         let result = get_table_of_contents(client, args, &EventDispatcher::new(), EventSource::Web)

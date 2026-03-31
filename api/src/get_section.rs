@@ -13,7 +13,7 @@ use crate::paper_navigation::{compute_breadcrumbs, compute_section_range};
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 pub struct GetSectionArgs {
     #[schemars(
-        description = "The lyti identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0')"
+        description = "The paper_lyt identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente')"
     )]
     pub paper: String,
     #[schemars(description = "The content sequence number from search results or get_table_of_contents")]
@@ -71,7 +71,7 @@ pub async fn get_section(
     );
 
     Ok(SectionResult {
-        lyti: args.paper,
+        paper_lyt: args.paper,
         breadcrumbs,
         items,
     })
@@ -149,23 +149,23 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_section_with_children() {
-        let lyti = "soccer_smallsize__2024__Test__0".to_string();
+        let paper_lyt = "soccer_smallsize__2024__Test".to_string();
         let mut mock = MockMetadataClient::new();
 
         let toc = sample_toc();
         let items = sample_section_items();
 
-        let lyti_c = lyti.clone();
+        let paper_lyt_c = paper_lyt.clone();
         mock.expect_load_toc()
-            .withf(move |l| *l == lyti_c)
+            .withf(move |l| *l == paper_lyt_c)
             .returning(move |_| {
                 let t = toc.clone();
                 Box::pin(std::future::ready(Ok(t)))
             });
 
-        let lyti_c = lyti.clone();
+        let paper_lyt_c = paper_lyt.clone();
         mock.expect_load_content_items_range()
-            .withf(move |l, start, end| *l == lyti_c && *start == 1 && *end == 4)
+            .withf(move |l, start, end| *l == paper_lyt_c && *start == 1 && *end == 4)
             .returning(move |_, _, _| {
                 let i = items.clone();
                 Box::pin(std::future::ready(Ok(i)))
@@ -174,7 +174,7 @@ mod tests {
         let result = get_section(
             Arc::new(mock),
             GetSectionArgs {
-                paper: lyti.clone(),
+                paper: paper_lyt.clone(),
                 content_seq: 1,
                 include_children: Some(true),
             },
@@ -184,7 +184,7 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(result.lyti, lyti);
+        assert_eq!(result.paper_lyt, paper_lyt);
         assert_eq!(result.breadcrumbs.len(), 1);
         assert_eq!(result.breadcrumbs[0].title, "Vision");
         assert_eq!(result.items.len(), 3);
@@ -192,22 +192,22 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_section_without_children() {
-        let lyti = "soccer_smallsize__2024__Test__0".to_string();
+        let paper_lyt = "soccer_smallsize__2024__Test".to_string();
         let mut mock = MockMetadataClient::new();
 
         let toc = sample_toc();
 
-        let lyti_c = lyti.clone();
+        let paper_lyt_c = paper_lyt.clone();
         mock.expect_load_toc()
-            .withf(move |l| *l == lyti_c)
+            .withf(move |l| *l == paper_lyt_c)
             .returning(move |_| {
                 let t = toc.clone();
                 Box::pin(std::future::ready(Ok(t)))
             });
 
-        let lyti_c = lyti.clone();
+        let paper_lyt_c = paper_lyt.clone();
         mock.expect_load_content_item()
-            .withf(move |l, seq| *l == lyti_c && *seq == 2)
+            .withf(move |l, seq| *l == paper_lyt_c && *seq == 2)
             .returning(move |_, _| {
                 let item = ContentItem {
                     content_seq: 2,
@@ -223,7 +223,7 @@ mod tests {
         let result = get_section(
             Arc::new(mock),
             GetSectionArgs {
-                paper: lyti.clone(),
+                paper: paper_lyt.clone(),
                 content_seq: 2,
                 include_children: Some(false),
             },

@@ -11,7 +11,7 @@ use crate::error::ApiError;
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 pub struct GetParagraphArgs {
     #[schemars(
-        description = "The lyti identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0')"
+        description = "The paper_lyt identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente')"
     )]
     pub paper: String,
     #[schemars(description = "The content sequence number from the table of contents")]
@@ -61,7 +61,7 @@ mod tests {
         let item_clone = item.clone();
 
         mock.expect_load_content_item()
-            .withf(|lyti, seq| lyti == "soccer_smallsize__2024__RoboTeam_Twente__0" && *seq == 0)
+            .withf(|lyti, seq| lyti == "soccer_smallsize__2024__RoboTeam_Twente" && *seq == 0)
             .returning(move |_, _| {
                 let i = item_clone.clone();
                 Box::pin(std::future::ready(Ok(i)))
@@ -69,7 +69,7 @@ mod tests {
 
         let client = Arc::new(mock);
         let args = GetParagraphArgs {
-            paper: "soccer_smallsize__2024__RoboTeam_Twente__0".to_string(),
+            paper: "soccer_smallsize__2024__RoboTeam_Twente".to_string(),
             content_seq: 0,
         };
 
