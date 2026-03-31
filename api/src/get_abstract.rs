@@ -50,7 +50,7 @@ mod tests {
         let expected_clone = expected.clone();
 
         mock.expect_load_paper_abstract()
-            .withf(|lyti| lyti == "soccer_smallsize__2024__RoboTeam_Twente")
+            .withf(|paper_lyt| paper_lyt == "soccer_smallsize__2024__RoboTeam_Twente")
             .returning(move |_| {
                 let e = expected_clone.clone();
                 Box::pin(std::future::ready(Ok(e)))

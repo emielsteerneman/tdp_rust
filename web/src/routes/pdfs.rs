@@ -11,11 +11,11 @@ pub async fn serve_pdf_file(
     Path(path): Path<String>,
 ) -> Result<Response<Body>, StatusCode> {
     // Strip .pdf extension
-    let lyti_str = path
+    let paper_lyt_str = path
         .strip_suffix(".pdf")
         .ok_or(StatusCode::BAD_REQUEST)?;
 
-    let tdp_name = TDPName::try_from(lyti_str).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let tdp_name = TDPName::try_from(paper_lyt_str).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     // Build filesystem path
     let root = std::path::Path::new(&state.tdps_pdf_root);
@@ -33,7 +33,7 @@ pub async fn serve_pdf_file(
             .join(&year)
     };
 
-    let file_path = league_path.join(format!("{}.pdf", lyti_str));
+    let file_path = league_path.join(format!("{}.pdf", paper_lyt_str));
 
     // Security: canonicalize and verify under root
     let canonical_root = std::fs::canonicalize(root).map_err(|_| StatusCode::NOT_FOUND)?;

@@ -72,7 +72,7 @@ mod tests {
         let item_clone = item.clone();
 
         mock.expect_load_content_item()
-            .withf(|lyti, seq| lyti == "soccer_smallsize__2024__RoboTeam_Twente" && *seq == 2)
+            .withf(|paper_lyt, seq| paper_lyt == "soccer_smallsize__2024__RoboTeam_Twente" && *seq == 2)
             .returning(move |_, _| {
                 let i = item_clone.clone();
                 Box::pin(std::future::ready(Ok(i)))
@@ -107,7 +107,7 @@ mod tests {
         let item_clone = item.clone();
 
         mock.expect_load_content_item()
-            .withf(|lyti, seq| lyti == "soccer_smallsize__2024__RoboTeam_Twente" && *seq == 0)
+            .withf(|paper_lyt, seq| paper_lyt == "soccer_smallsize__2024__RoboTeam_Twente" && *seq == 0)
             .returning(move |_, _| {
                 let i = item_clone.clone();
                 Box::pin(std::future::ready(Ok(i)))

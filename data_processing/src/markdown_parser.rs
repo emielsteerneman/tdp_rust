@@ -644,7 +644,7 @@ Table 1: Performance
     #[test]
     fn test_parse_real_file() {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../tdps_markdown/soccer/smallsize/2024/soccer_smallsize__2024__RoboTeam_Twente__0.md");
+            .join("../tdps_markdown/soccer/smallsize/2024/soccer_smallsize__2024__RoboTeam_Twente.md");
 
         if !path.exists() {
             eprintln!("Skipping test_parse_real_file: file not found at {}", path.display());
@@ -652,7 +652,7 @@ Table 1: Performance
         }
 
         let raw = std::fs::read_to_string(&path).unwrap();
-        let name = TDPName::try_from("soccer_smallsize__2024__RoboTeam_Twente__0").unwrap();
+        let name = TDPName::try_from("soccer_smallsize__2024__RoboTeam_Twente").unwrap();
         let tdp = parse_markdown(&raw, name);
 
         assert_eq!(

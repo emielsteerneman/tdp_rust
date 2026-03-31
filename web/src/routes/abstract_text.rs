@@ -7,9 +7,9 @@ use crate::state::AppState;
 
 pub async fn get_abstract_handler(
     State(state): State<AppState>,
-    Path(lyti): Path<String>,
+    Path(paper_lyt): Path<String>,
 ) -> Result<Json<ApiResponse<String>>, ApiError> {
-    let args = api::get_abstract::GetAbstractArgs { paper: lyti };
+    let args = api::get_abstract::GetAbstractArgs { paper: paper_lyt };
     let result = api::get_abstract::get_abstract(
         state.metadata_client.clone(),
         args,

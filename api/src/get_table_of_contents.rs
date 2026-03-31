@@ -75,7 +75,7 @@ mod tests {
         let entries_clone = entries.clone();
 
         mock.expect_load_toc()
-            .withf(|lyti| lyti == "soccer_smallsize__2024__RoboTeam_Twente")
+            .withf(|paper_lyt| paper_lyt == "soccer_smallsize__2024__RoboTeam_Twente")
             .returning(move |_| {
                 let e = entries_clone.clone();
                 Box::pin(std::future::ready(Ok(e)))
