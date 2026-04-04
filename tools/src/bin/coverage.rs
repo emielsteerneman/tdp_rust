@@ -245,9 +245,7 @@ fn heatmap(pdf_root: &str, md_root: &str) -> anyhow::Result<()> {
 /// Find teams that have papers but no metadata in the team registry.
 async fn teams(config: &configuration::AppConfig) -> anyhow::Result<()> {
     let metadata_client = configuration::helpers::load_any_metadata_client(config);
-    let team_registry = configuration::helpers::build_team_registry_client(config);
-
-    let team_registry = match team_registry {
+    let registry = match configuration::helpers::build_registry_client(config) {
         Some(r) => r,
         None => {
             println!("=== Team Registry Coverage ===");
@@ -272,7 +270,7 @@ async fn teams(config: &configuration::AppConfig) -> anyhow::Result<()> {
     let mut teams_with_metadata = 0;
 
     for (team_name, paper_count) in &teams {
-        let entries = team_registry.get_team_metadata(team_name).await
+        let entries = registry.get_team_metadata(team_name).await
             .unwrap_or_default();
         if entries.is_empty() {
             teams_without_metadata.push((team_name.clone(), *paper_count));

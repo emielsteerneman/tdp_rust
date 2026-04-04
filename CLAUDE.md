@@ -52,7 +52,7 @@ cargo test
 cd frontend && npm install && npm run dev
 npm run build             # -> frontend/build/
 
-# Docker (full stack, requires qdrant.snapshot + data/metadata.db + data/teams.db)
+# Docker (full stack, requires qdrant.snapshot + data/metadata.db + data/registry.db)
 docker compose up --build
 
 # Rebuild index from scratch (teardown → reindex → snapshot → docker rebuild)
@@ -90,9 +90,9 @@ filename = "data/activity.db"
 # bot_token = "123456:ABC-DEF..."
 # chat_id = "987654321"
 
-# Optional: Team registry for team metadata (websites, repos, social links)
-# [data_access.teams.sqlite]
-# filename = "data/teams.db"
+# Optional: Registry for team and league metadata (websites, repos, social links)
+# [data_access.registry.sqlite]
+# filename = "data/registry.db"
 # master_password = "your-secret-here"  # only consumed on first DB init
 ```
 

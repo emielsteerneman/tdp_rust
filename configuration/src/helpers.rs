@@ -2,7 +2,7 @@ use super::AppConfig;
 use data_access::{
     embed::{EmbedClient, FastembedClient, OpenAIClient},
     metadata::{MetadataClient, SqliteClient},
-    teams::{TeamRegistryClient, TeamsSqliteClient},
+    registry::{RegistryClient, SqliteRegistryClient},
     vector::{QdrantClient, VectorClient},
 };
 use event_processing::dispatcher::EventDispatcher;
@@ -59,12 +59,12 @@ pub fn load_any_metadata_client(config: &AppConfig) -> Arc<dyn MetadataClient + 
     metadata_client
 }
 
-pub fn build_team_registry_client(config: &AppConfig) -> Option<Arc<dyn TeamRegistryClient + Send + Sync>> {
-    let teams_config = config.data_access.teams.as_ref()?;
-    let sqlite_cfg = teams_config.sqlite.as_ref()?;
+pub fn build_registry_client(config: &AppConfig) -> Option<Arc<dyn RegistryClient + Send + Sync>> {
+    let registry_config = config.data_access.registry.as_ref()?;
+    let sqlite_cfg = registry_config.sqlite.as_ref()?;
 
-    info!("Using SQLite Teams Registry with file: {}", sqlite_cfg.filename);
-    Some(Arc::new(TeamsSqliteClient::new(sqlite_cfg.clone())))
+    info!("Using SQLite Registry with file: {}", sqlite_cfg.filename);
+    Some(Arc::new(SqliteRegistryClient::new(sqlite_cfg.clone())))
 }
 
 pub fn build_event_dispatcher(config: &AppConfig) -> Arc<EventDispatcher> {

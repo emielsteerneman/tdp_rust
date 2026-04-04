@@ -1,35 +1,33 @@
-use tools::{get_arg, validate_team_name};
+use tools::get_arg;
+use data_structures::file::League;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().collect();
 
-    let team_input = get_arg(&args, "--team")
-        .ok_or_else(|| anyhow::anyhow!("Usage: set_team_metadata --team \"Team Name\" --key \"key\" --value \"value\""))?;
+    let league_input = get_arg(&args, "--league")
+        .ok_or_else(|| anyhow::anyhow!("Usage: set_league_metadata --league \"Soccer SmallSize\" --key \"key\" --value \"value\""))?;
     let key = get_arg(&args, "--key")
         .ok_or_else(|| anyhow::anyhow!("--key is required"))?;
     let value = get_arg(&args, "--value")
         .ok_or_else(|| anyhow::anyhow!("--value is required"))?;
 
+    let league = League::try_from(league_input.as_str())
+        .map_err(|_| anyhow::anyhow!("Unknown league: '{}'. Use machine name (e.g. soccer_smallsize) or pretty name (e.g. Soccer SmallSize).", league_input))?;
+
     let config_path = "config.toml";
     let config = configuration::AppConfig::load_from_file(config_path)
         .map_err(|e| anyhow::anyhow!("Failed to load config from {}: {}", config_path, e))?;
-
-    let metadata_client = configuration::helpers::load_any_metadata_client(&config);
-    let known_teams = metadata_client
-        .load_teams()
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to load teams: {}", e))?;
-
-    let team = validate_team_name(&team_input, &known_teams);
 
     let registry = configuration::helpers::build_registry_client(&config)
         .ok_or_else(|| anyhow::anyhow!(
             "Registry not configured. Add [data_access.registry.sqlite] to config.toml"
         ))?;
 
+    let league_name = league.name();
+
     // Load existing entries, upsert the key, write back
-    let existing = registry.get_team_metadata(&team.name).await
+    let existing = registry.get_league_metadata(league_name).await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     let mut entries: Vec<(String, String)> = existing
@@ -39,10 +37,10 @@ async fn main() -> anyhow::Result<()> {
         .collect();
     entries.push((key.clone(), value.clone()));
 
-    registry.set_team_metadata(&team.name, entries).await
+    registry.set_league_metadata(league_name, entries).await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    println!("Set {}={} for {}", key, value, team.name);
+    println!("Set {}={} for league {}", key, value, league.name_pretty());
 
     Ok(())
 }

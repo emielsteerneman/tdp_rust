@@ -1,7 +1,7 @@
 import type { PageLoad } from './$types';
 import { error } from '@sveltejs/kit';
 import { getPaperInfo, getTeamInfo } from '$lib/api';
-import type { PaperInfo, TeamMetadataEntry } from '$lib/api';
+import type { PaperInfo, RegistryEntry } from '$lib/api';
 
 export const load: PageLoad = async ({ params, fetch }) => {
   const paper_lyt = params.id;
@@ -19,7 +19,7 @@ export const load: PageLoad = async ({ params, fetch }) => {
       return r.text();
     }),
     getPaperInfo(paper_lyt, fetch).catch((): PaperInfo | null => null),
-    getTeamInfo(teamPrettyName, fetch).catch((): TeamMetadataEntry[] => [])
+    getTeamInfo(teamPrettyName, fetch).catch((): RegistryEntry[] => [])
   ]);
 
   fetch(`/api/papers/${encodeURIComponent(paper_lyt)}/open`, { method: 'POST' }).catch(() => {});

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use data_access::teams::{TeamMetadataEntry, TeamRegistryClient};
+use data_access::registry::{RegistryEntry, RegistryClient};
 use data_structures::file::TeamName;
 use event_processing::dispatcher::EventDispatcher;
 use event_processing::{Event, EventSource, GetTeamInfoEvent};
@@ -16,11 +16,11 @@ pub struct GetTeamInfoArgs {
 }
 
 pub async fn get_team_info(
-    team_registry: Arc<dyn TeamRegistryClient + Send + Sync>,
+    team_registry: Arc<dyn RegistryClient + Send + Sync>,
     args: GetTeamInfoArgs,
     dispatcher: &EventDispatcher,
     source: EventSource,
-) -> Result<Vec<TeamMetadataEntry>, ApiError> {
+) -> Result<Vec<RegistryEntry>, ApiError> {
     let team_name = TeamName::new(args.team.trim());
 
     let entries = team_registry

@@ -103,7 +103,7 @@ export async function submitSuggestion(message: string, fetchFn?: FetchFn): Prom
 	});
 }
 
-export interface TeamMetadataEntry {
+export interface RegistryEntry {
 	key: string;
 	value: string;
 	updated_at: string;
@@ -120,8 +120,12 @@ export async function getPaperInfo(paper_lyt: string, fetchFn?: FetchFn): Promis
 	return fetchApi<PaperInfo>(`/papers/${encodeURIComponent(paper_lyt)}/info`, fetchFn);
 }
 
-export async function getTeamInfo(name: string, fetchFn?: FetchFn): Promise<TeamMetadataEntry[]> {
-	return fetchApi<TeamMetadataEntry[]>(`/team-registry/${encodeURIComponent(name)}`, fetchFn);
+export async function getTeamInfo(name: string, fetchFn?: FetchFn): Promise<RegistryEntry[]> {
+	return fetchApi<RegistryEntry[]>(`/registry/team/${encodeURIComponent(name)}`, fetchFn);
+}
+
+export async function getLeagueInfo(name: string, fetchFn?: FetchFn): Promise<RegistryEntry[]> {
+	return fetchApi<RegistryEntry[]>(`/registry/league/${encodeURIComponent(name)}`, fetchFn);
 }
 
 export async function updateTeamInfo(
@@ -130,7 +134,7 @@ export async function updateTeamInfo(
 	entries: { key: string; value: string }[],
 	fetchFn?: FetchFn
 ): Promise<string> {
-	return fetchApi<string>('/team-registry', fetchFn, {
+	return fetchApi<string>('/registry/team', fetchFn, {
 		method: 'POST',
 		body: JSON.stringify({ team, code, entries })
 	});

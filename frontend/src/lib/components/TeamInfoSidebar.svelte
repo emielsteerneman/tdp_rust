@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TeamMetadataEntry } from '$lib/api';
+	import type { RegistryEntry } from '$lib/api';
 	import { getLeagueBadgeColor } from '$lib/leagueColors';
 
 	interface Props {
@@ -7,7 +7,7 @@
 		leagueMachine: string;
 		year: number;
 		paperUrls: string[];
-		entries: TeamMetadataEntry[];
+		entries: RegistryEntry[];
 	}
 
 	let { teamName, leagueMachine, year, paperUrls, entries }: Props = $props();
@@ -21,10 +21,10 @@
 	const infoKeys = ['university', 'country'];
 
 	const grouped = $derived.by(() => {
-		const primary: TeamMetadataEntry[] = [];
-		const social: TeamMetadataEntry[] = [];
-		const info: TeamMetadataEntry[] = [];
-		const other: TeamMetadataEntry[] = [];
+		const primary: RegistryEntry[] = [];
+		const social: RegistryEntry[] = [];
+		const info: RegistryEntry[] = [];
+		const other: RegistryEntry[] = [];
 
 		for (const entry of entries) {
 			if (primaryKeys.includes(entry.key)) primary.push(entry);

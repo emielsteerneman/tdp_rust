@@ -145,6 +145,11 @@ pub struct GetTeamInfoEvent {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct GetLeagueInfoEvent {
+    pub league: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct UpdateTeamInfoEvent {
     pub team: String,
     pub entries: Vec<(String, String)>,
@@ -175,6 +180,7 @@ pub enum Event {
     PdfOpen(PdfOpenEvent),
     Suggestion(SuggestionEvent),
     GetTeamInfo(GetTeamInfoEvent),
+    GetLeagueInfo(GetLeagueInfoEvent),
     UpdateTeamInfo(UpdateTeamInfoEvent),
 }
 
@@ -199,6 +205,7 @@ impl Event {
             Event::PdfOpen(_) => "pdf_open",
             Event::Suggestion(_) => "suggestion",
             Event::GetTeamInfo(_) => "get_team_info",
+            Event::GetLeagueInfo(_) => "get_league_info",
             Event::UpdateTeamInfo(_) => "update_team_info",
         }
     }

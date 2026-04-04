@@ -241,8 +241,8 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<get_team_info::GetTeamInfoArgs>,
     ) -> Result<CallToolResult, McpError> {
-        let registry = self.state.team_registry.as_ref()
-            .ok_or_else(|| McpError::internal_error("Team registry not configured".to_string(), None))?;
+        let registry = self.state.registry.as_ref()
+            .ok_or_else(|| McpError::internal_error("Registry not configured".to_string(), None))?;
 
         match get_team_info::get_team_info(
             registry.clone(),

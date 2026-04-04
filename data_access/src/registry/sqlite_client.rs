@@ -6,7 +6,7 @@ use rusqlite::{Connection, params};
 use serde::Deserialize;
 use sha2::Sha256;
 use subtle::ConstantTimeEq;
-use crate::teams::{TeamMetadataEntry, TeamRegistryClient, TeamRegistryError};
+use crate::registry::{RegistryEntry, RegistryClient, RegistryError};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -14,19 +14,19 @@ const CONFIG_KEY_SALT: &str = "salt";
 const CONFIG_KEY_MASTER_HASH: &str = "master_hash";
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct TeamsSqliteConfig {
+pub struct SqliteRegistryConfig {
     pub filename: String,
     pub master_password: Option<String>,
     pub salt: Option<String>,
 }
 
-pub struct TeamsSqliteClient {
+pub struct SqliteRegistryClient {
     conn: Arc<Mutex<Connection>>,
     salt: String,
 }
 
-impl TeamsSqliteClient {
-    pub fn new(config: TeamsSqliteConfig) -> Self {
+impl SqliteRegistryClient {
+    pub fn new(config: SqliteRegistryConfig) -> Self {
         let conn = Connection::open(&config.filename)
             .expect("Failed to open SQLite database");
 
@@ -38,20 +38,28 @@ impl TeamsSqliteClient {
                 key   TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
-            CREATE TABLE IF NOT EXISTS team_metadata (
+            CREATE TABLE IF NOT EXISTS team_entries (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
                 team_name  TEXT NOT NULL,
                 key        TEXT NOT NULL,
                 value      TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
-            CREATE INDEX IF NOT EXISTS idx_team_metadata_team_name
-                ON team_metadata(team_name);",
+            CREATE INDEX IF NOT EXISTS idx_team_entries_team_name
+                ON team_entries(team_name);
+            CREATE TABLE IF NOT EXISTS league_entries (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                league_name TEXT NOT NULL,
+                key         TEXT NOT NULL,
+                value       TEXT NOT NULL,
+                updated_at  TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_league_entries_league_name
+                ON league_entries(league_name);",
         )
         .expect("Failed to create tables");
 
         let salt: String = if let Some(ref s) = config.salt {
-            // Use configured salt, store/update it in the DB
             conn.execute(
                 "INSERT OR REPLACE INTO config (key, value) VALUES (?1, ?2)",
                 params![CONFIG_KEY_SALT, s],
@@ -59,7 +67,6 @@ impl TeamsSqliteClient {
             .expect("Failed to store salt");
             s.clone()
         } else {
-            // Fall back to DB-stored or auto-generated salt
             let existing: Option<String> = conn
                 .query_row(
                     "SELECT value FROM config WHERE key = ?1",
@@ -102,7 +109,7 @@ impl TeamsSqliteClient {
             }
         }
 
-        TeamsSqliteClient {
+        SqliteRegistryClient {
             conn: Arc::new(Mutex::new(conn)),
             salt,
         }
@@ -124,35 +131,35 @@ impl TeamsSqliteClient {
     }
 }
 
-impl TeamRegistryClient for TeamsSqliteClient {
+impl RegistryClient for SqliteRegistryClient {
     fn get_team_metadata<'a>(
         &'a self,
         team_name: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<TeamMetadataEntry>, TeamRegistryError>> + Send + 'a>>
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<RegistryEntry>, RegistryError>> + Send + 'a>>
     {
         Box::pin(async move {
             let conn = self.conn.lock().map_err(|e| {
-                TeamRegistryError::Internal(format!("Lock poisoned: {e}"))
+                RegistryError::Internal(format!("Lock poisoned: {e}"))
             })?;
 
             let mut stmt = conn
                 .prepare_cached(
-                    "SELECT key, value, updated_at FROM team_metadata \
+                    "SELECT key, value, updated_at FROM team_entries \
                      WHERE team_name = ?1 ORDER BY id",
                 )
-                .map_err(|e| TeamRegistryError::Internal(e.to_string()))?;
+                .map_err(|e| RegistryError::Internal(e.to_string()))?;
 
-            let entries: Vec<TeamMetadataEntry> = stmt
+            let entries: Vec<RegistryEntry> = stmt
                 .query_map(params![team_name], |row| {
-                    Ok(TeamMetadataEntry {
+                    Ok(RegistryEntry {
                         key: row.get(0)?,
                         value: row.get(1)?,
                         updated_at: row.get(2)?,
                     })
                 })
-                .map_err(|e| TeamRegistryError::Internal(e.to_string()))?
+                .map_err(|e| RegistryError::Internal(e.to_string()))?
                 .collect::<Result<_, _>>()
-                .map_err(|e| TeamRegistryError::Internal(e.to_string()))?;
+                .map_err(|e| RegistryError::Internal(e.to_string()))?;
 
             Ok(entries)
         })
@@ -162,37 +169,37 @@ impl TeamRegistryClient for TeamsSqliteClient {
         &'a self,
         team_name: &'a str,
         entries: Vec<(String, String)>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), TeamRegistryError>> + Send + 'a>>
+    ) -> Pin<Box<dyn Future<Output = Result<(), RegistryError>> + Send + 'a>>
     {
         Box::pin(async move {
             let conn = self.conn.lock().map_err(|e| {
-                TeamRegistryError::Internal(format!("Lock poisoned: {e}"))
+                RegistryError::Internal(format!("Lock poisoned: {e}"))
             })?;
 
             let tx = conn.unchecked_transaction().map_err(|e| {
-                TeamRegistryError::Internal(e.to_string())
+                RegistryError::Internal(e.to_string())
             })?;
 
             tx.execute(
-                "DELETE FROM team_metadata WHERE team_name = ?1",
+                "DELETE FROM team_entries WHERE team_name = ?1",
                 params![team_name],
             )
-            .map_err(|e| TeamRegistryError::Internal(e.to_string()))?;
+            .map_err(|e| RegistryError::Internal(e.to_string()))?;
 
             let now = chrono::Utc::now().to_rfc3339();
 
             for (key, value) in &entries {
                 tx.execute(
-                    "INSERT INTO team_metadata (team_name, key, value, updated_at) \
+                    "INSERT INTO team_entries (team_name, key, value, updated_at) \
                      VALUES (?1, ?2, ?3, ?4)",
                     params![team_name, key, value, now],
                 )
                 .map_err(|e| {
-                    TeamRegistryError::Internal(e.to_string())
+                    RegistryError::Internal(e.to_string())
                 })?;
             }
 
-            tx.commit().map_err(|e| TeamRegistryError::Internal(e.to_string()))?;
+            tx.commit().map_err(|e| RegistryError::Internal(e.to_string()))?;
 
             Ok(())
         })
@@ -202,19 +209,16 @@ impl TeamRegistryClient for TeamsSqliteClient {
         &'a self,
         team_name: &'a str,
         code: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, TeamRegistryError>> + Send + 'a>>
+    ) -> Pin<Box<dyn Future<Output = Result<bool, RegistryError>> + Send + 'a>>
     {
         Box::pin(async move {
-            // Check team code first
             let expected_team_code = Self::compute_team_code(&self.salt, team_name);
             if Self::constant_time_eq(&expected_team_code, code) {
                 return Ok(true);
             }
 
-            // Check master password: stored master_hash = HMAC(salt, master_password)
-            // Submitted code is the raw master password, so compute HMAC of it and compare
             let conn = self.conn.lock().map_err(|e| {
-                TeamRegistryError::Internal(format!("Lock poisoned: {e}"))
+                RegistryError::Internal(format!("Lock poisoned: {e}"))
             })?;
 
             let master_hash: Option<String> = conn
@@ -239,10 +243,83 @@ impl TeamRegistryClient for TeamsSqliteClient {
     fn generate_team_code<'a>(
         &'a self,
         team_name: &'a str,
-    ) -> Pin<Box<dyn Future<Output = Result<String, TeamRegistryError>> + Send + 'a>>
+    ) -> Pin<Box<dyn Future<Output = Result<String, RegistryError>> + Send + 'a>>
     {
         Box::pin(async move {
             Ok(Self::compute_team_code(&self.salt, team_name))
+        })
+    }
+
+    fn get_league_metadata<'a>(
+        &'a self,
+        league_name: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<RegistryEntry>, RegistryError>> + Send + 'a>>
+    {
+        Box::pin(async move {
+            let conn = self.conn.lock().map_err(|e| {
+                RegistryError::Internal(format!("Lock poisoned: {e}"))
+            })?;
+
+            let mut stmt = conn
+                .prepare_cached(
+                    "SELECT key, value, updated_at FROM league_entries \
+                     WHERE league_name = ?1 ORDER BY id",
+                )
+                .map_err(|e| RegistryError::Internal(e.to_string()))?;
+
+            let entries: Vec<RegistryEntry> = stmt
+                .query_map(params![league_name], |row| {
+                    Ok(RegistryEntry {
+                        key: row.get(0)?,
+                        value: row.get(1)?,
+                        updated_at: row.get(2)?,
+                    })
+                })
+                .map_err(|e| RegistryError::Internal(e.to_string()))?
+                .collect::<Result<_, _>>()
+                .map_err(|e| RegistryError::Internal(e.to_string()))?;
+
+            Ok(entries)
+        })
+    }
+
+    fn set_league_metadata<'a>(
+        &'a self,
+        league_name: &'a str,
+        entries: Vec<(String, String)>,
+    ) -> Pin<Box<dyn Future<Output = Result<(), RegistryError>> + Send + 'a>>
+    {
+        Box::pin(async move {
+            let conn = self.conn.lock().map_err(|e| {
+                RegistryError::Internal(format!("Lock poisoned: {e}"))
+            })?;
+
+            let tx = conn.unchecked_transaction().map_err(|e| {
+                RegistryError::Internal(e.to_string())
+            })?;
+
+            tx.execute(
+                "DELETE FROM league_entries WHERE league_name = ?1",
+                params![league_name],
+            )
+            .map_err(|e| RegistryError::Internal(e.to_string()))?;
+
+            let now = chrono::Utc::now().to_rfc3339();
+
+            for (key, value) in &entries {
+                tx.execute(
+                    "INSERT INTO league_entries (league_name, key, value, updated_at) \
+                     VALUES (?1, ?2, ?3, ?4)",
+                    params![league_name, key, value, now],
+                )
+                .map_err(|e| {
+                    RegistryError::Internal(e.to_string())
+                })?;
+            }
+
+            tx.commit().map_err(|e| RegistryError::Internal(e.to_string()))?;
+
+            Ok(())
         })
     }
 }
@@ -251,8 +328,8 @@ impl TeamRegistryClient for TeamsSqliteClient {
 mod tests {
     use super::*;
 
-    fn test_client() -> TeamsSqliteClient {
-        TeamsSqliteClient::new(TeamsSqliteConfig {
+    fn test_client() -> SqliteRegistryClient {
+        SqliteRegistryClient::new(SqliteRegistryConfig {
             filename: ":memory:".to_string(),
             master_password: Some("test-master-pw".to_string()),
             salt: None,
@@ -373,7 +450,6 @@ mod tests {
     #[tokio::test]
     async fn test_verify_master_password() {
         let client = test_client();
-        // master password should work for any team
         assert!(client.verify_code("TeamA", "test-master-pw").await.unwrap());
         assert!(client.verify_code("TeamB", "test-master-pw").await.unwrap());
         assert!(client.verify_code("SomeOtherTeam", "test-master-pw").await.unwrap());
@@ -409,7 +485,7 @@ mod tests {
         let db_path_str = db_path.to_str().unwrap().to_string();
 
         let code1 = {
-            let client = TeamsSqliteClient::new(TeamsSqliteConfig {
+            let client = SqliteRegistryClient::new(SqliteRegistryConfig {
                 filename: db_path_str.clone(),
                 master_password: None,
                 salt: None,
@@ -418,7 +494,7 @@ mod tests {
         };
 
         let code2 = {
-            let client = TeamsSqliteClient::new(TeamsSqliteConfig {
+            let client = SqliteRegistryClient::new(SqliteRegistryConfig {
                 filename: db_path_str,
                 master_password: None,
                 salt: None,
@@ -427,5 +503,50 @@ mod tests {
         };
 
         assert_eq!(code1, code2);
+    }
+
+    #[tokio::test]
+    async fn test_get_empty_league() {
+        let client = test_client();
+        let result = client.get_league_metadata("soccer_smallsize").await.unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_set_and_get_league_metadata() {
+        let client = test_client();
+        client
+            .set_league_metadata(
+                "soccer_smallsize",
+                vec![
+                    ("website".to_string(), "https://ssl.robocup.org/".to_string()),
+                    ("github_org".to_string(), "https://github.com/RoboCup-SSL".to_string()),
+                ],
+            )
+            .await
+            .unwrap();
+
+        let entries = client.get_league_metadata("soccer_smallsize").await.unwrap();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].key, "website");
+        assert_eq!(entries[1].key, "github_org");
+    }
+
+    #[tokio::test]
+    async fn test_leagues_are_isolated_from_teams() {
+        let client = test_client();
+        client
+            .set_team_metadata("TeamA", vec![("website".to_string(), "https://team.com".to_string())])
+            .await
+            .unwrap();
+        client
+            .set_league_metadata("soccer_smallsize", vec![("website".to_string(), "https://league.com".to_string())])
+            .await
+            .unwrap();
+
+        let team = client.get_team_metadata("TeamA").await.unwrap();
+        let league = client.get_league_metadata("soccer_smallsize").await.unwrap();
+        assert_eq!(team[0].value, "https://team.com");
+        assert_eq!(league[0].value, "https://league.com");
     }
 }
