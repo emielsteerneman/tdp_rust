@@ -37,9 +37,6 @@ docker-down:
 init:
 	cargo run --release -p tools --bin initialize
 
-repl:
-	cargo run -p tools --bin repl
-
 search:
 	cargo run -p tools --bin search_by_sentence -- $(filter-out $@,$(MAKECMDGOALS))
 
