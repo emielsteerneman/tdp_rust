@@ -10,6 +10,7 @@ pub struct SearchResult {
     pub filter: Option<Filter>,
     pub chunks: Vec<SearchResultChunk>,
     pub suggestions: SearchSuggestions,
+    pub highlight_terms: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]
