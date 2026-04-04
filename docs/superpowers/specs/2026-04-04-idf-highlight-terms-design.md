@@ -133,6 +133,8 @@ export interface SearchResult {
 
 **`ChunkResult.svelte`**: Accept `highlightTerms: string[]` instead of `query: string`. The existing two-phase `highlightText()` function uses these terms directly as regex alternation — no splitting, no stop word filtering needed.
 
+**N-gram ordering in regex**: Before building the regex alternation, sort terms by **length descending**. Regex alternation is left-to-right greedy — `(computer vision|computer)` matches the bigram first, but `(computer|computer vision)` would match only the unigram at that position, leaving "vision" unhighlighted. Length-descending sorting ensures longer (more specific) terms always get priority. The merge step provides a safety net (overlapping ranges like `[5,13]` and `[5,20]` merge to `[5,20]`), but correct ordering avoids the problem entirely.
+
 ### MCP: No changes
 
 The MCP server maps `SearchResult` into its own `CompactSearchResult`, cherry-picking only `query`, `results`, and `suggestions`. The new `highlight_terms` field is silently ignored. AI clients don't render HTML highlighting.
