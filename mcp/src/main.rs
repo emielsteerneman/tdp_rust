@@ -65,7 +65,7 @@ async fn main() -> anyhow::Result<()> {
         Arc::new(idf_map),
         teams,
         leagues,
-        config.data_processing.highlight_idf_threshold.unwrap_or(1.5),
+        config.data_processing.highlight_idf_threshold(),
     );
 
     let state = AppState::new(metadata_client.clone(), Arc::new(searcher), dispatcher, team_registry, config.website_url.clone());
