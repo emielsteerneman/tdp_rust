@@ -12,7 +12,7 @@ use crate::error::ApiError;
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 pub struct GetPaperInfoArgs {
     #[schemars(
-        description = "The lyti identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0')"
+        description = "The paper_lyt identifier of the paper (e.g. 'soccer_smallsize__2024__RoboTeam_Twente')"
     )]
     pub paper: String,
 }

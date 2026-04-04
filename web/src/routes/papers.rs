@@ -23,7 +23,7 @@ pub async fn list_papers_handler(
 
 pub async fn paper_open_handler(
     State(state): State<AppState>,
-    Path(lyti): Path<String>,
+    Path(paper_lyt): Path<String>,
     headers: HeaderMap,
 ) -> StatusCode {
     let referrer = headers
@@ -34,7 +34,7 @@ pub async fn paper_open_handler(
     state.dispatcher.dispatch(
         event_processing::EventSource::Web,
         event_processing::Event::PaperOpen(event_processing::PaperOpenEvent {
-            paper_id: lyti,
+            paper_id: paper_lyt,
             referrer,
         }),
     );
@@ -44,12 +44,12 @@ pub async fn paper_open_handler(
 
 pub async fn pdf_open_handler(
     State(state): State<AppState>,
-    Path(lyti): Path<String>,
+    Path(paper_lyt): Path<String>,
 ) -> StatusCode {
     state.dispatcher.dispatch(
         event_processing::EventSource::Web,
         event_processing::Event::PdfOpen(event_processing::PdfOpenEvent {
-            paper_id: lyti,
+            paper_id: paper_lyt,
         }),
     );
 

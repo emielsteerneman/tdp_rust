@@ -18,7 +18,7 @@
 	marked.setOptions({ gfm: true, breaks: false });
 
 	// Pre-process markdown and extract headings
-	const processed = $derived(preprocessMarkdown(data.rawMarkdown, data.lyti));
+	const processed = $derived(preprocessMarkdown(data.rawMarkdown, data.paper_lyt));
 	const headings = $derived(extractHeadings(processed));
 	const htmlContent = $derived(marked.parse(processed) as string);
 
@@ -49,12 +49,12 @@
 			<div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
 				<div class="flex justify-end mb-4">
 					<a
-						href="/pdfs/{data.lyti}.pdf"
+						href="/pdfs/{data.paper_lyt}.pdf"
 						target="_blank"
 						rel="noopener noreferrer"
 						class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
 						onclick={() => {
-							fetch(`/api/papers/${encodeURIComponent(data.lyti)}/pdf-open`, { method: 'POST' }).catch(() => {});
+							fetch(`/api/papers/${encodeURIComponent(data.paper_lyt)}/pdf-open`, { method: 'POST' }).catch(() => {});
 						}}
 					>
 						View Original PDF

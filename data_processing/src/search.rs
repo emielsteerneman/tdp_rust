@@ -108,14 +108,14 @@ impl Searcher {
             .search_chunks(dense, sparse, limit, filter.clone())
             .await?;
 
-        // Collect unique lytis to batch-load ToCs
-        let unique_lytis: Vec<String> = {
+        // Collect unique paper_lyts to batch-load ToCs
+        let unique_paper_lyts: Vec<String> = {
             let mut seen = std::collections::HashSet::new();
             results
                 .iter()
                 .filter_map(|(chunk, _)| {
-                    if seen.insert(chunk.league_year_team_idx.clone()) {
-                        Some(chunk.league_year_team_idx.clone())
+                    if seen.insert(chunk.paper_lyt.clone()) {
+                        Some(chunk.paper_lyt.clone())
                     } else {
                         None
                     }
@@ -125,13 +125,13 @@ impl Searcher {
 
         // Load ToCs for breadcrumb computation
         let mut toc_cache: HashMap<String, Vec<TocEntry>> = HashMap::new();
-        for lyti in unique_lytis {
-            match self.metadata_client.load_toc(lyti.clone()).await {
+        for paper_lyt in unique_paper_lyts {
+            match self.metadata_client.load_toc(paper_lyt.clone()).await {
                 Ok(toc) => {
-                    toc_cache.insert(lyti, toc);
+                    toc_cache.insert(paper_lyt, toc);
                 }
                 Err(e) => {
-                    warn!("Failed to load ToC for {}: {}", lyti, e);
+                    warn!("Failed to load ToC for {}: {}", paper_lyt, e);
                 }
             }
         }
@@ -144,7 +144,7 @@ impl Searcher {
             .into_iter()
             .map(|(chunk, score)| {
                 let breadcrumbs = toc_cache
-                    .get(&chunk.league_year_team_idx)
+                    .get(&chunk.paper_lyt)
                     .map(|toc| compute_breadcrumbs(toc, chunk.content_seq))
                     .unwrap_or_default();
                 let mut result_chunk: SearchResultChunk = chunk.into();

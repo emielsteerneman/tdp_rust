@@ -218,14 +218,14 @@ mod tests {
     fn format_get_abstract() {
         let listener = make_listener();
         let event = Event::GetAbstract(GetAbstractEvent {
-            paper: "soccer_smallsize__2024__RoboTeam__0".into(),
+            paper: "soccer_smallsize__2024__RoboTeam".into(),
         });
 
         let msg = listener
             .format_message(&EventSource::Web, &event)
             .unwrap();
         assert!(msg.contains("Get abstract"));
-        assert!(msg.contains("soccer_smallsize__2024__RoboTeam__0"));
+        assert!(msg.contains("soccer_smallsize__2024__RoboTeam"));
     }
 
     #[test]
@@ -266,7 +266,7 @@ mod tests {
     fn format_pdf_open() {
         let listener = make_listener();
         let event = Event::PdfOpen(PdfOpenEvent {
-            paper_id: "soccer_smallsize__2024__RoboTeam__0".into(),
+            paper_id: "soccer_smallsize__2024__RoboTeam".into(),
         });
 
         let msg = listener
@@ -274,7 +274,7 @@ mod tests {
             .unwrap();
         assert!(msg.contains("[web]"));
         assert!(msg.contains("PDF opened"));
-        assert!(msg.contains("soccer_smallsize__2024__RoboTeam__0"));
+        assert!(msg.contains("soccer_smallsize__2024__RoboTeam"));
     }
 
     #[test]

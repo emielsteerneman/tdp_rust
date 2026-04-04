@@ -20,7 +20,7 @@
 		const groups = new Map<string, SearchResultChunk[]>();
 
 		for (const chunk of data.searchResult.chunks) {
-			const paperId = chunk.league_year_team_idx;
+			const paperId = chunk.paper_lyt;
 			if (!groups.has(paperId)) {
 				groups.set(paperId, []);
 			}

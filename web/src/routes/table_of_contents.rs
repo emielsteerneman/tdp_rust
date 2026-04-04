@@ -7,9 +7,9 @@ use crate::state::AppState;
 
 pub async fn get_table_of_contents_handler(
     State(state): State<AppState>,
-    Path(lyti): Path<String>,
+    Path(paper_lyt): Path<String>,
 ) -> Result<Json<ApiResponse<String>>, ApiError> {
-    let args = api::get_table_of_contents::GetTableOfContentsArgs { paper: lyti };
+    let args = api::get_table_of_contents::GetTableOfContentsArgs { paper: paper_lyt };
     let result = api::get_table_of_contents::get_table_of_contents(
         state.metadata_client.clone(),
         args,

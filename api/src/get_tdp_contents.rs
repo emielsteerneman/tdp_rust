@@ -30,7 +30,7 @@ pub async fn get_tdp_contents(
     let league = League::try_from(args.league.as_str())
         .map_err(|e| ApiError::Argument("league".to_string(), e.to_string()))?;
     let team_name = TeamName::new(&args.team);
-    let tdp_name = TDPName::new(league, args.year, team_name, None);
+    let tdp_name = TDPName::new(league, args.year, team_name);
 
     let markdown = metadata_client
         .get_tdp_markdown(tdp_name)

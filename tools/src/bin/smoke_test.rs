@@ -80,7 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 league_filter: Some(league.name_pretty().to_string()),
                 year_filter: Some(year.to_string()),
                 team_filter: None,
-                lyti_filter: None,
+                paper_lyt_filter: None,
                 content_type_filter: None,
                 search_type,
             };

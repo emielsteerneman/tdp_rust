@@ -13,7 +13,7 @@ pub struct BreadcrumbEntry {
 /// A section with its breadcrumb path and content items.
 #[derive(Debug, Clone, Serialize)]
 pub struct SectionResult {
-    pub lyti: String,
+    pub paper_lyt: String,
     pub breadcrumbs: Vec<BreadcrumbEntry>,
     pub items: Vec<ContentItem>,
 }

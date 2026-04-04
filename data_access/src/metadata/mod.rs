@@ -60,30 +60,30 @@ pub trait MetadataClient: Send + Sync {
 
     fn load_toc<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<TocEntry>, MetadataClientError>> + Send + 'a>>;
 
     fn load_content_item<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
         content_seq: u32,
     ) -> Pin<Box<dyn Future<Output = Result<ContentItem, MetadataClientError>> + Send + 'a>>;
 
     fn load_paper_abstract<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
     ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>>;
 
     fn load_content_items_range<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
         start_seq: u32,
         end_seq_exclusive: u32,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ContentItem>, MetadataClientError>> + Send + 'a>>;
 
     fn load_paper_info<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
     ) -> Pin<Box<dyn Future<Output = Result<PaperInfo, MetadataClientError>> + Send + 'a>>;
 
 }

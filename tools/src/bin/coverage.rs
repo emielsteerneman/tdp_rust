@@ -94,8 +94,8 @@ fn parsing(pdf_root: &str, md_root: &str) -> anyhow::Result<()> {
 
     if !pdfs_without_md.is_empty() {
         println!("PDFs without markdown ({}):", pdfs_without_md.len());
-        for lyti in pdfs_without_md.iter().take(20) {
-            println!("  {}", lyti);
+        for paper_lyt in pdfs_without_md.iter().take(20) {
+            println!("  {}", paper_lyt);
         }
         if pdfs_without_md.len() > 20 {
             println!("  ... and {} more", pdfs_without_md.len() - 20);
@@ -105,8 +105,8 @@ fn parsing(pdf_root: &str, md_root: &str) -> anyhow::Result<()> {
     if !mds_without_pdf.is_empty() {
         println!();
         println!("Markdowns without PDF ({}) — unexpected:", mds_without_pdf.len());
-        for lyti in &mds_without_pdf {
-            println!("  {}", lyti);
+        for paper_lyt in &mds_without_pdf {
+            println!("  {}", paper_lyt);
         }
     }
 
@@ -121,7 +121,7 @@ async fn indexing(md_root: &str, config: &configuration::AppConfig) -> anyhow::R
         .map_err(|e| anyhow::anyhow!("Failed to load TDPs from metadata DB: {}", e))?;
     let indexed: HashSet<String> = indexed_tdps
         .iter()
-        .map(|t| t.get_filename())
+        .map(|t| t.get_paper_lyt())
         .collect();
 
     let on_disk = scan_dir(md_root, "md");
@@ -136,8 +136,8 @@ async fn indexing(md_root: &str, config: &configuration::AppConfig) -> anyhow::R
 
     if !on_disk_not_indexed.is_empty() {
         println!("On disk but not indexed ({}):", on_disk_not_indexed.len());
-        for lyti in on_disk_not_indexed.iter().take(20) {
-            println!("  {}", lyti);
+        for paper_lyt in on_disk_not_indexed.iter().take(20) {
+            println!("  {}", paper_lyt);
         }
         if on_disk_not_indexed.len() > 20 {
             println!("  ... and {} more", on_disk_not_indexed.len() - 20);
@@ -146,8 +146,8 @@ async fn indexing(md_root: &str, config: &configuration::AppConfig) -> anyhow::R
 
     if !indexed_not_on_disk.is_empty() {
         println!("Indexed but not on disk ({}) — stale entries:", indexed_not_on_disk.len());
-        for lyti in &indexed_not_on_disk {
-            println!("  {}", lyti);
+        for paper_lyt in &indexed_not_on_disk {
+            println!("  {}", paper_lyt);
         }
     }
 
@@ -169,16 +169,16 @@ fn heatmap(pdf_root: &str, md_root: &str) -> anyhow::Result<()> {
     let mut pdf_counts: HashMap<(String, u32), usize> = HashMap::new();
     let mut md_counts: HashMap<(String, u32), usize> = HashMap::new();
 
-    for lyti in &pdfs {
-        if let Ok(tdp) = TDPName::try_from(lyti.as_str()) {
+    for paper_lyt in &pdfs {
+        if let Ok(tdp) = TDPName::try_from(paper_lyt.as_str()) {
             let league = tdp.league.name_pretty().to_string();
             years.insert(tdp.year);
             leagues.insert(league.clone());
             *pdf_counts.entry((league, tdp.year)).or_default() += 1;
         }
     }
-    for lyti in &mds {
-        if let Ok(tdp) = TDPName::try_from(lyti.as_str()) {
+    for paper_lyt in &mds {
+        if let Ok(tdp) = TDPName::try_from(paper_lyt.as_str()) {
             let league = tdp.league.name_pretty().to_string();
             years.insert(tdp.year);
             leagues.insert(league.clone());

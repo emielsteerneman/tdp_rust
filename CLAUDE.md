@@ -33,7 +33,7 @@ markdown files → data_processing (parse, chunk, embed) → data_access (store 
 - `docs/` — Architecture diagrams and planning docs.
 
 ## Key Conventions
-- **TDP naming**: `{league}__{year}__{team}__{index}` (double underscore), e.g. `soccer_smallsize__2024__RoboTeam_Twente__0`
+- **TDP naming**: `{league}__{year}__{team}` (double underscore), e.g. `soccer_smallsize__2024__RoboTeam_Twente`
 - **Dual name forms**: every `League` and `TeamName` has a machine name (`soccer_smallsize`) and pretty name (`Soccer SmallSize`). Both forms are accepted interchangeably.
 - **Trait-based DI**: all external systems are behind async traits — switch implementations via config, not code changes.
 - **`configuration::helpers`**: use these factory functions to instantiate clients; don't construct them directly.
@@ -104,7 +104,7 @@ Other prerequisites:
 - **Embed model ↔ Qdrant size must match**: if you change the embed model, update `embedding_size` and re-run `initialize`
 
 ## Key Terms
-- **lyti** — League Year Team Index. Canonical paper identifier: `soccer_smallsize__2024__RoboTeam_Twente__0`.
+- **paper_lyt** — League Year Team. Canonical paper identifier: `soccer_smallsize__2024__RoboTeam_Twente`.
 - **EventSource** — passed to `api` handlers. Use `EventSource::Mcp` in MCP, `EventSource::Web` in web.
 
 ## Debugging Guidelines

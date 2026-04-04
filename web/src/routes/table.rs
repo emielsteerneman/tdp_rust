@@ -7,10 +7,10 @@ use crate::state::AppState;
 
 pub async fn get_table_handler(
     State(state): State<AppState>,
-    Path((lyti, content_seq)): Path<(String, u32)>,
+    Path((paper_lyt, content_seq)): Path<(String, u32)>,
 ) -> Result<Json<ApiResponse<String>>, ApiError> {
     let args = api::get_table::GetTableArgs {
-        paper: lyti,
+        paper: paper_lyt,
         content_seq,
     };
     let result = api::get_table::get_table(

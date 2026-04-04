@@ -11,22 +11,22 @@ pub async fn serve_tdps_file(
     Path(path): Path<String>,
 ) -> Result<Response<Body>, StatusCode> {
     // The path is either:
-    //   {lyti}.md          — the markdown file itself
-    //   {lyti}/{subpath}   — a file inside the paper's image folder
-    let (lyti_str, subpath) = if let Some((lyti, sub)) = path.split_once('/') {
-        (lyti, Some(sub))
+    //   {paper_lyt}.md          — the markdown file itself
+    //   {paper_lyt}/{subpath}   — a file inside the paper's image folder
+    let (paper_lyt_str, subpath) = if let Some((paper_lyt, sub)) = path.split_once('/') {
+        (paper_lyt, Some(sub))
     } else {
         (path.as_str(), None)
     };
 
-    // Strip .md extension from lyti if present (for the markdown file case)
-    let lyti_for_parse = if lyti_str.ends_with(".md") {
-        &lyti_str[..lyti_str.len() - 3]
+    // Strip .md extension from paper_lyt if present (for the markdown file case)
+    let paper_lyt_for_parse = if paper_lyt_str.ends_with(".md") {
+        &paper_lyt_str[..paper_lyt_str.len() - 3]
     } else {
-        lyti_str
+        paper_lyt_str
     };
 
-    let tdp_name: TDPName = TDPName::try_from(lyti_for_parse).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let tdp_name: TDPName = TDPName::try_from(paper_lyt_for_parse).map_err(|_| StatusCode::BAD_REQUEST)?;
 
     // Build the filesystem path for the file
     let root = std::path::Path::new(&state.tdps_markdown_root);
@@ -45,16 +45,16 @@ pub async fn serve_tdps_file(
             .join(&year)
     };
 
-    let lyti_base = lyti_for_parse;
+    let paper_lyt_base = paper_lyt_for_parse;
 
     let file_path = match subpath {
         None => {
-            // Markdown file: {league_path}/{lyti}.md
-            league_path.join(format!("{}.md", lyti_base))
+            // Markdown file: {league_path}/{paper_lyt}.md
+            league_path.join(format!("{}.md", paper_lyt_base))
         }
         Some(sub) => {
-            // Image/asset inside paper folder: {league_path}/{lyti}/{subpath}
-            league_path.join(lyti_base).join(sub)
+            // Image/asset inside paper folder: {league_path}/{paper_lyt}/{subpath}
+            league_path.join(paper_lyt_base).join(sub)
         }
     };
 

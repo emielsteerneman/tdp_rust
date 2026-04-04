@@ -56,11 +56,10 @@ impl SqliteClient {
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS paper (
-                lyti TEXT PRIMARY KEY,
+                paper_lyt TEXT PRIMARY KEY,
                 league TEXT NOT NULL,
                 year INTEGER NOT NULL,
                 team TEXT NOT NULL,
-                idx INTEGER NOT NULL,
                 title TEXT,
                 abstract_text TEXT,
                 urls_json TEXT,
@@ -72,10 +71,10 @@ impl SqliteClient {
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS author (
-                lyti TEXT NOT NULL,
+                paper_lyt TEXT NOT NULL,
                 name TEXT NOT NULL,
                 affiliation TEXT,
-                FOREIGN KEY (lyti) REFERENCES paper(lyti)
+                FOREIGN KEY (paper_lyt) REFERENCES paper(paper_lyt)
             )",
             [],
         )
@@ -83,15 +82,15 @@ impl SqliteClient {
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS toc_entry (
-                lyti TEXT NOT NULL,
+                paper_lyt TEXT NOT NULL,
                 content_seq INTEGER NOT NULL,
                 content_type TEXT NOT NULL,
                 depth INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 body TEXT,
                 image_path TEXT,
-                FOREIGN KEY (lyti) REFERENCES paper(lyti),
-                UNIQUE(lyti, content_seq)
+                FOREIGN KEY (paper_lyt) REFERENCES paper(paper_lyt),
+                UNIQUE(paper_lyt, content_seq)
             )",
             [],
         )
@@ -206,20 +205,20 @@ impl MetadataClient for SqliteClient {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT lyti FROM paper")
+                    .prepare("SELECT paper_lyt FROM paper")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
                     .query_map([], |row| {
-                        let lyti: String = row.get(0)?;
-                        Ok(lyti)
+                        let paper_lyt: String = row.get(0)?;
+                        Ok(paper_lyt)
                     })
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let mut results = Vec::new();
                 for row in rows {
-                    let lyti = row.map_err(|e| MetadataClientError::Internal(e.to_string()))?;
-                    let tdp_name = data_structures::file::TDPName::try_from(lyti.as_str())
+                    let paper_lyt = row.map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    let tdp_name = data_structures::file::TDPName::try_from(paper_lyt.as_str())
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     results.push(tdp_name);
                 }
@@ -321,17 +320,17 @@ impl MetadataClient for SqliteClient {
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
                 let conn = conn.lock().unwrap();
-                let lyti = tdp_name.get_filename();
+                let paper_lyt = tdp_name.get_paper_lyt();
 
                 let mut stmt = conn
-                    .prepare("SELECT raw_markdown FROM paper WHERE lyti = ?1")
+                    .prepare("SELECT raw_markdown FROM paper WHERE paper_lyt = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let markdown: String = stmt
-                    .query_row(params![lyti], |row| row.get(0))
+                    .query_row(params![paper_lyt], |row| row.get(0))
                     .map_err(|e| match e {
                         rusqlite::Error::QueryReturnedNoRows => {
-                            MetadataClientError::NotFound(lyti.clone())
+                            MetadataClientError::NotFound(paper_lyt.clone())
                         }
                         _ => MetadataClientError::Internal(e.to_string()),
                     })?;
@@ -389,11 +388,10 @@ impl MetadataClient for SqliteClient {
         Box::pin(async move {
             tokio::task::spawn_blocking(move || {
                 let mut conn = conn.lock().unwrap();
-                let lyti = tdp.name.get_filename();
+                let paper_lyt = tdp.name.get_paper_lyt();
                 let league = tdp.name.league.name();
                 let year = tdp.name.year;
                 let team = &tdp.name.team_name.name_pretty;
-                let idx = tdp.name.index;
                 let title = &tdp.front_matter.title;
                 let abstract_text = tdp.front_matter.abstract_text.as_deref();
                 let urls_json = serde_json::to_string(&tdp.front_matter.urls)
@@ -405,42 +403,42 @@ impl MetadataClient for SqliteClient {
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 {
-                    // Delete existing data for this lyti (upsert)
-                    tx.execute("DELETE FROM toc_entry WHERE lyti = ?1", params![lyti])
+                    // Delete existing data for this paper_lyt (upsert)
+                    tx.execute("DELETE FROM toc_entry WHERE paper_lyt = ?1", params![paper_lyt])
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
-                    tx.execute("DELETE FROM author WHERE lyti = ?1", params![lyti])
+                    tx.execute("DELETE FROM author WHERE paper_lyt = ?1", params![paper_lyt])
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
-                    tx.execute("DELETE FROM paper WHERE lyti = ?1", params![lyti])
+                    tx.execute("DELETE FROM paper WHERE paper_lyt = ?1", params![paper_lyt])
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     // Insert paper
                     tx.execute(
-                        "INSERT INTO paper (lyti, league, year, team, idx, title, abstract_text, urls_json, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-                        params![lyti, league, year, team, idx, title, abstract_text, urls_json, raw_markdown],
+                        "INSERT INTO paper (paper_lyt, league, year, team, title, abstract_text, urls_json, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                        params![paper_lyt, league, year, team, title, abstract_text, urls_json, raw_markdown],
                     )
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     // Insert authors
                     let mut author_stmt = tx
-                        .prepare("INSERT INTO author (lyti, name, affiliation) VALUES (?1, ?2, ?3)")
+                        .prepare("INSERT INTO author (paper_lyt, name, affiliation) VALUES (?1, ?2, ?3)")
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     for author in &tdp.front_matter.authors {
                         author_stmt
-                            .execute(params![lyti, author.name, author.affiliation])
+                            .execute(params![paper_lyt, author.name, author.affiliation])
                             .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     }
                     drop(author_stmt);
 
                     // Insert content items into toc_entry
                     let mut toc_stmt = tx
-                        .prepare("INSERT INTO toc_entry (lyti, content_seq, content_type, depth, title, body, image_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
+                        .prepare("INSERT INTO toc_entry (paper_lyt, content_seq, content_type, depth, title, body, image_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                     for item in &tdp.content_items {
                         toc_stmt
                             .execute(params![
-                                lyti,
+                                paper_lyt,
                                 item.content_seq,
                                 item.content_type.as_str(),
                                 item.depth,
@@ -465,7 +463,7 @@ impl MetadataClient for SqliteClient {
 
     fn load_toc<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<TocEntry>, MetadataClientError>> + Send + 'a>> {
         let conn = self.conn.clone();
 
@@ -474,11 +472,11 @@ impl MetadataClient for SqliteClient {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT content_seq, content_type, depth, title FROM toc_entry WHERE lyti = ?1 ORDER BY content_seq")
+                    .prepare("SELECT content_seq, content_type, depth, title FROM toc_entry WHERE paper_lyt = ?1 ORDER BY content_seq")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
-                    .query_map(params![lyti], |row| {
+                    .query_map(params![paper_lyt], |row| {
                         let content_seq: u32 = row.get(0)?;
                         let content_type_str: String = row.get(1)?;
                         let depth: u8 = row.get(2)?;
@@ -503,8 +501,8 @@ impl MetadataClient for SqliteClient {
 
                 if results.is_empty() {
                     return Err(MetadataClientError::NotFound(format!(
-                        "No toc entries found for lyti: {}",
-                        lyti
+                        "No toc entries found for paper_lyt: {}",
+                        paper_lyt
                     )));
                 }
 
@@ -517,7 +515,7 @@ impl MetadataClient for SqliteClient {
 
     fn load_content_item<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
         content_seq: u32,
     ) -> Pin<Box<dyn Future<Output = Result<ContentItem, MetadataClientError>> + Send + 'a>> {
         let conn = self.conn.clone();
@@ -527,10 +525,10 @@ impl MetadataClient for SqliteClient {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT content_seq, content_type, depth, title, body, image_path FROM toc_entry WHERE lyti = ?1 AND content_seq = ?2")
+                    .prepare("SELECT content_seq, content_type, depth, title, body, image_path FROM toc_entry WHERE paper_lyt = ?1 AND content_seq = ?2")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
-                stmt.query_row(params![lyti, content_seq], |row| {
+                stmt.query_row(params![paper_lyt, content_seq], |row| {
                     let content_seq: u32 = row.get(0)?;
                     let content_type_str: String = row.get(1)?;
                     let depth: u8 = row.get(2)?;
@@ -542,8 +540,8 @@ impl MetadataClient for SqliteClient {
                 .map_err(|e| match e {
                     rusqlite::Error::QueryReturnedNoRows => {
                         MetadataClientError::NotFound(format!(
-                            "Content item not found for lyti: {}, content_seq: {}",
-                            lyti, content_seq
+                            "Content item not found for paper_lyt: {}, content_seq: {}",
+                            paper_lyt, content_seq
                         ))
                     }
                     _ => MetadataClientError::Internal(e.to_string()),
@@ -568,7 +566,7 @@ impl MetadataClient for SqliteClient {
 
     fn load_content_items_range<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
         start_seq: u32,
         end_seq_exclusive: u32,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ContentItem>, MetadataClientError>> + Send + 'a>>
@@ -583,13 +581,13 @@ impl MetadataClient for SqliteClient {
                     .prepare(
                         "SELECT content_seq, content_type, depth, title, body, image_path
                          FROM toc_entry
-                         WHERE lyti = ?1 AND content_seq >= ?2 AND content_seq < ?3
+                         WHERE paper_lyt = ?1 AND content_seq >= ?2 AND content_seq < ?3
                          ORDER BY content_seq",
                     )
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let rows = stmt
-                    .query_map(params![lyti, start_seq, end_seq_exclusive], |row| {
+                    .query_map(params![paper_lyt, start_seq, end_seq_exclusive], |row| {
                         let content_seq: u32 = row.get(0)?;
                         let content_type_str: String = row.get(1)?;
                         let depth: u8 = row.get(2)?;
@@ -618,8 +616,8 @@ impl MetadataClient for SqliteClient {
 
                 if results.is_empty() {
                     return Err(MetadataClientError::NotFound(format!(
-                        "No content items found for lyti: {}, range: {}..{}",
-                        lyti, start_seq, end_seq_exclusive
+                        "No content items found for paper_lyt: {}, range: {}..{}",
+                        paper_lyt, start_seq, end_seq_exclusive
                     )));
                 }
 
@@ -632,7 +630,7 @@ impl MetadataClient for SqliteClient {
 
     fn load_paper_abstract<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
     ) -> Pin<Box<dyn Future<Output = Result<String, MetadataClientError>> + Send + 'a>> {
         let conn = self.conn.clone();
 
@@ -641,16 +639,16 @@ impl MetadataClient for SqliteClient {
                 let conn = conn.lock().unwrap();
 
                 let mut stmt = conn
-                    .prepare("SELECT abstract_text FROM paper WHERE lyti = ?1")
+                    .prepare("SELECT abstract_text FROM paper WHERE paper_lyt = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let abstract_text: Option<String> = stmt
-                    .query_row(params![lyti], |row| row.get(0))
+                    .query_row(params![paper_lyt], |row| row.get(0))
                     .map_err(|e| match e {
                         rusqlite::Error::QueryReturnedNoRows => {
                             MetadataClientError::NotFound(format!(
-                                "Paper not found for lyti: {}",
-                                lyti
+                                "Paper not found for paper_lyt: {}",
+                                paper_lyt
                             ))
                         }
                         _ => MetadataClientError::Internal(e.to_string()),
@@ -658,8 +656,8 @@ impl MetadataClient for SqliteClient {
 
                 abstract_text.ok_or_else(|| {
                     MetadataClientError::NotFound(format!(
-                        "Abstract not found for lyti: {}",
-                        lyti
+                        "Abstract not found for paper_lyt: {}",
+                        paper_lyt
                     ))
                 })
             })
@@ -670,7 +668,7 @@ impl MetadataClient for SqliteClient {
 
     fn load_paper_info<'a>(
         &'a self,
-        lyti: String,
+        paper_lyt: String,
     ) -> Pin<Box<dyn Future<Output = Result<PaperInfo, MetadataClientError>> + Send + 'a>> {
         let conn = self.conn.clone();
 
@@ -681,13 +679,13 @@ impl MetadataClient for SqliteClient {
                 // Load title, urls from paper table
                 let (title, urls_json): (Option<String>, Option<String>) = conn
                     .query_row(
-                        "SELECT title, urls_json FROM paper WHERE lyti = ?1",
-                        params![lyti],
+                        "SELECT title, urls_json FROM paper WHERE paper_lyt = ?1",
+                        params![paper_lyt],
                         |row| Ok((row.get(0)?, row.get(1)?)),
                     )
                     .map_err(|e| match e {
                         rusqlite::Error::QueryReturnedNoRows => {
-                            MetadataClientError::NotFound(format!("Paper not found: {}", lyti))
+                            MetadataClientError::NotFound(format!("Paper not found: {}", paper_lyt))
                         }
                         _ => MetadataClientError::Internal(e.to_string()),
                     })?;
@@ -698,11 +696,11 @@ impl MetadataClient for SqliteClient {
 
                 // Load authors from author table
                 let mut stmt = conn
-                    .prepare("SELECT name, affiliation FROM author WHERE lyti = ?1")
+                    .prepare("SELECT name, affiliation FROM author WHERE paper_lyt = ?1")
                     .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
                 let authors: Vec<Author> = stmt
-                    .query_map(params![lyti], |row| {
+                    .query_map(params![paper_lyt], |row| {
                         Ok(Author {
                             name: row.get(0)?,
                             affiliation: row.get(1)?,
@@ -823,7 +821,7 @@ mod tests {
         let tdps = client.load_tdps().await?;
         println!("Number of TDPs: {}", tdps.len());
         for tdp in tdps.iter().take(5) {
-            println!("  {}", tdp.get_filename());
+            println!("  {}", tdp.get_paper_lyt());
         }
 
         Ok(())
@@ -846,16 +844,16 @@ mod tests {
         {
             let conn = client.conn.lock().unwrap();
             conn.execute(
-                "INSERT INTO paper (lyti, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params!["soccer_smallsize__2019__RoboTeam_Twente__1", "Soccer SmallSize", 2019, "RoboTeam Twente", 1, "# Test markdown 1"],
+                "INSERT INTO paper (paper_lyt, league, year, team, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params!["soccer_smallsize__2019__RoboTeam_Twente", "Soccer SmallSize", 2019, "RoboTeam Twente", "# Test markdown 1"],
             ).unwrap();
             conn.execute(
-                "INSERT INTO paper (lyti, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params!["soccer_smallsize__2019__Tigers_Mannheim__1", "Soccer SmallSize", 2019, "Tigers Mannheim", 1, "# Test markdown 2"],
+                "INSERT INTO paper (paper_lyt, league, year, team, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params!["soccer_smallsize__2019__Tigers_Mannheim", "Soccer SmallSize", 2019, "Tigers Mannheim", "# Test markdown 2"],
             ).unwrap();
             conn.execute(
-                "INSERT INTO paper (lyti, league, year, team, idx, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params!["soccer_midsize__2020__RoboTeam_Twente__1", "Soccer MidSize", 2020, "RoboTeam Twente", 1, "# Test markdown 3"],
+                "INSERT INTO paper (paper_lyt, league, year, team, raw_markdown) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params!["soccer_midsize__2020__RoboTeam_Twente", "Soccer MidSize", 2020, "RoboTeam Twente", "# Test markdown 3"],
             ).unwrap();
         }
 
@@ -874,7 +872,7 @@ mod tests {
         assert!(league_names.contains(&"Soccer MidSize".to_string()));
 
         // Test get_tdp_markdown
-        let tdp_name = data_structures::file::TDPName::try_from("soccer_smallsize__2019__RoboTeam_Twente__1").unwrap();
+        let tdp_name = data_structures::file::TDPName::try_from("soccer_smallsize__2019__RoboTeam_Twente").unwrap();
         let markdown = client
             .get_tdp_markdown(tdp_name)
             .await
@@ -908,8 +906,8 @@ mod tests {
         let league = data_structures::file::League::try_from("soccer_smallsize").unwrap();
         let team = data_structures::file::TeamName::new("RoboTeam Twente");
         let name =
-            data_structures::file::TDPName::new(league.clone(), 2024, team.clone(), Some(0));
-        let lyti = name.get_filename();
+            data_structures::file::TDPName::new(league.clone(), 2024, team.clone());
+        let paper_lyt = name.get_paper_lyt();
 
         let tdp = MarkdownTDP {
             name,
@@ -967,7 +965,7 @@ mod tests {
 
         // Test load_toc
         let toc = client
-            .load_toc(lyti.clone())
+            .load_toc(paper_lyt.clone())
             .await
             .expect("Failed to load toc");
         assert_eq!(toc.len(), 3);
@@ -984,7 +982,7 @@ mod tests {
 
         // Test load_content_item
         let item = client
-            .load_content_item(lyti.clone(), 0)
+            .load_content_item(paper_lyt.clone(), 0)
             .await
             .expect("Failed to load content item");
         assert_eq!(item.content_seq, 0);
@@ -993,18 +991,18 @@ mod tests {
         assert!(item.image_path.is_none());
 
         let item_img = client
-            .load_content_item(lyti.clone(), 1)
+            .load_content_item(paper_lyt.clone(), 1)
             .await
             .expect("Failed to load image content item");
         assert_eq!(item_img.image_path, Some("images/robot.png".to_string()));
 
         // Test load_content_item not found
-        let not_found = client.load_content_item(lyti.clone(), 99).await;
+        let not_found = client.load_content_item(paper_lyt.clone(), 99).await;
         assert!(not_found.is_err());
 
         // Test load_paper_abstract
         let abstract_text = client
-            .load_paper_abstract(lyti.clone())
+            .load_paper_abstract(paper_lyt.clone())
             .await
             .expect("Failed to load abstract");
         assert_eq!(abstract_text, "This paper describes our cool robot.");

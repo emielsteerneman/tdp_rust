@@ -56,7 +56,7 @@ impl QdrantClient {
     const KEY_LEAGUE: &'static str = "league";
     const KEY_YEAR: &'static str = "year";
     const KEY_TEAM: &'static str = "team";
-    const KEY_LYTI: &'static str = "lyti";
+    const KEY_PAPER_LYT: &'static str = "paper_lyt";
 
     pub async fn new(config: QdrantConfig) -> Result<Self, VectorClientError> {
         info!(
@@ -235,7 +235,7 @@ impl VectorClient for QdrantClient {
         payload.insert(Self::KEY_LEAGUE.into(), league_value.into());
         payload.insert(Self::KEY_YEAR.into(), (chunk.year as i64).into());
         payload.insert(Self::KEY_TEAM.into(), team_value.into());
-        payload.insert(Self::KEY_LYTI.into(), chunk.league_year_team_idx.into());
+        payload.insert(Self::KEY_PAPER_LYT.into(), chunk.paper_lyt.into());
         // Structure
         payload.insert(
             "content_seq".to_string(),
@@ -398,12 +398,12 @@ impl VectorClient for QdrantClient {
                 }
             }
 
-            if let Some(indexes) = f.league_year_team_indexes {
-                if !indexes.is_empty() {
-                    info!("Adding lity filter {:?}", indexes);
+            if let Some(paper_lyts) = f.paper_lyts {
+                if !paper_lyts.is_empty() {
+                    info!("Adding paper_lyt filter {:?}", paper_lyts);
                     conditions.push(Condition::matches(
-                        Self::KEY_LYTI,
-                        indexes.into_iter().collect::<Vec<String>>(),
+                        Self::KEY_PAPER_LYT,
+                        paper_lyts.into_iter().collect::<Vec<String>>(),
                     ));
                 }
             }
@@ -508,8 +508,8 @@ impl IntoChunk for HashMap<String, Value> {
             .ok_or_else(|| VectorClientError::FieldMissing(QdrantClient::KEY_TEAM.to_string()))?;
         let team = TeamName::new(&team_str);
 
-        let league_year_team_idx = from_payload_get_string(&self, QdrantClient::KEY_LYTI)
-            .ok_or_else(|| VectorClientError::FieldMissing(QdrantClient::KEY_LYTI.to_string()))?;
+        let paper_lyt = from_payload_get_string(&self, QdrantClient::KEY_PAPER_LYT)
+            .ok_or_else(|| VectorClientError::FieldMissing(QdrantClient::KEY_PAPER_LYT.to_string()))?;
 
         // Structure
         let content_seq = from_payload_get_i64(&self, "content_seq")
@@ -535,7 +535,7 @@ impl IntoChunk for HashMap<String, Value> {
         Ok(Chunk {
             dense_embedding: vec![],
             sparse_embedding: HashMap::new(),
-            league_year_team_idx,
+            paper_lyt,
             league,
             year,
             team,
@@ -697,7 +697,7 @@ mod tests {
         let chunk = Chunk {
             dense_embedding: dense_embedding.clone(),
             sparse_embedding: sparse_embedding.clone(),
-            league_year_team_idx: "soccer_smallsize__1998__test_team__0".to_string(),
+            paper_lyt: "soccer_smallsize__1998__test_team".to_string(),
             league: League::SoccerSmallSize,
             year: 1998,
             team: TeamName::new("test_team"),
@@ -718,8 +718,8 @@ mod tests {
         let retrieved_chunk = client.get_chunk_by_id(id).await?;
 
         assert_eq!(
-            chunk.league_year_team_idx,
-            retrieved_chunk.league_year_team_idx
+            chunk.paper_lyt,
+            retrieved_chunk.paper_lyt
         );
         assert_eq!(dense_embedding, retrieved_chunk.dense_embedding);
         assert_eq!(sparse_embedding, retrieved_chunk.sparse_embedding);
@@ -758,7 +758,7 @@ mod tests {
         let chunk_1 = Chunk {
             dense_embedding: dense_embedding.clone(),
             sparse_embedding: sparse_embedding.clone(),
-            league_year_team_idx: "soccer_midsize__1998__test_team_1__0".to_string(),
+            paper_lyt: "soccer_midsize__1998__test_team_1".to_string(),
             league: League::SoccerMidSize,
             year: 1998,
             team: TeamName::new("test_team_1"),
@@ -774,22 +774,7 @@ mod tests {
         let chunk_2_1 = Chunk {
             dense_embedding: dense_embedding.clone(),
             sparse_embedding: sparse_embedding.clone(),
-            league_year_team_idx: "rescue_robot__2008__test_team_2__0".to_string(),
-            league: League::RescueRobot,
-            year: 2008,
-            team: TeamName::new("test_team_2"),
-            content_seq: 0,
-            chunk_seq: 0,
-            content_type: ContentType::default(),
-            title: String::new(),
-            image_path: None,
-            text: "test_text_2".to_string(),
-        };
-
-        let chunk_2_2 = Chunk {
-            dense_embedding: dense_embedding.clone(),
-            sparse_embedding: sparse_embedding.clone(),
-            league_year_team_idx: "rescue_robot__2008__test_team_2__1".to_string(),
+            paper_lyt: "rescue_robot__2008__test_team_2".to_string(),
             league: League::RescueRobot,
             year: 2008,
             team: TeamName::new("test_team_2"),
@@ -803,29 +788,22 @@ mod tests {
 
         let id_1 = chunk_1.to_uuid();
         let id_2_1 = chunk_2_1.to_uuid();
-        let id_2_2 = chunk_2_2.to_uuid();
 
         client.store_chunk(chunk_1.clone()).await?;
         client.store_chunk(chunk_2_1.clone()).await?;
-        client.store_chunk(chunk_2_2.clone()).await?;
 
         client.analytics().await?;
 
         // Test retrieval by ID
         let retrieved_chunk = client.get_chunk_by_id(id_1).await?;
         assert_eq!(
-            chunk_1.league_year_team_idx,
-            retrieved_chunk.league_year_team_idx
+            chunk_1.paper_lyt,
+            retrieved_chunk.paper_lyt
         );
         let retrieved_chunk = client.get_chunk_by_id(id_2_1).await?;
         assert_eq!(
-            chunk_2_1.league_year_team_idx,
-            retrieved_chunk.league_year_team_idx
-        );
-        let retrieved_chunk = client.get_chunk_by_id(id_2_2).await?;
-        assert_eq!(
-            chunk_2_2.league_year_team_idx,
-            retrieved_chunk.league_year_team_idx
+            chunk_2_1.paper_lyt,
+            retrieved_chunk.paper_lyt
         );
 
         // Test retrieval by filter
@@ -862,31 +840,31 @@ mod tests {
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0].0.to_uuid(), id_1);
 
-        // Test LeagueYearTeamIndex filter
+        // Test paper_lyt filter
         let mut filter = Filter::default();
-        filter.add_league_year_team_index(chunk_1.league_year_team_idx);
+        filter.add_paper_lyt(chunk_1.paper_lyt);
         let chunks = get(filter).await?;
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0].0.to_uuid(), id_1);
 
-        //// TEST 2. 2_1 and 2_2 should both be retrieved (Except for lyti)
+        //// TEST 2. Only chunk_2_1 exists for rescue_robot__2008__test_team_2
         // Test League filter
         let mut filter = Filter::default();
         filter.add_league(chunk_2_1.league);
         let chunks = get(filter).await?;
-        assert_eq!(chunks.len(), 2);
+        assert_eq!(chunks.len(), 1);
 
         // Test Year filter
         let mut filter = Filter::default();
         filter.add_year(chunk_2_1.year);
         let chunks = get(filter).await?;
-        assert_eq!(chunks.len(), 2);
+        assert_eq!(chunks.len(), 1);
 
         // Test Team filter
         let mut filter = Filter::default();
         filter.add_team(chunk_2_1.team);
         let chunks = get(filter).await?;
-        assert_eq!(chunks.len(), 2);
+        assert_eq!(chunks.len(), 1);
 
         Ok(())
     }

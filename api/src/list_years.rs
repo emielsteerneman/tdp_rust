@@ -57,25 +57,21 @@ mod tests {
                         League::SoccerSmallSize,
                         2019,
                         TeamName::from_pretty("RoboTeam Twente"),
-                        None,
                     ),
                     TDPName::new(
                         League::SoccerSmallSize,
                         2020,
                         TeamName::from_pretty("Er-Force"),
-                        None,
                     ),
                     TDPName::new(
                         League::SoccerMidSize,
                         2019,
                         TeamName::from_pretty("TIGERs Mannheim"),
-                        None,
                     ),
                     TDPName::new(
                         League::SoccerMidSize,
                         2021,
                         TeamName::from_pretty("Delft Mercurians"),
-                        None,
                     ),
                 ])
             })

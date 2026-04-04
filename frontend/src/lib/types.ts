@@ -17,7 +17,6 @@ export interface TDPName {
 	league: League;
 	team_name: TeamName;
 	year: number;
-	index: number;
 }
 
 export interface BreadcrumbEntry {
@@ -26,7 +25,7 @@ export interface BreadcrumbEntry {
 }
 
 export interface SearchResultChunk {
-	league_year_team_idx: string;
+	paper_lyt: string;
 	league: League;
 	year: number;
 	team: TeamName;
@@ -55,7 +54,7 @@ export interface Filter {
 	leagues?: string[];
 	years?: number[];
 	teams?: string[];
-	league_year_team_indexes?: string[];
+	paper_lyts?: string[];
 }
 
 export type EmbedType = 'dense' | 'sparse' | 'hybrid';
@@ -66,7 +65,7 @@ export interface SearchParams {
 	league_filter?: string;
 	year_filter?: string;
 	team_filter?: string;
-	lyti_filter?: string;
+	paper_lyt_filter?: string;
 	content_type_filter?: string;
 	search_type?: EmbedType;
 }

@@ -14,7 +14,7 @@ pub struct SearchResult {
 
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct SearchResultChunk {
-    pub league_year_team_idx: String,
+    pub paper_lyt: String,
     pub league: League,
     pub year: u32,
     pub team: TeamName,
@@ -31,7 +31,7 @@ pub struct SearchResultChunk {
 impl From<Chunk> for SearchResultChunk {
     fn from(chunk: Chunk) -> Self {
         Self {
-            league_year_team_idx: chunk.league_year_team_idx,
+            paper_lyt: chunk.paper_lyt,
             league: chunk.league,
             year: chunk.year,
             team: chunk.team,

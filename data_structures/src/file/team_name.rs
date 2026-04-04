@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     pub fn test_deserialize() {
-        let json = r#"{"league": "industrial_atwork", "team_name": {"name": "Carologistics", "name_pretty": "Carologistics"}, "year": 2019, "index": 0}"#;
+        let json = r#"{"league": "industrial_atwork", "team_name": {"name": "Carologistics", "name_pretty": "Carologistics"}, "year": 2019}"#;
 
         let tdp_name: TDPName = serde_json::from_str(json).unwrap();
 
@@ -58,7 +58,6 @@ mod tests {
         assert_eq!(tdp_name.league.name_pretty(), "Industrial @Work");
         assert_eq!(tdp_name.year, 2019);
         assert_eq!(tdp_name.team_name.name_pretty, "Carologistics");
-        assert_eq!(tdp_name.index, 0);
     }
 
     #[test]

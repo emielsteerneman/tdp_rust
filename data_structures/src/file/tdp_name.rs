@@ -4,7 +4,7 @@ use crate::file::{League, LeagueParseError, TeamName};
 
 #[derive(thiserror::Error, Debug)]
 pub enum TDPParseError {
-    #[error("expected 4 fields separated by '__', got {0}")]
+    #[error("expected 3 fields separated by '__', got {0}")]
     BadFieldCount(usize),
     #[error("Could not parse league: {0}")]
     League(#[from] LeagueParseError),
@@ -12,8 +12,6 @@ pub enum TDPParseError {
     Team(String),
     #[error("invalid year: {0}")]
     Year(String),
-    #[error("invalid index: {0}")]
-    Index(String),
     #[error("missing file stem in path")]
     NoFileStem,
 }
@@ -23,30 +21,22 @@ pub struct TDPName {
     pub league: League,
     pub team_name: TeamName,
     pub year: u32,
-    pub index: u32,
 }
 
 impl TDPName {
     pub const PDF_EXT: &'static str = ".pdf";
     pub const HTML_EXT: &'static str = ".html";
 
-    pub fn new(league: League, year: u32, team_name: TeamName, index: Option<u32>) -> Self {
-        let index = index.unwrap_or(0);
-
+    pub fn new(league: League, year: u32, team_name: TeamName) -> Self {
         Self {
             league,
             team_name,
             year,
-            index,
         }
     }
 
-    pub fn get_filename(&self) -> String {
-        let filename = format!(
-            "{}__{}__{}__{}",
-            self.league.name(), self.year, self.team_name.name, self.index
-        );
-        filename
+    pub fn get_paper_lyt(&self) -> String {
+        format!("{}__{}__{}", self.league.name(), self.year, self.team_name.name)
     }
 }
 
@@ -61,21 +51,19 @@ impl TryFrom<&str> for TDPName {
         };
 
         let parts: Vec<&str> = base.split("__").collect();
-        if parts.len() != 4 {
+        if parts.len() != 3 {
             return Err(TDPParseError::BadFieldCount(parts.len()));
         }
 
         let l = parts[0];
         let y = parts[1];
         let t = parts[2];
-        let i = parts[3];
 
         let league: League = l.try_into()?;
         let year: u32 = y.parse().map_err(|_| TDPParseError::Year(y.to_string()))?;
         let team_name: TeamName = TeamName::new(t);
-        let index: u32 = i.parse().map_err(|_| TDPParseError::Index(i.to_string()))?;
 
-        Ok(Self::new(league, year, team_name, Some(index)))
+        Ok(Self::new(league, year, team_name))
     }
 }
 
@@ -85,7 +73,7 @@ mod tests {
 
     #[test]
     pub fn test_basic() {
-        let filename = "soccer_smallsize__2019__RoboTeam_Twente__1.pdf";
+        let filename = "soccer_smallsize__2019__RoboTeam_Twente.pdf";
         let tdp_name: TDPName = filename.try_into().unwrap();
 
         assert_eq!(tdp_name.league, League::SoccerSmallSize);
@@ -93,12 +81,11 @@ mod tests {
         assert_eq!(tdp_name.year, 2019);
         assert_eq!(tdp_name.team_name.name, "RoboTeam_Twente");
         assert_eq!(tdp_name.team_name.name_pretty, "RoboTeam Twente");
-        assert_eq!(tdp_name.index, 1);
     }
 
     #[test]
     pub fn test_deserialize() {
-        let json = r#"{"league": "industrial_atwork", "team_name": {"name": "Carologistics", "name_pretty": "Carologistics"}, "year": 2019, "index": 0}"#;
+        let json = r#"{"league": "industrial_atwork", "team_name": {"name": "Carologistics", "name_pretty": "Carologistics"}, "year": 2019}"#;
 
         let tdp_name: TDPName = serde_json::from_str(json).unwrap();
 
@@ -107,6 +94,5 @@ mod tests {
         assert_eq!(tdp_name.year, 2019);
         assert_eq!(tdp_name.team_name.name, "Carologistics");
         assert_eq!(tdp_name.team_name.name_pretty, "Carologistics");
-        assert_eq!(tdp_name.index, 0);
     }
 }

@@ -44,9 +44,9 @@ pub struct SearchArgs {
     pub team_filter: Option<String>,
 
     #[schemars(
-        description = "Optional comma-separated filter for specific papers by their league__year__team__index identifier, e.g. 'soccer_smallsize__2024__RoboTeam_Twente__0'. Rarely needed — prefer league/year/team filters."
+        description = "Optional comma-separated filter for specific papers by their paper_lyt identifier, e.g. 'soccer_smallsize__2024__RoboTeam_Twente'. Rarely needed — prefer league/year/team filters."
     )]
-    pub lyti_filter: Option<String>,
+    pub paper_lyt_filter: Option<String>,
 
     #[schemars(
         description = "Optional comma-separated content type filter. Values: 'text', 'table', 'image'. E.g. 'text, table' to exclude images. Defaults to all types."
@@ -81,9 +81,9 @@ impl SearchArgs {
             }
         }
 
-        if let Some(lyti_filter) = &self.lyti_filter {
-            for lyti in lyti_filter.split(",") {
-                filter.add_league_year_team_index(lyti.trim().to_string());
+        if let Some(paper_lyt_filter) = &self.paper_lyt_filter {
+            for paper_lyt in paper_lyt_filter.split(",") {
+                filter.add_paper_lyt(paper_lyt.trim().to_string());
             }
         }
 
@@ -145,7 +145,7 @@ mod tests {
             league_filter: Some("Soccer SmallSize, Soccer MidSize".to_string()),
             year_filter: Some("2021, 2024".to_string()),
             team_filter: Some("RoboTeam Twente, TIGERs Mannheim".to_string()),
-            lyti_filter: Some("rescue_simulation_infrastructure__2012__UvA_Rescue__0".to_string()),
+            paper_lyt_filter: Some("rescue_simulation_infrastructure__2012__UvA_Rescue".to_string()),
             content_type_filter: Some("text, table".to_string()),
             search_type: EmbedType::DENSE,
         };
@@ -166,10 +166,10 @@ mod tests {
         assert!(filter.teams.as_ref().unwrap().contains("TIGERs_Mannheim"));
         assert!(
             filter
-                .league_year_team_indexes
+                .paper_lyts
                 .as_ref()
                 .unwrap()
-                .contains("rescue_simulation_infrastructure__2012__UvA_Rescue__0")
+                .contains("rescue_simulation_infrastructure__2012__UvA_Rescue")
         );
         assert!(filter.content_types.as_ref().unwrap().contains("text"));
         assert!(filter.content_types.as_ref().unwrap().contains("table"));

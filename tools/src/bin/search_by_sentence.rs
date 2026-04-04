@@ -112,7 +112,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         league_filter: None,
         year_filter: None,
         team_filter: None,
-        lyti_filter: None,
+        paper_lyt_filter: None,
         content_type_filter: content_type_filter,
         search_type: search_mode,
     };

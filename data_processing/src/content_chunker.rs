@@ -15,7 +15,7 @@ pub fn tdp_to_chunks(tdp: &MarkdownTDP) -> Vec<Chunk> {
                     chunks.push(Chunk {
                         dense_embedding: vec![],
                         sparse_embedding: std::collections::HashMap::new(),
-                        league_year_team_idx: tdp.name.get_filename(),
+                        paper_lyt: tdp.name.get_paper_lyt(),
                         league: tdp.name.league.clone(),
                         year: tdp.name.year,
                         team: tdp.name.team_name.clone(),
@@ -37,7 +37,7 @@ pub fn tdp_to_chunks(tdp: &MarkdownTDP) -> Vec<Chunk> {
                 chunks.push(Chunk {
                     dense_embedding: vec![],
                     sparse_embedding: std::collections::HashMap::new(),
-                    league_year_team_idx: tdp.name.get_filename(),
+                    paper_lyt: tdp.name.get_paper_lyt(),
                     league: tdp.name.league.clone(),
                     year: tdp.name.year,
                     team: tdp.name.team_name.clone(),
@@ -54,7 +54,7 @@ pub fn tdp_to_chunks(tdp: &MarkdownTDP) -> Vec<Chunk> {
                 chunks.push(Chunk {
                     dense_embedding: vec![],
                     sparse_embedding: std::collections::HashMap::new(),
-                    league_year_team_idx: tdp.name.get_filename(),
+                    paper_lyt: tdp.name.get_paper_lyt(),
                     league: tdp.name.league.clone(),
                     year: tdp.name.year,
                     team: tdp.name.team_name.clone(),
@@ -119,7 +119,7 @@ mod tests {
     use data_structures::file::TDPName;
 
     fn make_tdp(content_items: Vec<ContentItem>) -> MarkdownTDP {
-        let name: TDPName = "soccer_smallsize__2024__TestTeam__0".try_into().unwrap();
+        let name: TDPName = "soccer_smallsize__2024__TestTeam".try_into().unwrap();
         MarkdownTDP {
             name,
             front_matter: FrontMatter::default(),
