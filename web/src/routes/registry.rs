@@ -6,6 +6,14 @@ use crate::error::ApiError;
 use crate::state::AppState;
 use data_access::registry::RegistryEntry;
 
+fn map_api_error(e: api::error::ApiError) -> ApiError {
+    match e {
+        api::error::ApiError::Argument(_, _) => ApiError::bad_request(e.to_string()),
+        api::error::ApiError::Internal(_) => ApiError::internal_server_error(e.to_string()),
+        api::error::ApiError::Forbidden(_) => ApiError::forbidden(e.to_string()),
+    }
+}
+
 pub async fn get_team_info_handler(
     State(state): State<AppState>,
     Path(name): Path<String>,
@@ -22,7 +30,7 @@ pub async fn get_team_info_handler(
         event_processing::EventSource::Web,
     )
     .await
-    .map_err(|e| ApiError::internal_server_error(e.to_string()))?;
+    .map_err(map_api_error)?;
 
     Ok(Json(ApiResponse::new(entries)))
 }
@@ -43,11 +51,7 @@ pub async fn get_league_info_handler(
         event_processing::EventSource::Web,
     )
     .await
-    .map_err(|e| match e {
-        api::error::ApiError::Argument(_, _) => ApiError::bad_request(e.to_string()),
-        api::error::ApiError::Internal(_) => ApiError::internal_server_error(e.to_string()),
-        api::error::ApiError::Forbidden(_) => ApiError::internal_server_error(e.to_string()),
-    })?;
+    .map_err(map_api_error)?;
 
     Ok(Json(ApiResponse::new(entries)))
 }
@@ -66,11 +70,7 @@ pub async fn update_team_info_handler(
         event_processing::EventSource::Web,
     )
     .await
-    .map_err(|e| match e {
-        api::error::ApiError::Forbidden(_) => ApiError::forbidden(e.to_string()),
-        api::error::ApiError::Argument(_, _) => ApiError::bad_request(e.to_string()),
-        api::error::ApiError::Internal(_) => ApiError::internal_server_error(e.to_string()),
-    })?;
+    .map_err(map_api_error)?;
 
     Ok(Json(ApiResponse::new(result)))
 }

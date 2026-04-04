@@ -1,4 +1,4 @@
-use tools::{get_arg, validate_team_name};
+use tools::{get_arg, upsert_entry, validate_team_name};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -28,18 +28,10 @@ async fn main() -> anyhow::Result<()> {
             "Registry not configured. Add [data_access.registry.sqlite] to config.toml"
         ))?;
 
-    // Load existing entries, upsert the key, write back
     let existing = registry.get_team_metadata(&team.name).await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    let mut entries: Vec<(String, String)> = existing
-        .into_iter()
-        .filter(|e| e.key != key)
-        .map(|e| (e.key, e.value))
-        .collect();
-    entries.push((key.clone(), value.clone()));
-
-    registry.set_team_metadata(&team.name, entries).await
+    registry.set_team_metadata(&team.name, upsert_entry(existing, &key, &value)).await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     println!("Set {}={} for {}", key, value, team.name);

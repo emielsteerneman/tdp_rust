@@ -1,3 +1,4 @@
+use data_access::registry::RegistryEntry;
 use data_structures::file::TeamName;
 
 /// Validate that a team exists in the known teams list.
@@ -30,6 +31,17 @@ pub fn validate_team_name(input: &str, known_teams: &[TeamName]) -> TeamName {
     }
 
     std::process::exit(1);
+}
+
+/// Given existing entries, replace or add a (key, value) pair.
+pub fn upsert_entry(existing: Vec<RegistryEntry>, key: &str, value: &str) -> Vec<(String, String)> {
+    let mut entries: Vec<(String, String)> = existing
+        .into_iter()
+        .filter(|e| e.key != key)
+        .map(|e| (e.key, e.value))
+        .collect();
+    entries.push((key.to_string(), value.to_string()));
+    entries
 }
 
 /// Extract a --flag value from CLI args.

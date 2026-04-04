@@ -129,6 +129,57 @@ impl SqliteRegistryClient {
     fn constant_time_eq(a: &str, b: &str) -> bool {
         a.as_bytes().ct_eq(b.as_bytes()).into()
     }
+
+
+    fn get_entries(&self, table: &str, name_col: &str, name_val: &str) -> Result<Vec<RegistryEntry>, RegistryError> {
+        let conn = self.conn.lock().map_err(|e| {
+            RegistryError::Internal(format!("Lock poisoned: {e}"))
+        })?;
+
+        let sql = format!("SELECT key, value, updated_at FROM {table} WHERE {name_col} = ?1 ORDER BY id");
+        let mut stmt = conn.prepare_cached(&sql)
+            .map_err(|e| RegistryError::Internal(e.to_string()))?;
+
+        let entries: Vec<RegistryEntry> = stmt
+            .query_map(params![name_val], |row| {
+                Ok(RegistryEntry {
+                    key: row.get(0)?,
+                    value: row.get(1)?,
+                    updated_at: row.get(2)?,
+                })
+            })
+            .map_err(|e| RegistryError::Internal(e.to_string()))?
+            .collect::<Result<_, _>>()
+            .map_err(|e| RegistryError::Internal(e.to_string()))?;
+
+        Ok(entries)
+    }
+
+    fn set_entries(&self, table: &str, name_col: &str, name_val: &str, entries: Vec<(String, String)>) -> Result<(), RegistryError> {
+        let conn = self.conn.lock().map_err(|e| {
+            RegistryError::Internal(format!("Lock poisoned: {e}"))
+        })?;
+
+        let tx = conn.unchecked_transaction().map_err(|e| {
+            RegistryError::Internal(e.to_string())
+        })?;
+
+        let delete_sql = format!("DELETE FROM {table} WHERE {name_col} = ?1");
+        tx.execute(&delete_sql, params![name_val])
+            .map_err(|e| RegistryError::Internal(e.to_string()))?;
+
+        let now = chrono::Utc::now().to_rfc3339();
+        let insert_sql = format!("INSERT INTO {table} ({name_col}, key, value, updated_at) VALUES (?1, ?2, ?3, ?4)");
+
+        for (key, value) in &entries {
+            tx.execute(&insert_sql, params![name_val, key, value, now])
+                .map_err(|e| RegistryError::Internal(e.to_string()))?;
+        }
+
+        tx.commit().map_err(|e| RegistryError::Internal(e.to_string()))?;
+
+        Ok(())
+    }
 }
 
 impl RegistryClient for SqliteRegistryClient {
@@ -137,32 +188,7 @@ impl RegistryClient for SqliteRegistryClient {
         team_name: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<RegistryEntry>, RegistryError>> + Send + 'a>>
     {
-        Box::pin(async move {
-            let conn = self.conn.lock().map_err(|e| {
-                RegistryError::Internal(format!("Lock poisoned: {e}"))
-            })?;
-
-            let mut stmt = conn
-                .prepare_cached(
-                    "SELECT key, value, updated_at FROM team_entries \
-                     WHERE team_name = ?1 ORDER BY id",
-                )
-                .map_err(|e| RegistryError::Internal(e.to_string()))?;
-
-            let entries: Vec<RegistryEntry> = stmt
-                .query_map(params![team_name], |row| {
-                    Ok(RegistryEntry {
-                        key: row.get(0)?,
-                        value: row.get(1)?,
-                        updated_at: row.get(2)?,
-                    })
-                })
-                .map_err(|e| RegistryError::Internal(e.to_string()))?
-                .collect::<Result<_, _>>()
-                .map_err(|e| RegistryError::Internal(e.to_string()))?;
-
-            Ok(entries)
-        })
+        Box::pin(async move { self.get_entries("team_entries", "team_name", team_name) })
     }
 
     fn set_team_metadata<'a>(
@@ -171,38 +197,7 @@ impl RegistryClient for SqliteRegistryClient {
         entries: Vec<(String, String)>,
     ) -> Pin<Box<dyn Future<Output = Result<(), RegistryError>> + Send + 'a>>
     {
-        Box::pin(async move {
-            let conn = self.conn.lock().map_err(|e| {
-                RegistryError::Internal(format!("Lock poisoned: {e}"))
-            })?;
-
-            let tx = conn.unchecked_transaction().map_err(|e| {
-                RegistryError::Internal(e.to_string())
-            })?;
-
-            tx.execute(
-                "DELETE FROM team_entries WHERE team_name = ?1",
-                params![team_name],
-            )
-            .map_err(|e| RegistryError::Internal(e.to_string()))?;
-
-            let now = chrono::Utc::now().to_rfc3339();
-
-            for (key, value) in &entries {
-                tx.execute(
-                    "INSERT INTO team_entries (team_name, key, value, updated_at) \
-                     VALUES (?1, ?2, ?3, ?4)",
-                    params![team_name, key, value, now],
-                )
-                .map_err(|e| {
-                    RegistryError::Internal(e.to_string())
-                })?;
-            }
-
-            tx.commit().map_err(|e| RegistryError::Internal(e.to_string()))?;
-
-            Ok(())
-        })
+        Box::pin(async move { self.set_entries("team_entries", "team_name", team_name, entries) })
     }
 
     fn verify_code<'a>(
@@ -255,32 +250,7 @@ impl RegistryClient for SqliteRegistryClient {
         league_name: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<RegistryEntry>, RegistryError>> + Send + 'a>>
     {
-        Box::pin(async move {
-            let conn = self.conn.lock().map_err(|e| {
-                RegistryError::Internal(format!("Lock poisoned: {e}"))
-            })?;
-
-            let mut stmt = conn
-                .prepare_cached(
-                    "SELECT key, value, updated_at FROM league_entries \
-                     WHERE league_name = ?1 ORDER BY id",
-                )
-                .map_err(|e| RegistryError::Internal(e.to_string()))?;
-
-            let entries: Vec<RegistryEntry> = stmt
-                .query_map(params![league_name], |row| {
-                    Ok(RegistryEntry {
-                        key: row.get(0)?,
-                        value: row.get(1)?,
-                        updated_at: row.get(2)?,
-                    })
-                })
-                .map_err(|e| RegistryError::Internal(e.to_string()))?
-                .collect::<Result<_, _>>()
-                .map_err(|e| RegistryError::Internal(e.to_string()))?;
-
-            Ok(entries)
-        })
+        Box::pin(async move { self.get_entries("league_entries", "league_name", league_name) })
     }
 
     fn set_league_metadata<'a>(
@@ -289,38 +259,7 @@ impl RegistryClient for SqliteRegistryClient {
         entries: Vec<(String, String)>,
     ) -> Pin<Box<dyn Future<Output = Result<(), RegistryError>> + Send + 'a>>
     {
-        Box::pin(async move {
-            let conn = self.conn.lock().map_err(|e| {
-                RegistryError::Internal(format!("Lock poisoned: {e}"))
-            })?;
-
-            let tx = conn.unchecked_transaction().map_err(|e| {
-                RegistryError::Internal(e.to_string())
-            })?;
-
-            tx.execute(
-                "DELETE FROM league_entries WHERE league_name = ?1",
-                params![league_name],
-            )
-            .map_err(|e| RegistryError::Internal(e.to_string()))?;
-
-            let now = chrono::Utc::now().to_rfc3339();
-
-            for (key, value) in &entries {
-                tx.execute(
-                    "INSERT INTO league_entries (league_name, key, value, updated_at) \
-                     VALUES (?1, ?2, ?3, ?4)",
-                    params![league_name, key, value, now],
-                )
-                .map_err(|e| {
-                    RegistryError::Internal(e.to_string())
-                })?;
-            }
-
-            tx.commit().map_err(|e| RegistryError::Internal(e.to_string()))?;
-
-            Ok(())
-        })
+        Box::pin(async move { self.set_entries("league_entries", "league_name", league_name, entries) })
     }
 }
 

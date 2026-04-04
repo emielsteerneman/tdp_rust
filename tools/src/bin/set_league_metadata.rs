@@ -1,4 +1,4 @@
-use tools::get_arg;
+use tools::{get_arg, upsert_entry};
 use data_structures::file::League;
 
 #[tokio::main]
@@ -26,18 +26,10 @@ async fn main() -> anyhow::Result<()> {
 
     let league_name = league.name();
 
-    // Load existing entries, upsert the key, write back
     let existing = registry.get_league_metadata(league_name).await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    let mut entries: Vec<(String, String)> = existing
-        .into_iter()
-        .filter(|e| e.key != key)
-        .map(|e| (e.key, e.value))
-        .collect();
-    entries.push((key.clone(), value.clone()));
-
-    registry.set_league_metadata(league_name, entries).await
+    registry.set_league_metadata(league_name, upsert_entry(existing, &key, &value)).await
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     println!("Set {}={} for league {}", key, value, league.name_pretty());
