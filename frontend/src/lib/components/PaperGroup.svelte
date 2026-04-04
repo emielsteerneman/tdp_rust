@@ -5,10 +5,10 @@
 	interface Props {
 		paperId: string;
 		chunks: SearchResultChunk[];
-		query: string;
+		highlightTerms: string[];
 	}
 
-	let { paperId, chunks, query }: Props = $props();
+	let { paperId, chunks, highlightTerms }: Props = $props();
 
 	let expanded = $state(false);
 
@@ -57,7 +57,7 @@
 			{#each topChunks as chunk}
 				<ChunkResult
 					text={chunk.text}
-					{query}
+					{highlightTerms}
 					score={chunk.score}
 					breadcrumbs={chunk.breadcrumbs}
 					title={chunk.title}
@@ -70,8 +70,9 @@
 					{#each remainingChunks as chunk}
 						<ChunkResult
 							text={chunk.text}
-							{query}
+							{highlightTerms}
 							score={chunk.score}
+							{paperId}
 						/>
 					{/each}
 					<button

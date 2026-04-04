@@ -48,6 +48,7 @@ export interface SearchResult {
 	filter: Filter | null;
 	chunks: SearchResultChunk[];
 	suggestions: SearchSuggestions;
+	highlight_terms: string[];
 }
 
 export interface Filter {

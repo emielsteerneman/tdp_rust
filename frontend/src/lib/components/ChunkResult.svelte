@@ -4,29 +4,53 @@
 
 	interface Props {
 		text: string;
-		query: string;
+		highlightTerms: string[];
 		score: number;
 		breadcrumbs?: BreadcrumbEntry[];
 		title?: string;
 		paperId: string;
 	}
 
-	let { text, query, score, breadcrumbs, title, paperId }: Props = $props();
+	let { text, highlightTerms, score, breadcrumbs, title, paperId }: Props = $props();
 
-	function highlightText(text: string, query: string): string {
-		if (!query.trim()) return text;
+	function highlightText(text: string, terms: string[]): string {
+		if (terms.length === 0) return text;
 
-		const words = query
-			.trim()
-			.split(/\s+/)
-			.filter((w) => w.length > 0);
+		// Sort by length descending so longer terms (bigrams/trigrams) match
+		// before their constituent unigrams in the regex alternation
+		const sorted = [...terms].sort((a, b) => b.length - a.length);
 
-		let result = text;
-		for (const word of words) {
-			const regex = new RegExp(`(${escapeRegex(word)})`, 'gi');
-			result = result.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-700/60 dark:text-yellow-100">$1</mark>');
+		// Phase 1: collect all match ranges against the original plain text
+		const pattern = sorted.map(escapeRegex).join('|');
+		const regex = new RegExp(pattern, 'gi');
+		const matches: { start: number; end: number }[] = [];
+		let m: RegExpExecArray | null;
+		while ((m = regex.exec(text)) !== null) {
+			matches.push({ start: m.index, end: m.index + m[0].length });
+		}
+		if (matches.length === 0) return text;
+
+		// Merge overlapping/adjacent ranges
+		matches.sort((a, b) => a.start - b.start);
+		const merged = [matches[0]];
+		for (let i = 1; i < matches.length; i++) {
+			const last = merged[merged.length - 1];
+			if (matches[i].start <= last.end) {
+				last.end = Math.max(last.end, matches[i].end);
+			} else {
+				merged.push(matches[i]);
+			}
 		}
 
+		// Phase 2: build result by slicing original text and wrapping matched ranges
+		const tag = '<mark class="bg-yellow-200 dark:bg-yellow-700/60 dark:text-yellow-100">';
+		let result = '';
+		let cursor = 0;
+		for (const { start, end } of merged) {
+			result += text.slice(cursor, start) + tag + text.slice(start, end) + '</mark>';
+			cursor = end;
+		}
+		result += text.slice(cursor);
 		return result;
 	}
 
@@ -34,7 +58,7 @@
 		return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	}
 
-	const highlighted = $derived(highlightText(text, query));
+	const highlighted = $derived(highlightText(text, highlightTerms));
 
 	// Build full breadcrumb trail: ancestors + chunk's own title
 	const crumbs = $derived.by(() => {
