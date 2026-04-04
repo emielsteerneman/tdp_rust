@@ -65,9 +65,10 @@ async fn main() -> anyhow::Result<()> {
         Arc::new(idf_map),
         teams,
         leagues,
+        config.data_processing.highlight_idf_threshold(),
     );
 
-    let state = AppState::new(metadata_client.clone(), Arc::new(searcher), dispatcher, team_registry);
+    let state = AppState::new(metadata_client.clone(), Arc::new(searcher), dispatcher, team_registry, config.website_url.clone());
     let server = AppServer::new(state);
 
     // The MCP service is Clone — both routers share the same underlying factory.

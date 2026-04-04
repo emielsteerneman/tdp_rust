@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use data_access::embed::EmbedClient;
+use data_access::embed::{EmbedClient, extract_highlight_terms};
 use data_access::metadata::MetadataClient;
 use data_access::vector::VectorClient;
 use data_structures::{
@@ -49,6 +49,7 @@ pub struct Searcher {
     pub idf_map: Arc<IDF>,
     pub teams: Vec<String>,
     pub leagues: Vec<String>,
+    pub highlight_idf_threshold: f32,
 }
 
 impl Searcher {
@@ -59,6 +60,7 @@ impl Searcher {
         idf_map: Arc<IDF>,
         teams: Vec<String>,
         leagues: Vec<String>,
+        highlight_idf_threshold: f32,
     ) -> Self {
         Self {
             embed_client,
@@ -67,6 +69,7 @@ impl Searcher {
             idf_map,
             teams,
             leagues,
+            highlight_idf_threshold,
         }
     }
 
@@ -88,6 +91,7 @@ impl Searcher {
                 filter,
                 chunks: Vec::new(),
                 suggestions: SearchSuggestions::default(),
+                highlight_terms: Vec::new(),
             });
         }
 
@@ -154,6 +158,8 @@ impl Searcher {
             })
             .collect();
 
+        let highlight_terms = extract_highlight_terms(query_trim, &self.idf_map, self.highlight_idf_threshold);
+
         Ok(SearchResult {
             query,
             filter,
@@ -162,6 +168,7 @@ impl Searcher {
                 teams: team_suggestions,
                 leagues: league_suggestions,
             },
+            highlight_terms,
         })
     }
 }

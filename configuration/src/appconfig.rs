@@ -12,6 +12,7 @@ pub struct AppConfig {
     pub data_access: DataAccessConfig,
     pub data_processing: DataProcessingConfig,
     pub event_processing: Option<EventProcessingConfig>,
+    pub website_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

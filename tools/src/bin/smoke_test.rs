@@ -51,6 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         idf_map,
         teams,
         leagues,
+        config.data_processing.highlight_idf_threshold(),
     );
 
     println!(

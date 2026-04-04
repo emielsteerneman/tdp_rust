@@ -86,7 +86,7 @@
 					<PaperGroup
 						paperId={group.paperId}
 						chunks={group.chunks}
-						query={data.query}
+						highlightTerms={data.searchResult.highlight_terms}
 					/>
 				{/each}
 			</div>

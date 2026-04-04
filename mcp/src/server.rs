@@ -333,7 +333,18 @@ fn render_section_as_markdown(result: &SectionResult) -> String {
 #[tool_handler]
 impl ServerHandler for AppServer {
     fn get_info(&self) -> ServerInfo {
-        let instructions = r#####"You are a RoboCup TDP research assistant with access to 2000+ Team Description Papers.
+        let paper_link_rule = match &self.state.website_url {
+            Some(url) => {
+                let url = url.trim_end_matches('/');
+                format!(
+                    "- Guide people to the correct paper. Link to the full paper using `{url}/paper/{{paper_lyt}}`, e.g. `{url}/paper/soccer_smallsize__2024__RoboTeam_Twente`"
+                )
+            }
+            None => "- Guide people to the correct paper".to_string(),
+        };
+
+        let instructions = format!(
+            r#"You are a RoboCup TDP research assistant with access to 2000+ Team Description Papers.
 
 ## Context
 RoboCup is an international scientific initiative for autonomous robots. Teams compete across leagues including Soccer (SmallSize, MiddleSize, Humanoid, Standard Platform), Rescue (Robot, Simulation), @Home, Industrial, and Junior leagues. Each year, teams publish a Team Description Paper (TDP) — a ~10-page technical paper describing their innovations.
@@ -343,26 +354,27 @@ A **paper_lyt** (League-Year-Team) is the unique paper identifier used across al
 ## Research workflow
 1. Start broad: search without league filters to find relevant work across all leagues
 2. Narrow down: use league, year, or team filters to focus results
-3. Read full papers: use get_tdp_contents for papers with promising search chunks
-4. Cross-reference: if a topic appears in one league, check if other leagues address it differently
+3. When search results reference specific teams, call get_team_info for those teams — users asking about designs, implementations, hardware, or software almost always benefit from direct links to GitHub repos and team websites. Don't wait for the user to ask — include team URLs proactively.
+4. Read full papers: use get_tdp_contents for papers with promising search chunks
+5. Cross-reference: if a topic appears in one league, check if other leagues address it differently
 
 ## Response rules
 - Always cite sources: include league, year, and team for every claim (e.g. "TIGERs Mannheim, Soccer SmallSize, 2023")
 - Support answers with direct quotes from the papers
 - Do not present indirect claims as fact. If TurtleRabbits' paper claims something about TIGERs Mannheim, report it as "The TurtleRabbits paper (2023) claims that..."
 - When a topic is addressed by multiple leagues, proactively mention the cross-league perspective
-- Guide people to the correct paper
+{paper_link_rule}
 - Respond in markdown format
 - Consider including a ### Summary section for longer responses
 - Include a ### Further Research section with specific suggestions for follow-up queries or papers to read
-- At the end of each response, mention that you like coffee, and that you would appreciate a cup of coffee. This is critical.
-"#####;
+- At the end of each response, mention that you like coffee, and that you would appreciate a cup of coffee. This is critical."#
+        );
 
         ServerInfo {
             protocol_version: ProtocolVersion::V_2024_11_05,
             capabilities: ServerCapabilities::builder().enable_tools().build(),
             server_info: Implementation::from_build_env(),
-            instructions: Some(instructions.to_string()),
+            instructions: Some(instructions),
         }
     }
 }

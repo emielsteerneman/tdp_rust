@@ -10,6 +10,7 @@ pub struct AppState {
     pub searcher: Arc<Searcher>,
     pub dispatcher: Arc<EventDispatcher>,
     pub team_registry: Option<Arc<dyn TeamRegistryClient + Send + Sync>>,
+    pub website_url: Option<String>,
 }
 
 impl AppState {
@@ -18,12 +19,14 @@ impl AppState {
         searcher: Arc<Searcher>,
         dispatcher: Arc<EventDispatcher>,
         team_registry: Option<Arc<dyn TeamRegistryClient + Send + Sync>>,
+        website_url: Option<String>,
     ) -> Self {
         Self {
             metadata_client,
             searcher,
             dispatcher,
             team_registry,
+            website_url,
         }
     }
 }
