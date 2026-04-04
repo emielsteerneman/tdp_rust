@@ -99,7 +99,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     leagues.sort();
 
-    let searcher = Searcher::new(embed_client, vector_client, metadata_client.clone(), idf_map, teams, leagues);
+    let searcher = Searcher::new(embed_client, vector_client, metadata_client.clone(), idf_map, teams, leagues, config.data_processing.highlight_idf_threshold.unwrap_or(1.5));
 
     println!("\n=== Search Results ===");
     println!("Query: {}", query);

@@ -66,6 +66,7 @@ async fn main() -> anyhow::Result<()> {
         Arc::new(idf_map),
         teams,
         leagues,
+        config.data_processing.highlight_idf_threshold.unwrap_or(1.5),
     );
 
     let state = AppState::new(
