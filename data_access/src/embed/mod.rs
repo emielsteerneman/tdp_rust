@@ -61,6 +61,12 @@ pub fn extract_highlight_terms(query: &str, idf_map: &IDF, min_base_idf: f32) ->
         .chain(ngram2.iter())
         .chain(ngram3.iter())
         .filter_map(|word| {
+            // Skip short unigrams — 1-2 char words like "am", "do", "be" are
+            // rarely meaningful and can match inside longer words (e.g. "am" in "team")
+            let is_unigram = !word.contains(' ');
+            if is_unigram && word.len() < 3 {
+                return None;
+            }
             let (_, weighted_idf) = idf_map.get(word)?;
             let ngram_weight = (word.matches(' ').count() as f32 + 1.0).min(3.0);
             let base_idf = weighted_idf / ngram_weight;
@@ -129,5 +135,23 @@ mod tests {
         let idf_map = IDF::new();
         let terms = extract_highlight_terms("unknown words here", &idf_map, 1.5);
         assert!(terms.is_empty());
+    }
+
+    #[test]
+    fn test_extract_highlight_terms_filters_short_unigrams() {
+        // "am" has high IDF but only 2 chars — should be filtered
+        // "do" same — 2 chars, filtered
+        // "run" is 3 chars — should pass
+        let idf_map = IDF::from([
+            ("am".to_string(), (0, 4.0)),
+            ("do".to_string(), (1, 3.8)),
+            ("run".to_string(), (2, 3.5)),
+        ]);
+
+        let terms = extract_highlight_terms("am do run", &idf_map, 1.5);
+
+        assert!(!terms.contains(&"am".to_string()));
+        assert!(!terms.contains(&"do".to_string()));
+        assert!(terms.contains(&"run".to_string()));
     }
 }
