@@ -26,9 +26,9 @@ embedding_size = 1536        # Fixed with pre-filled snapshot
 [data_access.metadata.sqlite]
 filename = "/app/data/metadata.db"
 
-# Team registry (baked into image)
-[data_access.teams.sqlite]
-filename = "/app/data/teams.db"
+# Registry (baked into image)
+[data_access.registry.sqlite]
+filename = "/app/data/registry.db"
 master_password = ""  # Only consumed on first DB init
 salt = ""
 

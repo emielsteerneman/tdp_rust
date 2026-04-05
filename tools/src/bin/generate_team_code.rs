@@ -19,9 +19,9 @@ async fn main() -> anyhow::Result<()> {
 
     let team = validate_team_name(&team_input, &known_teams);
 
-    let registry = configuration::helpers::build_team_registry_client(&config)
+    let registry = configuration::helpers::build_registry_client(&config)
         .ok_or_else(|| anyhow::anyhow!(
-            "Team registry not configured. Add [data_access.teams.sqlite] to config.toml"
+            "Registry not configured. Add [data_access.registry.sqlite] to config.toml"
         ))?;
 
     let code = registry.generate_team_code(&team.name).await

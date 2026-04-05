@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
     let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
     let dispatcher = configuration::helpers::build_event_dispatcher(&config);
-    let team_registry = configuration::helpers::build_team_registry_client(&config);
+    let registry = configuration::helpers::build_registry_client(&config);
 
     metadata_client.print_analytics().await?;
 
@@ -75,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
         dispatcher,
         config.data_processing.tdps_markdown_root.clone(),
         config.data_processing.tdps_pdf_root.clone(),
-        team_registry,
+        registry,
     );
 
     let router = routes::create_router(state);

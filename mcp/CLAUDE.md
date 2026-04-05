@@ -3,7 +3,7 @@ MCP server using the `rmcp` framework. Thin wrapper — all logic lives in `api`
 
 ## Structure
 - `server.rs` — `AppServer` struct with `#[tool_router]` impl. Each `#[tool(...)]` method calls an `api` handler.
-- `state.rs` — `AppState` holding Arc'd clients (metadata, searcher, dispatcher, team_registry).
+- `state.rs` — `AppState` holding Arc'd clients (metadata, searcher, dispatcher, registry).
 - `oauth.rs` — PKCE OAuth flow with in-memory token store. Dynamic client registration, auto-approve.
 - `main.rs` — dual server setup: open on :50001, OAuth-protected on :50002. Both share the same `AppServer`.
 

@@ -1,5 +1,5 @@
 use data_access::metadata::MetadataClient;
-use data_access::teams::TeamRegistryClient;
+use data_access::registry::RegistryClient;
 use data_processing::search::Searcher;
 use event_processing::dispatcher::EventDispatcher;
 use std::sync::Arc;
@@ -11,7 +11,7 @@ pub struct AppState {
     pub dispatcher: Arc<EventDispatcher>,
     pub tdps_markdown_root: String,
     pub tdps_pdf_root: String,
-    pub team_registry: Option<Arc<dyn TeamRegistryClient + Send + Sync>>,
+    pub registry: Option<Arc<dyn RegistryClient + Send + Sync>>,
 }
 
 impl AppState {
@@ -21,7 +21,7 @@ impl AppState {
         dispatcher: Arc<EventDispatcher>,
         tdps_markdown_root: String,
         tdps_pdf_root: String,
-        team_registry: Option<Arc<dyn TeamRegistryClient + Send + Sync>>,
+        registry: Option<Arc<dyn RegistryClient + Send + Sync>>,
     ) -> Self {
         Self {
             metadata_client,
@@ -29,7 +29,7 @@ impl AppState {
             dispatcher,
             tdps_markdown_root,
             tdps_pdf_root,
-            team_registry,
+            registry,
         }
     }
 }

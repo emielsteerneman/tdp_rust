@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
     let vector_client = configuration::helpers::load_any_vector_client(&config).await?;
     let metadata_client = configuration::helpers::load_any_metadata_client(&config);
     let dispatcher = configuration::helpers::build_event_dispatcher(&config);
-    let team_registry = configuration::helpers::build_team_registry_client(&config);
+    let registry = configuration::helpers::build_registry_client(&config);
 
     metadata_client.print_analytics().await?;
 
@@ -68,7 +68,7 @@ async fn main() -> anyhow::Result<()> {
         config.data_processing.highlight_idf_threshold(),
     );
 
-    let state = AppState::new(metadata_client.clone(), Arc::new(searcher), dispatcher, team_registry, config.website_url.clone());
+    let state = AppState::new(metadata_client.clone(), Arc::new(searcher), dispatcher, registry, config.website_url.clone());
     let server = AppServer::new(state);
 
     // The MCP service is Clone — both routers share the same underlying factory.

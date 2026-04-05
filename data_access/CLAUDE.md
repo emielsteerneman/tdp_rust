@@ -5,7 +5,7 @@ Trait-defined storage abstractions and their implementations. All external syste
 - `EmbedClient` — generates embeddings. Impls: `OpenAIClient` (API, batches of 100), `FastembedClient` (local ONNX inference).
 - `VectorClient` — stores/searches chunks. Impl: `QdrantClient` (gRPC, hybrid search with RRF fusion).
 - `MetadataClient` — paper metadata, IDF storage, TOC. Impl: `SqliteClient`. Has `#[automock]` for testing.
-- `TeamRegistryClient` — team metadata key-value store with HMAC auth. Impl: `TeamsSqliteClient`.
+- `RegistryClient` — team and league metadata key-value store with HMAC auth. Impl: `SqliteRegistryClient`.
 
 ## Patterns
 - Two async trait styles coexist: `#[async_trait]` (VectorClient) and manual `Pin<Box<dyn Future>>` (others, for lifetime control).

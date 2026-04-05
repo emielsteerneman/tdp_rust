@@ -26,9 +26,9 @@ embedding_size = 1536  # must match the embed model's output dimension — chang
 [data_access.metadata.sqlite]
 filename = "data/metadata.db"
 
-# Optional: Team registry for team metadata (websites, repos, social links)
-# [data_access.teams.sqlite]
-# filename = "data/teams.db"
+# Optional: Registry for team and league metadata (websites, repos, social links)
+# [data_access.registry.sqlite]
+# filename = "data/registry.db"
 # master_password = "your-secret-here"  # only consumed on first DB init
 # salt = "shared-secret-salt"           # optional: set to share team codes across instances
 

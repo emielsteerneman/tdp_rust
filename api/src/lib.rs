@@ -15,5 +15,6 @@ pub mod paper_filter;
 pub mod paper_navigation;
 pub mod search;
 pub mod suggestion;
+pub mod get_league_info;
 pub mod get_team_info;
 pub mod update_team_info;

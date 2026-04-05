@@ -10,7 +10,7 @@ mod table;
 mod table_of_contents;
 mod tdps;
 mod suggestion;
-mod team_registry;
+mod registry;
 mod teams;
 mod years;
 
@@ -44,8 +44,9 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/leagues", get(leagues::list_leagues_handler))
         .route("/api/years", get(years::list_years_handler))
         .route("/api/suggestion", post(suggestion::submit_suggestion_handler))
-        .route("/api/team-registry/{name}", get(team_registry::get_team_info_handler))
-        .route("/api/team-registry", post(team_registry::update_team_info_handler))
+        .route("/api/registry/team/{name}", get(registry::get_team_info_handler))
+        .route("/api/registry/team", post(registry::update_team_info_handler))
+        .route("/api/registry/league/{name}", get(registry::get_league_info_handler))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             crate::middleware::activity_logging,

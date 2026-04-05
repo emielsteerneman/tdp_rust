@@ -27,7 +27,7 @@ markdown files → data_processing (parse, chunk, embed) → data_access (store 
 - `api` — Shared async handlers used by both `mcp` and `web`. This is where business logic lives.
 - `mcp` — MCP server (rmcp framework). Thin wrapper that calls `api` handlers. Dual ports: open (:50001) and OAuth (:50002).
 - `web` — Axum HTTP server (:50000). Thin wrapper that calls `api` handlers. Serves the frontend SPA.
-- `tools` — CLI binaries: `initialize`, `search_by_sentence`, `smoke_test`, `activity`, `generate_team_code`, `set_team_metadata`.
+- `tools` — CLI binaries: `initialize`, `search_by_sentence`, `smoke_test`, `activity`, `generate_team_code`, `set_team_metadata`, `set_league_metadata`.
 - `frontend/` — SvelteKit static SPA. Talks to `web` via `/api/*` endpoints.
 - `scripts/` — Qdrant maintenance and index rebuild shell scripts.
 - `docs/` — Architecture diagrams and planning docs.
@@ -52,7 +52,7 @@ cargo test
 cd frontend && npm install && npm run dev
 npm run build             # -> frontend/build/
 
-# Docker (full stack, requires qdrant.snapshot + data/metadata.db + data/teams.db)
+# Docker (full stack, requires qdrant.snapshot + data/metadata.db + data/registry.db)
 docker compose up --build
 
 # Rebuild index from scratch (teardown → reindex → snapshot → docker rebuild)
@@ -90,9 +90,9 @@ filename = "data/activity.db"
 # bot_token = "123456:ABC-DEF..."
 # chat_id = "987654321"
 
-# Optional: Team registry for team metadata (websites, repos, social links)
-# [data_access.teams.sqlite]
-# filename = "data/teams.db"
+# Optional: Registry for team and league metadata (websites, repos, social links)
+# [data_access.registry.sqlite]
+# filename = "data/registry.db"
 # master_password = "your-secret-here"  # only consumed on first DB init
 ```
 

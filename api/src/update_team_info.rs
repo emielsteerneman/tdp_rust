@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use data_access::teams::TeamRegistryClient;
+use data_access::registry::RegistryClient;
 use data_structures::file::TeamName;
 use event_processing::dispatcher::EventDispatcher;
 use event_processing::{Event, EventSource, UpdateTeamInfoEvent};
@@ -22,7 +22,7 @@ pub struct UpdateEntry {
 }
 
 pub async fn update_team_info(
-    team_registry: Arc<dyn TeamRegistryClient + Send + Sync>,
+    team_registry: Arc<dyn RegistryClient + Send + Sync>,
     args: UpdateTeamInfoArgs,
     dispatcher: &EventDispatcher,
     source: EventSource,
@@ -102,14 +102,14 @@ pub async fn update_team_info(
 mod tests {
     use std::sync::Arc;
 
-    use data_access::teams::{TeamRegistryClient, TeamsSqliteClient, TeamsSqliteConfig};
+    use data_access::registry::{RegistryClient, SqliteRegistryClient, SqliteRegistryConfig};
     use event_processing::dispatcher::EventDispatcher;
     use event_processing::EventSource;
 
     use super::*;
 
-    fn make_registry(master_pw: &str) -> Arc<dyn TeamRegistryClient + Send + Sync> {
-        Arc::new(TeamsSqliteClient::new(TeamsSqliteConfig {
+    fn make_registry(master_pw: &str) -> Arc<dyn RegistryClient + Send + Sync> {
+        Arc::new(SqliteRegistryClient::new(SqliteRegistryConfig {
             filename: ":memory:".to_string(),
             master_password: Some(master_pw.to_string()),
             salt: None,

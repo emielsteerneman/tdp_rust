@@ -101,6 +101,7 @@ impl TelegramListener {
             | Event::ListPapers(_)
             | Event::HttpRequest(_)
             | Event::GetTeamInfo(_)
+            | Event::GetLeagueInfo(_)
             | Event::UpdateTeamInfo(_) => None,
         }
     }

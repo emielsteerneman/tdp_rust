@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getTeamInfo, updateTeamInfo, listTeams, type TeamMetadataEntry } from '$lib/api';
+	import { getTeamInfo, updateTeamInfo, listTeams, type RegistryEntry } from '$lib/api';
 	import type { TeamName } from '$lib/types';
 
 	let teams: TeamName[] = $state([]);

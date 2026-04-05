@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use api::{get_abstract, get_paper_info, get_section, get_table_of_contents, get_tdp_contents, get_team_info, list_leagues, list_papers, list_teams, list_years, paper_filter, search, suggestion};
+use api::{get_abstract, get_league_info, get_paper_info, get_section, get_table_of_contents, get_tdp_contents, get_team_info, list_leagues, list_papers, list_teams, list_years, paper_filter, search, suggestion};
 use data_structures::content::ContentType;
 use data_structures::intermediate::{BreadcrumbEntry, SectionResult};
 use rmcp::handler::server::router::tool::ToolRouter;
@@ -241,8 +241,8 @@ impl AppServer {
         &self,
         Parameters(args): Parameters<get_team_info::GetTeamInfoArgs>,
     ) -> Result<CallToolResult, McpError> {
-        let registry = self.state.team_registry.as_ref()
-            .ok_or_else(|| McpError::internal_error("Team registry not configured".to_string(), None))?;
+        let registry = self.state.registry.as_ref()
+            .ok_or_else(|| McpError::internal_error("Registry not configured".to_string(), None))?;
 
         match get_team_info::get_team_info(
             registry.clone(),
@@ -253,6 +253,37 @@ impl AppServer {
             Ok(entries) => {
                 if entries.is_empty() {
                     Ok(CallToolResult::success(vec![Content::text("No metadata found for this team.")]))
+                } else {
+                    let text = entries.iter()
+                        .map(|e| format!("{}: {}", e.key, e.value))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    Ok(CallToolResult::success(vec![Content::text(text)]))
+                }
+            },
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Get a league's official resources — websites, GitHub organizations, rules, social media, and other metadata. Accepts both machine names (e.g. 'soccer_smallsize') and pretty names (e.g. 'Soccer SmallSize')."
+    )]
+    pub async fn get_league_info(
+        &self,
+        Parameters(args): Parameters<get_league_info::GetLeagueInfoArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        let registry = self.state.registry.as_ref()
+            .ok_or_else(|| McpError::internal_error("Registry not configured".to_string(), None))?;
+
+        match get_league_info::get_league_info(
+            registry.clone(),
+            args,
+            &self.state.dispatcher,
+            event_processing::EventSource::Mcp,
+        ).await {
+            Ok(entries) => {
+                if entries.is_empty() {
+                    Ok(CallToolResult::success(vec![Content::text("No metadata found for this league.")]))
                 } else {
                     let text = entries.iter()
                         .map(|e| format!("{}: {}", e.key, e.value))
