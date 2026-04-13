@@ -6,7 +6,7 @@ use serde::Deserialize;
 /// Manually implements JsonSchema to produce an inlined enum schema.
 /// The derived version uses `$defs`/`$ref` which Claude's MCP tool runner
 /// on claude.ai doesn't resolve, causing the field to arrive as null.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum EmbedType {
     DENSE,

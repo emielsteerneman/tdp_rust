@@ -8,7 +8,7 @@
 	let years: number[] = $derived($page.data.years || []);
 
 	const endpoints = [
-		{ method: 'GET', path: '/api/search?q=<query>&league=&year=&team=&content_type=&search_type=', desc: 'Search across all papers using hybrid semantic+keyword search' },
+		{ method: 'GET', path: '/api/search?query=<query>&league=&year=&team=&content_type=&search_type=', desc: 'Search across all papers using hybrid semantic+keyword search' },
 		{ method: 'GET', path: '/api/papers?league=&year=&team=', desc: 'List papers, optionally filtered by league, year, or team' },
 		{ method: 'GET', path: '/api/papers/{paper_lyt}/toc', desc: 'Get the table of contents for a paper' },
 		{ method: 'GET', path: '/api/papers/{paper_lyt}/abstract', desc: 'Get the abstract of a paper' },
@@ -28,11 +28,11 @@
 		{
 			title: 'Search papers',
 			desc: 'Search for papers about ball detection in the Small Size League',
-			path: '/api/search?q=ball+detection&league=soccer_smallsize',
+			path: '/api/search?query=ball+detection&league=soccer_smallsize',
 			python: `import requests
 
 response = requests.get("${BASE_URL}/search", params={
-    "q": "ball detection",
+    "query": "ball detection",
     "league": "soccer_smallsize"
 })
 results = response.json()["data"]
@@ -40,7 +40,7 @@ results = response.json()["data"]
 for chunk in results["chunks"]:
     print(f'{chunk["paper_lyt"]}: {chunk["title"]}')
     print(f'  {chunk["text"][:120]}...')`,
-			curl: `curl -s "${BASE_URL}/search?q=ball+detection&league=soccer_smallsize" | python3 -m json.tool`,
+			curl: `curl -s "${BASE_URL}/search?query=ball+detection&league=soccer_smallsize" | python3 -m json.tool`,
 		},
 		{
 			title: 'Read a paper abstract',
@@ -50,9 +50,9 @@ for chunk in results["chunks"]:
 
 paper = "soccer_smallsize__2024__RoboTeam_Twente"
 response = requests.get(f"${BASE_URL}/papers/{paper}/abstract")
-abstract = response.json()["data"]
+data = response.json()["data"]
 
-print(abstract)`,
+print(data)`,
 			curl: `curl -s "${BASE_URL}/papers/soccer_smallsize__2024__RoboTeam_Twente/abstract" | python3 -m json.tool`,
 		},
 		{

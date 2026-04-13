@@ -56,7 +56,7 @@ pub struct SearchArgs {
     #[schemars(
         description = "Search method: 'hybrid' (default, best for most queries — combines semantic and keyword matching), 'sparse' (keyword-only, best for exact technical terms like 'PID controller'), 'dense' (semantic-only, best for conceptual queries like 'how to make robots kick harder')."
     )]
-    pub search_type: EmbedType,
+    pub search_type: Option<EmbedType>,
 }
 
 impl SearchArgs {
@@ -107,13 +107,14 @@ pub async fn search(
     dispatcher: &EventDispatcher,
     source: EventSource,
 ) -> anyhow::Result<data_structures::intermediate::SearchResult> {
-    let search_type_str = format!("{:?}", args.search_type);
+    let search_type = args.search_type.unwrap_or_default();
+    let search_type_str = format!("{:?}", search_type);
     let search_result = searcher
         .search(
             args.query.clone(),
             args.limit,
             args.to_filter()?,
-            args.search_type.into(),
+            search_type.into(),
         )
         .await?;
 
@@ -147,7 +148,7 @@ mod tests {
             team_filter: Some("RoboTeam Twente, TIGERs Mannheim".to_string()),
             paper_lyt_filter: Some("rescue_simulation_infrastructure__2012__UvA_Rescue".to_string()),
             content_type_filter: Some("text, table".to_string()),
-            search_type: EmbedType::DENSE,
+            search_type: Some(EmbedType::DENSE),
         };
 
         let filter = args.to_filter().unwrap().unwrap();

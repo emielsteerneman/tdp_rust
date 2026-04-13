@@ -17,7 +17,7 @@ pub async fn api_index_handler() -> Json<Vec<ApiRoute>> {
         },
         ApiRoute {
             method: "GET",
-            path: "/api/search?q=<query>&league=&year=&team=&content_type=&search_type=",
+            path: "/api/search?query=<query>&league=&year=&team=&content_type=&search_type=",
             description: "Search across all papers using hybrid semantic+keyword search",
         },
         ApiRoute {
