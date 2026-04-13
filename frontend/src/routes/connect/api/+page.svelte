@@ -79,7 +79,7 @@ for team in teams:
 	<div class="max-w-2xl mx-auto">
 		<!-- Tab navigation -->
 		<div class="flex space-x-1 mb-6 bg-gray-200 dark:bg-gray-800 rounded-lg p-1 max-w-xs">
-			<a href="/connect" class="flex-1 text-center px-3 py-1.5 text-sm rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
+			<a href="/connect/mcp" class="flex-1 text-center px-3 py-1.5 text-sm rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
 				Your AI
 			</a>
 			<span class="flex-1 text-center px-3 py-1.5 text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-medium shadow-sm">
