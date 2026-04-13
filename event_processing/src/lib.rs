@@ -155,6 +155,11 @@ pub struct UpdateTeamInfoEvent {
     pub entries: Vec<(String, String)>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct GetReferencesEvent {
+    pub paper: String,
+}
+
 // ---------------------------------------------------------------------------
 // Event enum
 // ---------------------------------------------------------------------------
@@ -182,6 +187,7 @@ pub enum Event {
     GetTeamInfo(GetTeamInfoEvent),
     GetLeagueInfo(GetLeagueInfoEvent),
     UpdateTeamInfo(UpdateTeamInfoEvent),
+    GetReferences(GetReferencesEvent),
 }
 
 impl Event {
@@ -207,6 +213,7 @@ impl Event {
             Event::GetTeamInfo(_) => "get_team_info",
             Event::GetLeagueInfo(_) => "get_league_info",
             Event::UpdateTeamInfo(_) => "update_team_info",
+            Event::GetReferences(_) => "get_references",
         }
     }
 }
@@ -278,6 +285,7 @@ mod tests {
             (Event::Suggestion(SuggestionEvent { message: "test suggestion".into() }), "suggestion"),
             (Event::GetTeamInfo(GetTeamInfoEvent { team: "t".into() }), "get_team_info"),
             (Event::UpdateTeamInfo(UpdateTeamInfoEvent { team: "t".into(), entries: vec![] }), "update_team_info"),
+            (Event::GetReferences(GetReferencesEvent { paper: "p".into() }), "get_references"),
         ];
 
         for (event, expected) in cases {
@@ -321,6 +329,7 @@ mod tests {
             Event::PaperOpen(PaperOpenEvent { paper_id: "id".into(), referrer: Some("https://example.com".into()) }),
             Event::PdfOpen(PdfOpenEvent { paper_id: "test_paper".into() }),
             Event::Suggestion(SuggestionEvent { message: "improve search".into() }),
+            Event::GetReferences(GetReferencesEvent { paper: "test_paper".into() }),
         ];
 
         for event in events {

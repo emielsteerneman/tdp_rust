@@ -86,6 +86,9 @@ impl TelegramListener {
                     e.league, e.year, e.team
                 ))
             }
+            Event::GetReferences(e) => {
+                Some(format!("[{src}] Get references: {}", e.paper))
+            }
             Event::PaperOpen(e) => {
                 let referrer = e.referrer.as_deref().unwrap_or("direct");
                 Some(format!("[{src}] Paper opened: {} (from {referrer})", e.paper_id))
@@ -306,6 +309,20 @@ mod tests {
             .unwrap();
         assert!(msg.contains("Get TDP contents"));
         assert!(msg.contains("soccer_smallsize / 2024 / RoboTeam"));
+    }
+
+    #[test]
+    fn format_get_references() {
+        let listener = make_listener();
+        let event = Event::GetReferences(GetReferencesEvent {
+            paper: "soccer_smallsize__2024__RoboTeam".into(),
+        });
+
+        let msg = listener
+            .format_message(&EventSource::Web, &event)
+            .unwrap();
+        assert!(msg.contains("Get references"));
+        assert!(msg.contains("soccer_smallsize__2024__RoboTeam"));
     }
 
     #[test]
