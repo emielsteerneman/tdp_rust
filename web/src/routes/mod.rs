@@ -1,4 +1,5 @@
 mod abstract_text;
+mod references;
 mod image;
 mod leagues;
 mod paper_info;
@@ -39,6 +40,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/papers/{id}/table/{seq}", get(table::get_table_handler))
         .route("/api/papers/{id}/image/{seq}", get(image::get_image_handler))
         .route("/api/papers/{id}/abstract", get(abstract_text::get_abstract_handler))
+        .route("/api/papers/{id}/references", get(references::get_references_handler))
         .route("/api/papers/{id}/info", get(paper_info::get_paper_info_handler))
         .route("/api/teams", get(teams::list_teams_handler))
         .route("/api/leagues", get(leagues::list_leagues_handler))

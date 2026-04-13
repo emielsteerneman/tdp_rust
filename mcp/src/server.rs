@@ -1,5 +1,5 @@
 use crate::state::AppState;
-use api::{get_abstract, get_league_info, get_paper_info, get_section, get_table_of_contents, get_tdp_contents, get_team_info, list_leagues, list_papers, list_teams, list_years, paper_filter, search, suggestion};
+use api::{get_abstract, get_league_info, get_paper_info, get_references, get_section, get_table_of_contents, get_tdp_contents, get_team_info, list_leagues, list_papers, list_teams, list_years, paper_filter, search, suggestion};
 use data_structures::content::ContentType;
 use data_structures::intermediate::{BreadcrumbEntry, SectionResult};
 use rmcp::handler::server::router::tool::ToolRouter;
@@ -195,6 +195,30 @@ impl AppServer {
     ) -> Result<CallToolResult, McpError> {
         match get_abstract::get_abstract(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
             Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Err(e) => Err(McpError::internal_error(e.to_string(), None)),
+        }
+    }
+
+    #[tool(
+        description = "Get the references/bibliography of a paper. Requires the paper paper_lyt identifier. Returns a list of cited works — useful for finding related papers and understanding what prior work a team builds on."
+    )]
+    pub async fn get_references(
+        &self,
+        Parameters(args): Parameters<get_references::GetReferencesArgs>,
+    ) -> Result<CallToolResult, McpError> {
+        match get_references::get_references(self.state.metadata_client.clone(), args, &self.state.dispatcher, event_processing::EventSource::Mcp).await {
+            Ok(refs) => {
+                let text = if refs.is_empty() {
+                    "No references found for this paper.".to_string()
+                } else {
+                    refs.iter()
+                        .enumerate()
+                        .map(|(i, r)| format!("{}. {}", i + 1, r))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                };
+                Ok(CallToolResult::success(vec![Content::text(text)]))
+            },
             Err(e) => Err(McpError::internal_error(e.to_string(), None)),
         }
     }
