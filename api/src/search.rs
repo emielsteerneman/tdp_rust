@@ -108,7 +108,11 @@ pub async fn search(
     source: EventSource,
 ) -> anyhow::Result<data_structures::intermediate::SearchResult> {
     let search_type = args.search_type.unwrap_or_default();
-    let search_type_str = format!("{:?}", search_type);
+    let search_type_str = match search_type {
+        EmbedType::DENSE => "dense",
+        EmbedType::SPARSE => "sparse",
+        EmbedType::HYBRID => "hybrid",
+    };
     let search_result = searcher
         .search(
             args.query.clone(),
@@ -122,7 +126,7 @@ pub async fn search(
         source,
         Event::Search(SearchEvent {
             query: args.query.clone(),
-            search_type: search_type_str,
+            search_type: search_type_str.to_string(),
             result_count: search_result.chunks.len(),
             league_filter: args.league_filter.clone(),
             year_filter: args.year_filter.clone(),
