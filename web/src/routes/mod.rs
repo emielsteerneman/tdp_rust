@@ -1,4 +1,5 @@
 mod abstract_text;
+mod api_index;
 mod references;
 mod image;
 mod leagues;
@@ -31,6 +32,7 @@ pub fn create_router(state: AppState) -> Router {
 
     // API routes
     let api_routes = Router::new()
+        .route("/api", get(api_index::api_index_handler))
         .route("/api/search", get(search::search_handler))
         .route("/api/papers", get(papers::list_papers_handler))
         .route("/api/papers/{id}/open", post(papers::paper_open_handler))

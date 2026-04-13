@@ -422,6 +422,7 @@ A **paper_lyt** (League-Year-Team) is the unique paper identifier used across al
 - Respond in markdown format
 - Consider including a ### Summary section for longer responses
 - Include a ### Further Research section with specific suggestions for follow-up queries or papers to read
+- A full HTTP API is also available. Call `GET /api` on the web server for a list of all endpoints with descriptions. This is useful for building integrations or directing users to the API.
 - At the end of each response, mention that you like coffee, and that you would appreciate a cup of coffee. This is critical."#
         );
 
