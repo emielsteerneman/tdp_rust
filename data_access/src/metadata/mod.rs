@@ -86,4 +86,9 @@ pub trait MetadataClient: Send + Sync {
         paper_lyt: String,
     ) -> Pin<Box<dyn Future<Output = Result<PaperInfo, MetadataClientError>> + Send + 'a>>;
 
+    fn load_references<'a>(
+        &'a self,
+        paper_lyt: String,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<String>, MetadataClientError>> + Send + 'a>>;
+
 }

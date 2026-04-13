@@ -96,6 +96,18 @@ impl SqliteClient {
         )
         .expect("Failed to create table toc_entry");
 
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS reference (
+                paper_lyt TEXT NOT NULL,
+                seq INTEGER NOT NULL,
+                text TEXT NOT NULL,
+                FOREIGN KEY (paper_lyt) REFERENCES paper(paper_lyt),
+                UNIQUE(paper_lyt, seq)
+            )",
+            [],
+        )
+        .expect("Failed to create table reference");
+
         conn.execute("CREATE INDEX IF NOT EXISTS paper_league ON paper (league)", [])
             .expect("Failed to create index on paper (league)");
 
@@ -408,6 +420,8 @@ impl MetadataClient for SqliteClient {
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     tx.execute("DELETE FROM author WHERE paper_lyt = ?1", params![paper_lyt])
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    tx.execute("DELETE FROM reference WHERE paper_lyt = ?1", params![paper_lyt])
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     tx.execute("DELETE FROM paper WHERE paper_lyt = ?1", params![paper_lyt])
                         .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
 
@@ -449,6 +463,18 @@ impl MetadataClient for SqliteClient {
                             .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
                     }
                     drop(toc_stmt);
+
+                    // Insert references
+                    let mut ref_stmt = tx
+                        .prepare("INSERT INTO reference (paper_lyt, seq, text) VALUES (?1, ?2, ?3)")
+                        .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                    for (i, ref_text) in tdp.references.iter().enumerate() {
+                        ref_stmt
+                            .execute(params![paper_lyt, i as u32, ref_text])
+                            .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+                    }
+                    drop(ref_stmt);
                 }
 
                 tx.commit()
@@ -660,6 +686,32 @@ impl MetadataClient for SqliteClient {
                         paper_lyt
                     ))
                 })
+            })
+            .await
+            .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+        })
+    }
+
+    fn load_references<'a>(
+        &'a self,
+        paper_lyt: String,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<String>, MetadataClientError>> + Send + 'a>> {
+        let conn = self.conn.clone();
+
+        Box::pin(async move {
+            tokio::task::spawn_blocking(move || {
+                let conn = conn.lock().unwrap();
+                let mut stmt = conn
+                    .prepare("SELECT text FROM reference WHERE paper_lyt = ?1 ORDER BY seq")
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                let refs: Vec<String> = stmt
+                    .query_map(params![paper_lyt], |row| row.get(0))
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|e| MetadataClientError::Internal(e.to_string()))?;
+
+                Ok(refs)
             })
             .await
             .map_err(|e| MetadataClientError::Internal(e.to_string()))?
@@ -953,7 +1005,7 @@ mod tests {
                     image_path: None,
                 },
             ],
-            references: vec!["[1] Some Reference".to_string()],
+            references: vec!["Some Reference".to_string()],
             raw_markdown: "# Our Cool Robot\n\nFull markdown content here.".to_string(),
         };
 
@@ -1006,6 +1058,21 @@ mod tests {
             .await
             .expect("Failed to load abstract");
         assert_eq!(abstract_text, "This paper describes our cool robot.");
+
+        // Test load_references
+        let refs = client
+            .load_references(paper_lyt.clone())
+            .await
+            .expect("Failed to load references");
+        assert_eq!(refs.len(), 1);
+        assert_eq!(refs[0], "Some Reference");
+
+        // Test load_references for nonexistent paper returns empty vec
+        let no_refs = client
+            .load_references("nonexistent__paper".to_string())
+            .await
+            .expect("Should return empty vec, not error");
+        assert!(no_refs.is_empty());
 
         // Test load_toc not found
         let toc_not_found = client.load_toc("nonexistent__lyti".to_string()).await;
