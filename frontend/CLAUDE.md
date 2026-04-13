@@ -19,6 +19,7 @@ SvelteKit 2 static SPA (Svelte 5) — the web UI for browsing and searching TDPs
 - `/search?q=...` — search results grouped by paper with chunk scores and breadcrumbs.
 - `/paper/[id]` — paper detail with rendered markdown, TOC sidebar, team info sidebar.
 - `/connect` — MCP server setup guides for AI clients.
+- `/connect/api` — REST API guide with Python/curl examples, filter values, endpoint listing.
 - `/teams/edit` — team metadata editor (requires team auth code).
 - `/suggestions` — feedback form.
 

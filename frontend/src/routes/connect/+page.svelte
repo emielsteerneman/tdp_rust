@@ -29,6 +29,16 @@
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-950 py-8 px-4">
 	<div class="max-w-2xl mx-auto">
+		<!-- Tab navigation -->
+		<div class="flex space-x-1 mb-6 bg-gray-200 dark:bg-gray-800 rounded-lg p-1 max-w-xs">
+			<span class="flex-1 text-center px-3 py-1.5 text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-medium shadow-sm">
+				Your AI
+			</span>
+			<a href="/connect/api" class="flex-1 text-center px-3 py-1.5 text-sm rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors">
+				Your scripts
+			</a>
+		</div>
+
 		<div class="mb-8">
 			<h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Connect your AI</h1>
 			<p class="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
