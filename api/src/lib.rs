@@ -3,6 +3,7 @@ pub mod get_abstract;
 pub mod get_paper_info;
 pub mod get_image;
 pub mod get_paragraph;
+pub mod get_references;
 pub mod get_section;
 pub mod get_table;
 pub mod get_table_of_contents;
