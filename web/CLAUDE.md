@@ -15,6 +15,9 @@ Axum HTTP server. Thin wrapper — all logic lives in `api`. Serves the frontend
 4. Return `Ok(Json(ApiResponse::new(result)))`.
 5. Register in `routes/mod.rs`.
 
+## API Discoverability
+- `GET /api` — returns JSON list of all API routes with methods and descriptions.
+
 ## Static Serving
 - `/api/*` — API routes (with activity logging middleware)
 - `/tdps/{*path}` — serves TDP markdown files from `tdps_markdown_root` (with path traversal protection)

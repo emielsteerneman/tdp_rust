@@ -2,7 +2,7 @@
 Fire-and-forget event system for tracking usage across MCP and web interfaces.
 
 ## Architecture
-- `Event` enum — 18 variants covering all user actions (Search, GetAbstract, PaperOpen, Suggestion, etc.).
+- `Event` enum — 20 variants covering all user actions (Search, GetAbstract, GetReferences, PaperOpen, Suggestion, etc.).
 - `EventSource` — Web or Mcp. Passed through `api` handlers to identify the caller.
 - `EventDispatcher` — holds Vec of listeners. `dispatch()` spawns a tokio task per listener; never blocks the caller.
 - `EventListener` trait — `on_event(&self, source, event)`. Failures are logged, not propagated.
