@@ -388,10 +388,29 @@ pub fn parse_markdown(raw: &str, name: TDPName) -> MarkdownTDP {
             }
             Section::References => {
                 let trimmed = line.trim();
-                if let Some(ref_text) = trimmed.strip_prefix("* ") {
-                    let ref_text = ref_text.trim();
-                    if !ref_text.is_empty() {
-                        references.push(ref_text.to_string());
+                if trimmed.is_empty() {
+                    continue;
+                }
+                // Match "N. text" format (e.g. "1. Author, Title...")
+                if let Some(after_num) = trimmed.strip_prefix(|c: char| c.is_ascii_digit()).and_then(|rest| {
+                    let rest = rest.trim_start_matches(|c: char| c.is_ascii_digit());
+                    rest.strip_prefix(". ")
+                }) {
+                    let after_num = after_num.trim();
+                    if !after_num.is_empty() {
+                        references.push(after_num.to_string());
+                    }
+                }
+                // Match "[N] text" format (e.g. "[1] Author, Title...")
+                else if trimmed.starts_with('[') {
+                    if let Some(bracket_end) = trimmed.find(']') {
+                        let inside = &trimmed[1..bracket_end];
+                        if inside.chars().all(|c| c.is_ascii_digit()) {
+                            let after = trimmed[bracket_end + 1..].trim();
+                            if !after.is_empty() {
+                                references.push(after.to_string());
+                            }
+                        }
                     }
                 }
             }
@@ -552,7 +571,8 @@ This describes the mechanics.
 
 With a blank line in between.
 # references
-* [1] Some reference
+1. Some reference
+2. Another reference
 ";
         let tdp = parse_markdown(md, make_name());
 
@@ -573,8 +593,25 @@ With a blank line in between.
         assert!(item1.body.contains("This describes the mechanics."));
         assert!(item1.body.contains("With a blank line in between."));
 
-        assert_eq!(tdp.references.len(), 1);
-        assert_eq!(tdp.references[0], "[1] Some reference");
+        assert_eq!(tdp.references.len(), 2);
+        assert_eq!(tdp.references[0], "Some reference");
+        assert_eq!(tdp.references[1], "Another reference");
+    }
+
+    #[test]
+    fn test_parse_references_bracket_format() {
+        let md = "\
+# title
+Test
+# references
+[1] First reference
+[2] Second reference with URL https://example.com
+";
+        let tdp = parse_markdown(md, make_name());
+
+        assert_eq!(tdp.references.len(), 2);
+        assert_eq!(tdp.references[0], "First reference");
+        assert_eq!(tdp.references[1], "Second reference with URL https://example.com");
     }
 
     #[test]
