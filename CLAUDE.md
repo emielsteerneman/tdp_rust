@@ -27,7 +27,7 @@ markdown files → data_processing (parse, chunk, embed) → data_access (store 
 - `api` — Shared async handlers used by both `mcp` and `web`. This is where business logic lives.
 - `mcp` — MCP server (rmcp framework). Thin wrapper that calls `api` handlers. Dual ports: open (:50001) and OAuth (:50002).
 - `web` — Axum HTTP server (:50000). Thin wrapper that calls `api` handlers. Serves the frontend SPA.
-- `tools` — CLI binaries: `initialize`, `search_by_sentence`, `smoke_test`, `activity`, `generate_team_code`, `set_team_metadata`, `set_league_metadata`.
+- `tools` — CLI binaries: `initialize`, `search_by_sentence`, `smoke_test`, `activity`, `coverage`, `generate_team_code`, `set_team_metadata`, `set_league_metadata`.
 - `frontend/` — SvelteKit static SPA. Talks to `web` via `/api/*` endpoints. Pages at `/connect/mcp` and `/connect/api` share a layout with tab navigation.
 - `scripts/` — Qdrant maintenance and index rebuild shell scripts.
 - `docs/` — Architecture diagrams and planning docs.

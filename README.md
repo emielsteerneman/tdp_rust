@@ -17,6 +17,7 @@ Rust workspace with the following crates:
 | `data_access` | Library | Trait-based clients: Qdrant, SQLite, OpenAI |
 | `data_processing` | Library | Chunking, embedding, IDF, search orchestration |
 | `data_structures` | Library | Shared types (TDPName, League, Chunk, ContentItem, Filter) |
+| `event_processing` | Library | Fire-and-forget event system: activity logging, Telegram notifications |
 | `configuration` | Library | Config loading and client initialization |
 | `tools` | Binaries | CLI tools for initialization, search, and analytics |
 
@@ -51,7 +52,7 @@ Rust workspace with the following crates:
 4. Start the web server and frontend:
    ```
    make web   # API server on :50000
-   make ui    # SvelteKit dev server on :50000
+   make ui    # SvelteKit dev server on :50080
    ```
    > **Note:** `make web` runs `cargo run -p web`, which serves the built frontend from `./static/`. If you run it directly without `make ui`, create a symlink first: `ln -s frontend/build static`.
 
@@ -122,20 +123,16 @@ End-to-end verification: searches every (league, year) combination across all th
 make smoke-test
 ```
 
-### repl
-
-Interactive search REPL for testing queries from the terminal.
-
-```
-cargo run -p tools --bin repl
-```
-
 ### search_by_sentence
 
-Runs a predefined set of sentence-level searches for benchmarking/testing.
+CLI search with `--mode` (dense/sparse/hybrid) and `--type` (text/table/image) flags.
 
 ```
-cargo run -p tools --bin search_by_sentence
+make search "omniwheels"
+make search-text "omniwheels"    # text content only
+make search-table "omniwheels"   # tables only
+make search-image "omniwheels"   # images only
+# or: cargo run -p tools --bin search_by_sentence -- "omniwheels" --type text
 ```
 
 ### activity
@@ -155,6 +152,43 @@ Or via Make:
 ```
 make activity ARGS="summary"
 make activity ARGS="agents --since 2025-06-01"
+make activity-docker ARGS="summary"   # query the Docker-deployed activity DB
+```
+
+### coverage
+
+Corpus coverage analysis: checks parsing completeness, indexing status, and metadata gaps.
+
+```
+cargo run -p tools --bin coverage             # all reports
+cargo run -p tools --bin coverage -- parsing  # PDFs vs markdowns
+cargo run -p tools --bin coverage -- indexing  # disk vs DB
+cargo run -p tools --bin coverage -- heatmap  # league×year grid
+cargo run -p tools --bin coverage -- teams    # missing team metadata
+```
+
+### generate_team_code
+
+Generate an HMAC authentication code for a team.
+
+```
+cargo run -p tools --bin generate_team_code -- --team "RoboTeam Twente"
+```
+
+### set_team_metadata
+
+Upsert metadata (website, GitHub, socials) for a team in the registry.
+
+```
+cargo run -p tools --bin set_team_metadata -- --team "RoboTeam Twente" --key "github" --value "https://github.com/RoboTeamTwente"
+```
+
+### set_league_metadata
+
+Upsert metadata for a league in the registry.
+
+```
+cargo run -p tools --bin set_league_metadata -- --league "Soccer SmallSize" --key "github" --value "https://github.com/RoboCup-SSL"
 ```
 
 ## Makefile Targets
@@ -165,7 +199,7 @@ make activity ARGS="agents --since 2025-06-01"
 |---|---|
 | `make web` | Start the Axum API server on :50000 |
 | `make mcp` | Start the MCP servers (:50001 open, :50002 OAuth) |
-| `make ui` | Start the SvelteKit dev server on :50000 |
+| `make ui` | Start the SvelteKit dev server on :50080 |
 
 **Tools:**
 
@@ -173,9 +207,12 @@ make activity ARGS="agents --since 2025-06-01"
 |---|---|
 | `make init` | Initialize database (parse, embed, index) |
 | `make smoke-test` | End-to-end search verification across all leagues/years |
-| `make repl` | Interactive search REPL |
-| `make search "query"` | Search for a query |
+| `make search "query"` | Hybrid search for a query |
+| `make search-text "query"` | Search text content only |
+| `make search-table "query"` | Search tables only |
+| `make search-image "query"` | Search images only |
 | `make activity ARGS="..."` | Run the activity analytics CLI |
+| `make activity-docker ARGS="..."` | Activity analytics against Docker-deployed DB |
 
 **Infrastructure:**
 
@@ -202,8 +239,11 @@ The MCP server exposes TDP search functionality to LLMs. Available tools:
 - `get_table_of_contents` - Get the structured table of contents of a paper
 - `get_abstract` - Get a paper's abstract
 - `get_section` - Get a specific section by content sequence number
+- `get_references` - Get the references/bibliography of a paper
 - `get_paper_info` - Get paper metadata (team, league, year, authors)
 - `get_team_info` - Get team metadata (website, GitHub, socials)
+- `get_league_info` - Get league metadata (official sites, GitHub orgs, rules, socials)
+- `submit_suggestion` - Submit feedback or suggestions about the TDP search system
 
 ```
 cargo run -p mcp

@@ -6,6 +6,8 @@ Loads config from TOML and provides factory functions to construct all clients.
 1. Reads TOML file
 2. Applies `TDP_*` env var overrides (double underscore `__` = path separator, e.g. `TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY`)
 
+Top-level struct: `AppConfig { data_access, data_processing, event_processing: Option<...>, website_url: Option<String> }`. Note: `event_processing` is optional.
+
 ## Factory Functions (in `helpers.rs`)
 - `load_any_embed_client()` → `Arc<dyn EmbedClient>` (picks OpenAI or FastEmbed from config)
 - `load_any_vector_client()` → `Arc<dyn VectorClient>` (async, Qdrant)
