@@ -6,11 +6,10 @@
 		teamName: string;
 		leagueMachine: string;
 		year: number;
-		paperUrls: string[];
 		entries: RegistryEntry[];
 	}
 
-	let { teamName, leagueMachine, year, paperUrls, entries }: Props = $props();
+	let { teamName, leagueMachine, year, entries }: Props = $props();
 
 	const leagueMajor = $derived(leagueMachine.split('_')[0] ?? '');
 	const leagueBadge = $derived(getLeagueBadgeColor(leagueMajor));
@@ -49,10 +48,6 @@
 	function ensureProtocol(url: string): string {
 		if (url.startsWith('http://') || url.startsWith('https://')) return url;
 		return `https://${url}`;
-	}
-
-	function displayUrl(url: string): string {
-		return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 	}
 
 	const labels: Record<string, string> = {
@@ -149,15 +144,6 @@
 				{/each}
 				{#each grouped.info as entry}
 					{@render textItem(entry.key, entry.value)}
-				{/each}
-			</div>
-		{:else if paperUrls.length > 0}
-			<hr class="border-gray-200 dark:border-gray-700 mb-3" />
-			<h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Paper Links</h3>
-
-			<div class="space-y-1.5">
-				{#each paperUrls as url}
-					{@render linkItem(url, 'link', displayUrl(url))}
 				{/each}
 			</div>
 		{:else}

@@ -80,7 +80,6 @@
 		teamName={data.teamPrettyName}
 		leagueMachine={data.leagueMachine}
 		year={data.year}
-		paperUrls={data.paperInfo?.urls ?? []}
 		entries={data.teamEntries}
 	/>
 </div>
