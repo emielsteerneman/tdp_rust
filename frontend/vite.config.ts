@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	server: {
-		allowedHosts: ['tdp.emielsteerneman.nl'],
+		allowedHosts: ['tdp.tdpsearch.com'],
 		proxy: {
 			'/api': {
 				target: 'http://localhost:50000',

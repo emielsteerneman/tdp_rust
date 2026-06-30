@@ -9,7 +9,7 @@
 # All environment variable keys use the TDP_ prefix and __ (double underscore) to separate nested levels
 
 # Optional: website URL for the MCP server to generate paper links in LLM responses
-# website_url = "https://web.emielsteerneman.nl"
+# website_url = "https://tdpsearch.com"
 
 [data_access]
 
