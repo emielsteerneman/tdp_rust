@@ -1,11 +1,12 @@
 <script>
 	const guides = [
 		{ title: 'Claude Desktop', href: 'https://modelcontextprotocol.io/quickstart/user', source: 'modelcontextprotocol.io' },
-		{ title: 'Claude Code', href: 'https://docs.anthropic.com/en/docs/claude-code/mcp', source: 'docs.anthropic.com' },
-		{ title: 'Cursor', href: 'https://docs.cursor.com/context/model-context-protocol', source: 'docs.cursor.com' },
+		{ title: 'Claude Code', href: 'https://code.claude.com/docs/en/mcp', source: 'code.claude.com' },
+		{ title: 'Cursor', href: 'https://cursor.com/docs/context/mcp', source: 'cursor.com' },
 		{ title: 'Windsurf', href: 'https://docs.windsurf.com/windsurf/cascade/mcp', source: 'docs.windsurf.com' },
 		{ title: 'Gemini CLI', href: 'https://geminicli.com/docs/tools/mcp-server/', source: 'geminicli.com' },
 		{ title: 'OpenAI Codex', href: 'https://developers.openai.com/codex/mcp', source: 'developers.openai.com' },
+		{ title: 'GitHub Copilot CLI', href: 'https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers', source: 'docs.github.com' },
 		{ title: 'Mistral Le Chat', href: 'https://mistral.ai/news/le-chat-mcp-connectors-memories', source: 'mistral.ai' },
 	];
 
@@ -39,7 +40,7 @@
 <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 shadow-sm mb-6">
 	<h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">MCP Server URL</h2>
 	<code class="block px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-mono text-gray-900 dark:text-gray-100 select-all">
-		https://mcp.emielsteerneman.nl/mcp
+		https://mcp.tdpsearch.com/mcp
 	</code>
 	<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
 		Transport: Streamable HTTP — no authentication required.

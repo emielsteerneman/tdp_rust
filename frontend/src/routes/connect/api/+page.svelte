@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import type { League } from '$lib/types';
 
-	const BASE_URL = 'https://web.emielsteerneman.nl/api';
+	const BASE_URL = 'https://tdpsearch.com/api';
 
 	const leagues: League[] = $page.data.leagues ?? [];
 	const years: number[] = $page.data.years ?? [];
