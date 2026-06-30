@@ -61,7 +61,7 @@ COPY data/registry.db /app/data/registry.db
 
 WORKDIR /app
 
-EXPOSE 50001 50002
+EXPOSE 50001
 
 CMD ["/app/mcp"]
 

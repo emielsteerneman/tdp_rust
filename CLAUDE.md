@@ -25,7 +25,7 @@ markdown files → data_processing (parse, chunk, embed) → data_access (store 
 - `event_processing` — Fire-and-forget event system: Event enum, EventDispatcher, SQLite and Telegram listeners.
 - `configuration` — TOML config loading with `TDP_*` env overrides, factory functions for all clients.
 - `api` — Shared async handlers used by both `mcp` and `web`. This is where business logic lives.
-- `mcp` — MCP server (rmcp framework). Thin wrapper that calls `api` handlers. Dual ports: open (:50001) and OAuth (:50002).
+- `mcp` — MCP server (rmcp framework). Thin wrapper that calls `api` handlers. Open port (:50001), no auth.
 - `web` — Axum HTTP server (:50000). Thin wrapper that calls `api` handlers. Serves the frontend SPA.
 - `tools` — CLI binaries: `initialize`, `search_by_sentence`, `smoke_test`, `activity`, `coverage`, `generate_team_code`, `set_team_metadata`, `set_league_metadata`.
 - `frontend/` — SvelteKit static SPA. Talks to `web` via `/api/*` endpoints. Pages at `/connect/mcp` and `/connect/api` share a layout with tab navigation.
@@ -43,7 +43,7 @@ markdown files → data_processing (parse, chunk, embed) → data_access (store 
 ```bash
 # Backend
 cargo build
-cargo run -p mcp          # MCP servers: open on :50001, OAuth on :50002
+cargo run -p mcp          # MCP server: open on :50001
 cargo run -p web          # Web server on :50000
 cargo run --bin initialize # Corpus ingestion pipeline
 cargo test

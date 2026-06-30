@@ -10,7 +10,6 @@ services:
     container_name: tdp-mcp-test
     ports:
       - "51001:50001"
-      - "51002:50002"
     volumes:
       - ./data/metadata.db:/app/data/metadata.db
       - ./data/activity.db:/app/data/activity.db

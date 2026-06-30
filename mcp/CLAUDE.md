@@ -4,8 +4,7 @@ MCP server using the `rmcp` framework. Thin wrapper — all logic lives in `api`
 ## Structure
 - `server.rs` — `AppServer` struct with `#[tool_router]` impl. Each `#[tool(...)]` method calls an `api` handler.
 - `state.rs` — `AppState` holding Arc'd clients (metadata, searcher, dispatcher, registry, website_url).
-- `oauth.rs` — PKCE OAuth flow with in-memory token store. Dynamic client registration, auto-approve.
-- `main.rs` — dual server setup: open on :50001, OAuth-protected on :50002. Both share the same `AppServer`.
+- `main.rs` — server setup: open MCP on :50001 (no auth).
 
 ## Adding a New Tool
 1. Add `#[tool(description = "...")]` method to `AppServer` impl in `server.rs`.

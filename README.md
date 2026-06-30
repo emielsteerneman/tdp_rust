@@ -198,7 +198,7 @@ cargo run -p tools --bin set_league_metadata -- --league "Soccer SmallSize" --ke
 | Target | Description |
 |---|---|
 | `make web` | Start the Axum API server on :50000 |
-| `make mcp` | Start the MCP servers (:50001 open, :50002 OAuth) |
+| `make mcp` | Start the MCP server (:50001 open) |
 | `make ui` | Start the SvelteKit dev server on :50080 |
 
 **Tools:**
