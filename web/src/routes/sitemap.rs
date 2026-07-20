@@ -23,13 +23,10 @@ fn build_sitemap_xml(base_url: &str, paper_lyts: &[String]) -> String {
 }
 
 pub async fn sitemap_handler(State(state): State<AppState>) -> Response {
-    let papers = api::list_papers::list_papers(
-        state.metadata_client.clone(),
-        api::paper_filter::PaperFilter::default(),
-        &state.dispatcher,
-        event_processing::EventSource::Web,
-    )
-    .await;
+    // Fetch papers WITHOUT dispatching a ListPapers analytics event: bots poll the
+    // sitemap and every hit would otherwise pollute analytics. This mirrors what
+    // `list_papers` does internally, minus the event and the default no-op filter.
+    let papers = state.metadata_client.load_tdps().await;
 
     let paper_lyts: Vec<String> = match papers {
         Ok(list) => list.iter().map(|p| p.get_paper_lyt()).collect(),
