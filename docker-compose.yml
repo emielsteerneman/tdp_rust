@@ -87,7 +87,10 @@ services:
     environment:
       - API_ORIGIN=http://web:50000
       - OUT_DIR=/out
-    mem_limit: 2g
+      # Prerendering the full corpus (~2249 pages) holds a lot of HTML in memory;
+      # give Node a 4 GB heap within a 6 GB container (2g OOM'd).
+      - NODE_OPTIONS=--max-old-space-size=4096
+    mem_limit: 6g
     restart: "no"
 
 volumes:
