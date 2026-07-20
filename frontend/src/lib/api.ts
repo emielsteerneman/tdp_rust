@@ -6,7 +6,9 @@ import type {
 	League
 } from './types';
 
-const API_BASE = '/api';
+import { API_ORIGIN } from './config';
+
+const API_BASE = `${API_ORIGIN}/api`;
 
 type FetchFn = typeof globalThis.fetch;
 
