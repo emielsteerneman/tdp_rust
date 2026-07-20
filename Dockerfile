@@ -73,10 +73,13 @@ CMD ["/app/mcp"]
 # ============================================================================
 FROM debian:trixie-slim AS web
 
-# Install runtime dependencies
+# Install runtime dependencies. curl is needed by the compose healthcheck
+# (`curl -f http://localhost:50000/api/papers`), which the prerender job's
+# `depends_on: service_healthy` relies on.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     libssl3 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /web-bin /app/web
