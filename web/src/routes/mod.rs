@@ -8,6 +8,7 @@ mod papers;
 mod paragraph;
 mod pdfs;
 mod search;
+mod sitemap;
 mod table;
 mod table_of_contents;
 mod tdps;
@@ -60,6 +61,7 @@ pub fn create_router(state: AppState) -> Router {
     // TDP file routes (no activity logging, static file serving)
     let tdps_routes = Router::new()
         .route("/tdps/{*path}", get(tdps::serve_tdps_file))
+        .route("/sitemap.xml", get(sitemap::sitemap_handler))
         .with_state(state.clone());
 
     // PDF file routes (no activity logging, static file serving)

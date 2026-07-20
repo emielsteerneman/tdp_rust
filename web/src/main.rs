@@ -76,6 +76,7 @@ async fn main() -> anyhow::Result<()> {
         config.data_processing.tdps_markdown_root.clone(),
         config.data_processing.tdps_pdf_root.clone(),
         registry,
+        config.website_url.clone().unwrap_or_else(|| "https://tdpsearch.com".to_string()),
     );
 
     let router = routes::create_router(state);

@@ -12,6 +12,7 @@ pub struct AppState {
     pub tdps_markdown_root: String,
     pub tdps_pdf_root: String,
     pub registry: Option<Arc<dyn RegistryClient + Send + Sync>>,
+    pub website_url: String,
 }
 
 impl AppState {
@@ -22,6 +23,7 @@ impl AppState {
         tdps_markdown_root: String,
         tdps_pdf_root: String,
         registry: Option<Arc<dyn RegistryClient + Send + Sync>>,
+        website_url: String,
     ) -> Self {
         Self {
             metadata_client,
@@ -30,6 +32,7 @@ impl AppState {
             tdps_markdown_root,
             tdps_pdf_root,
             registry,
+            website_url,
         }
     }
 }
