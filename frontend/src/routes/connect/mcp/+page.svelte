@@ -25,7 +25,9 @@
 </script>
 
 <svelte:head>
-	<title>Connect your AI — TDP Browser</title>
+	<title>Connect via MCP | TDPSearch</title>
+	<meta name="description" content="Connect AI assistants to tdpsearch.com over MCP to search 2000+ RoboCup Team Description Papers." />
+	<link rel="canonical" href="https://tdpsearch.com/connect/mcp" />
 </svelte:head>
 
 <div class="mb-8">

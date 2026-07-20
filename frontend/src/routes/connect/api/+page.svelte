@@ -72,7 +72,9 @@ for team in teams:
 </script>
 
 <svelte:head>
-	<title>Connect your scripts — TDP Browser</title>
+	<title>Connect via REST API | TDPSearch</title>
+	<meta name="description" content="Access the tdpsearch.com REST API to query 2000+ RoboCup Team Description Papers programmatically." />
+	<link rel="canonical" href="https://tdpsearch.com/connect/api" />
 </svelte:head>
 
 <!-- Header -->

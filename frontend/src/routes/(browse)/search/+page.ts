@@ -1,3 +1,5 @@
+export const prerender = false;
+
 import type { PageLoad } from './$types';
 import { search } from '$lib/api';
 import type { SearchParams } from '$lib/types';

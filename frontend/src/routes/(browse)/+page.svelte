@@ -80,6 +80,24 @@
 	let isLoading = $state(false);
 </script>
 
+<svelte:head>
+	<title>TDPSearch — Search 2000+ RoboCup Team Description Papers</title>
+	<meta
+		name="description"
+		content="Search and browse 2000+ RoboCup Team Description Papers across all leagues — SmallSize, MiddleSize, Humanoid, @Home, Rescue and more."
+	/>
+	<link rel="canonical" href="https://tdpsearch.com/" />
+	<meta property="og:title" content="TDPSearch — RoboCup Team Description Papers" />
+	<meta
+		property="og:description"
+		content="Search and browse 2000+ RoboCup Team Description Papers across all leagues."
+	/>
+	<meta property="og:url" content="https://tdpsearch.com/" />
+	<meta property="og:type" content="website" />
+	<meta property="og:image" content="https://tdpsearch.com/og-default.png" />
+	<meta name="twitter:card" content="summary_large_image" />
+</svelte:head>
+
 <!-- Introduction (desktop only) -->
 <div class="hidden md:block bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/30 dark:to-transparent py-8 px-4">
 	<p class="max-w-3xl mx-auto text-gray-600 dark:text-gray-400 text-base leading-relaxed">
