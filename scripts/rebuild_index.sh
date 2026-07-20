@@ -26,6 +26,9 @@ docker rm qdrant || true
 echo "Step 7: Building and starting Docker Compose..."
 docker compose up -d --build
 
+echo "rebuild: prerendering frontend"
+docker compose up --build prerender
+
 echo ""
 echo "=== Done. Services are starting up. ==="
 echo "Run 'docker compose logs -f' to follow startup."

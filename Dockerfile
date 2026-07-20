@@ -25,6 +25,7 @@ COPY event_processing ./event_processing
 COPY mcp ./mcp
 COPY tools ./tools
 COPY web ./web
+COPY scripts ./scripts
 
 # Copy frontend
 COPY frontend ./frontend
@@ -40,8 +41,10 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cp target/release/mcp /mcp-bin && \
     cp target/release/web /web-bin
 
-# Build frontend
-RUN cd frontend && npm ci && npm run build
+# Install frontend deps only. The actual build needs a live Axum API (data
+# comes from Qdrant/SQLite at prerender time), so it cannot happen here — see
+# the `frontend-prerender` stage below, which runs as a one-shot job.
+RUN cd frontend && npm ci
 
 # ============================================================================
 # Stage 2: MCP Server
@@ -81,8 +84,10 @@ COPY config.docker.toml /app/config.toml
 COPY data/metadata.db /app/data/metadata.db
 COPY data/registry.db /app/data/registry.db
 
-# Copy frontend static files
-COPY --from=builder /build/frontend/build /app/static
+# Prerendered frontend files are written at runtime by the `frontend-prerender`
+# one-shot job into a shared volume mounted at /app/static. Create an empty
+# dir here so ServeDir has a root even before the prerender job has run.
+RUN mkdir -p /app/static
 
 WORKDIR /app
 
@@ -152,3 +157,16 @@ EOF
 RUN chmod +x /docker-entrypoint.d/restore-snapshot.sh
 
 CMD ["/bin/sh", "/docker-entrypoint.d/restore-snapshot.sh"]
+
+# ============================================================================
+# Stage: Frontend prerender (one-shot; run against a live web API)
+# ============================================================================
+FROM node:22-slim AS frontend-prerender
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl rsync ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+# node_modules already installed via Nexus in the builder stage.
+COPY --from=builder /build/frontend /app/frontend
+COPY --from=builder /build/scripts /app/scripts
+CMD ["sh", "scripts/prerender.sh"]

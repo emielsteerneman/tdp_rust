@@ -28,7 +28,7 @@ markdown files → data_processing (parse, chunk, embed) → data_access (store 
 - `mcp` — MCP server (rmcp framework). Thin wrapper that calls `api` handlers. Open port (:50001), no auth.
 - `web` — Axum HTTP server (:50000). Thin wrapper that calls `api` handlers. Serves the frontend SPA.
 - `tools` — CLI binaries: `initialize`, `search_by_sentence`, `smoke_test`, `activity`, `coverage`, `generate_team_code`, `set_team_metadata`, `set_league_metadata`.
-- `frontend/` — SvelteKit static SPA. Talks to `web` via `/api/*` endpoints. Pages at `/connect/mcp` and `/connect/api` share a layout with tab navigation.
+- `frontend/` — SvelteKit app: content routes prerendered at build, dynamic routes (search, forms) client-side via SPA fallback. Talks to `web` via `/api/*` endpoints. Pages at `/connect/mcp` and `/connect/api` share a layout with tab navigation.
 - `scripts/` — Qdrant maintenance and index rebuild shell scripts.
 - `docs/` — Architecture diagrams and planning docs.
 
@@ -50,12 +50,16 @@ cargo test
 
 # Frontend
 cd frontend && npm install && npm run dev
-npm run build             # -> frontend/build/
+npm run build             # -> frontend/build/ — requires a reachable API (PUBLIC_API_ORIGIN); prerender routes fetch live data at build time
+
+# Prerender the frontend against a live Axum and drop the output where `web` serves it
+make prerender
 
 # Docker (full stack, requires qdrant.snapshot + data/metadata.db + data/registry.db)
 docker compose up --build
+docker compose up --build prerender  # one-shot: prerender into the shared web_static volume
 
-# Rebuild index from scratch (teardown → reindex → snapshot → docker rebuild)
+# Rebuild index from scratch (teardown → reindex → snapshot → docker rebuild → prerender)
 make rebuild-index
 
 # Smoke test: verify search works across all leagues, years, and search types
@@ -100,7 +104,7 @@ Other prerequisites:
 - **Qdrant** must be running at the configured URL before starting `mcp` or `web` (use `docker-compose up qdrant`)
 - **TDP markdown files** must exist at `tdps_markdown_root` before running `initialize`
 - **TDP PDF files** must exist at `tdps_pdf_root` for the "View Original PDF" button to work
-- **Static files**: the web server expects `./static/`; for local dev symlink: `ln -s frontend/build static`
+- **Static files**: the web server expects `./static/`. The frontend build requires a live Axum to prerender against (it fetches real data at build time), so populate `./static/` by running `make prerender` (wraps `scripts/prerender.sh`) against a running `web`, or for local dev symlink after building manually: `ln -s frontend/build static`
 - **Embed model ↔ Qdrant size must match**: if you change the embed model, update `embedding_size` and re-run `initialize`
 
 ## Key Terms

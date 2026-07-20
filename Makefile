@@ -1,6 +1,6 @@
 .PHONY: qdrant-restart web ui docker docker-logs docker-down init clean
 .PHONY: activity activity-docker repl search search-text search-table search-image mcp leagues
-.PHONY: rebuild-index smoke-test
+.PHONY: rebuild-index smoke-test prerender
 
 # --- Services ---
 
@@ -12,6 +12,9 @@ mcp:
 
 ui:
 	cd frontend && npm run dev -- --host --port 50080
+
+prerender:
+	API_ORIGIN=$(or $(API_ORIGIN),http://localhost:50000) ./scripts/prerender.sh
 
 # --- Infrastructure ---
 
@@ -59,6 +62,7 @@ activity-docker:
 
 rebuild-index:
 	./scripts/rebuild_index.sh
+	$(MAKE) prerender
 
 smoke-test:
 	cargo run -p tools --bin smoke_test

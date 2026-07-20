@@ -54,7 +54,7 @@ Rust workspace with the following crates:
    make web   # API server on :50000
    make ui    # SvelteKit dev server on :50080
    ```
-   > **Note:** `make web` runs `cargo run -p web`, which serves the built frontend from `./static/`. If you run it directly without `make ui`, create a symlink first: `ln -s frontend/build static`.
+   > **Note:** `make web` runs `cargo run -p web`, which serves the built frontend from `./static/`. The frontend build now prerenders content routes against a live API (dynamic routes like search stay client-side SPA), so `npm run build` requires a reachable `PUBLIC_API_ORIGIN`. Populate `./static/` by running `make prerender` against a running `web` server (defaults to `http://localhost:50000`), or symlink for local dev after building manually: `ln -s frontend/build static`.
 
 ### Docker
 
@@ -101,6 +101,22 @@ cp .env.example .env
 #### Startup order
 
 The `mcp` and `web` services use `depends_on` with a health check on Qdrant's `/healthz` endpoint. They will not start until Qdrant is ready to accept connections. If you need to rebuild after changing `config.docker.toml`, run `docker compose up --build` since the config is copied into the image at build time.
+
+#### Prerendering the frontend
+
+The Docker image no longer builds the frontend at `docker build` time — the SvelteKit build
+prerenders content routes against a live API, and no backend is reachable during image build.
+Instead, `web` starts with an empty `./static/` (backed by the shared `web_static` volume), and a
+one-shot `prerender` service builds the frontend against the running `web` API and writes the
+output into that same volume:
+
+```
+docker compose up --build -d qdrant web
+docker compose up --build prerender   # waits for `web` healthy, then builds + writes to web_static
+```
+
+Re-run `docker compose up --build prerender` any time the frontend or underlying data changes.
+`make rebuild-index` runs this automatically as its last step.
 
 ## CLI Tools
 
@@ -200,6 +216,7 @@ cargo run -p tools --bin set_league_metadata -- --league "Soccer SmallSize" --ke
 | `make web` | Start the Axum API server on :50000 |
 | `make mcp` | Start the MCP server (:50001 open) |
 | `make ui` | Start the SvelteKit dev server on :50080 |
+| `make prerender` | Prerender the frontend against a live Axum and write it to `./static/` |
 
 **Tools:**
 

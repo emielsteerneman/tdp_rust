@@ -60,8 +60,36 @@ services:
       - ./data/activity_docker:/app/activity_data
       - ${TDP_MARKDOWN_ROOT:?Set TDP_MARKDOWN_ROOT in .env}:/data/tdps_markdown:ro
       - ${TDP_PDF_ROOT:?Set TDP_PDF_ROOT in .env}:/data/tdps_pdf:ro
+      - web_static:/app/static
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:50000/api/papers"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     # environment:
       # Override config settings via TDP_* environment variables
       # Example: TDP_DATA_ACCESS__EMBED__OPENAI__API_KEY=sk-proj-...
     restart: unless-stopped
+
+  # One-shot: prerender the frontend against the live web API into the shared
+  # static volume. Exits when done. Re-run with: docker compose up prerender
+  prerender:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-prerender
+    container_name: tdp-prerender
+    depends_on:
+      web:
+        condition: service_healthy
+    volumes:
+      - web_static:/out
+    environment:
+      - API_ORIGIN=http://web:50000
+      - OUT_DIR=/out
+    mem_limit: 2g
+    restart: "no"
+
+volumes:
+  web_static:
 
