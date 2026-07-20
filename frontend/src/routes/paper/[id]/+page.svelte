@@ -4,8 +4,30 @@
 	import { preprocessMarkdown, extractHeadings, slugifyHeading } from '$lib/markdown';
 	import TableOfContents from '$lib/components/TableOfContents.svelte';
 	import TeamInfoSidebar from '$lib/components/TeamInfoSidebar.svelte';
+	import { onMount } from 'svelte';
+	import { articleJsonLd } from '$lib/seo';
 
 	let { data }: { data: PageData } = $props();
+
+	// Record a real human view — browser-only, fires on initial hydration and
+	// on client-side navigation, never during prerender, never for non-JS bots.
+	onMount(() => {
+		fetch(`/api/papers/${encodeURIComponent(data.paper_lyt)}/open`, { method: 'POST' }).catch(
+			() => {}
+		);
+	});
+
+	const canonical = $derived(`https://tdpsearch.com/paper/${data.paper_lyt}`);
+	const jsonLd = $derived(
+		articleJsonLd({
+			title: data.title,
+			description: data.description,
+			url: canonical,
+			team: data.teamPrettyName,
+			year: data.year,
+			league: data.leagueMachine
+		})
+	);
 
 	// Configure marked renderer to generate heading IDs matching extractHeadings output
 	const renderer = new marked.Renderer();
@@ -37,6 +59,19 @@
 		activeId = '';
 	}
 </script>
+
+<svelte:head>
+	<title>{data.title}</title>
+	<meta name="description" content={data.description} />
+	<link rel="canonical" href={canonical} />
+	<meta property="og:title" content={data.title} />
+	<meta property="og:description" content={data.description} />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:type" content="article" />
+	<meta property="og:image" content="https://tdpsearch.com/og-default.png" />
+	<meta name="twitter:card" content="summary_large_image" />
+	{@html `<script type="application/ld+json">${jsonLd}</` + `script>`}
+</svelte:head>
 
 <svelte:window onscroll={handleScroll} />
 
