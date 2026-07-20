@@ -17,70 +17,109 @@ mod registry;
 mod teams;
 mod years;
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-use axum::handler::HandlerWithoutStateExt;
 use axum::http::{header, StatusCode, Uri};
 use axum::middleware;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::Router;
 use tower_http::cors::{Any, CorsLayer};
-use tower_http::services::ServeDir;
 
 use crate::state::AppState;
 
 const STATIC_ROOT: &str = "static";
 
-/// Map an extension-less URL path to its prerendered `{root}/{path}.html` candidate.
-///
-/// Returns `None` (i.e. "no prerendered file, use the SPA shell") for the site root,
-/// paths that already carry a file extension, and any path containing `..` (traversal
-/// guard). Existence of the returned candidate is NOT checked here — that happens at
-/// serve time.
-fn resolve_prerendered(root: &Path, url_path: &str) -> Option<PathBuf> {
-    // Traversal guard: never let a request escape the static root.
+/// Best-effort `Content-Type` from a path's extension, covering the asset types a
+/// SvelteKit static build emits. Unknown extensions fall back to octet-stream.
+fn content_type_for(path: &str) -> &'static str {
+    match path.rsplit('.').next().unwrap_or("") {
+        "html" => "text/html; charset=utf-8",
+        "js" | "mjs" => "text/javascript; charset=utf-8",
+        "css" => "text/css; charset=utf-8",
+        "json" | "map" => "application/json",
+        "xml" => "application/xml",
+        "svg" => "image/svg+xml",
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        "gif" => "image/gif",
+        "ico" => "image/x-icon",
+        "woff2" => "font/woff2",
+        "woff" => "font/woff",
+        "ttf" => "font/ttf",
+        "txt" => "text/plain; charset=utf-8",
+        "webmanifest" => "application/manifest+json",
+        _ => "application/octet-stream",
+    }
+}
+
+fn file_response(bytes: Vec<u8>, content_type: &'static str) -> Response {
+    ([(header::CONTENT_TYPE, content_type)], bytes).into_response()
+}
+
+/// Relative `{path}.html` an extension-less content URL should resolve to, or `None`
+/// for the site root, paths that already carry a file extension, and traversal attempts.
+/// Existence is checked by the caller.
+fn page_html_path(url_path: &str) -> Option<String> {
     if url_path.contains("..") {
         return None;
     }
     let trimmed = url_path.trim_start_matches('/');
-    // Root ("" / "/") is served by ServeDir's directory index (index.html).
     if trimmed.is_empty() {
         return None;
     }
-    // A path whose final segment already has an extension is a concrete asset request,
-    // not an extension-less content route.
     let last_segment = trimmed.rsplit('/').next().unwrap_or("");
     if last_segment.contains('.') {
         return None;
     }
-    Some(root.join(format!("{trimmed}.html")))
+    Some(format!("{trimmed}.html"))
 }
 
-fn html_response(bytes: Vec<u8>) -> Response {
-    (
-        [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
-        bytes,
-    )
-        .into_response()
-}
-
-/// Fallback for requests ServeDir could not satisfy with an exact/dir match.
+/// Serve the SvelteKit static build directly (no `ServeDir`), so we fully control
+/// status codes and never emit a directory 307-redirect. Prerendered paper pages sit
+/// beside a companion `paper/{id}/` directory (holding `__data.json` for client-side
+/// navigation); `ServeDir` would 307 `/paper/{id}` to `/paper/{id}/` and never serve
+/// the page, and its `not_found_service` responses come back as 404. This handler
+/// avoids both.
 ///
-/// 1. Extension-less path with a matching prerendered `static/{path}.html` -> serve it.
-/// 2. Otherwise serve the SPA shell `static/200.html` (client-side routing).
-/// 3. If even that is missing -> 404.
-async fn prerender_fallback(uri: Uri) -> Response {
+/// Resolution order (all hits are 200): exact file (assets, root files, `__data.json`)
+/// -> extension-less `{path}.html` prerendered page -> site root `index.html` -> SPA
+/// shell `200.html`. Only a missing `200.html` yields 404.
+async fn serve_static(uri: Uri) -> Response {
+    let raw = uri.path();
+    if raw.contains("..") {
+        return StatusCode::NOT_FOUND.into_response();
+    }
     let root = Path::new(STATIC_ROOT);
+    let rel = raw.trim_start_matches('/');
 
-    if let Some(candidate) = resolve_prerendered(root, uri.path()) {
-        if let Ok(bytes) = tokio::fs::read(&candidate).await {
-            return html_response(bytes);
+    // 1. Exact file: assets (/_app/...), root files (/robots.txt, /favicon.png), and
+    //    client-nav data (/paper/{id}/__data.json). read() errors on a directory, so a
+    //    request for the extension-less `/paper/{id}` falls through to step 2.
+    if !rel.is_empty() {
+        if let Ok(bytes) = tokio::fs::read(root.join(rel)).await {
+            return file_response(bytes, content_type_for(rel));
         }
     }
 
+    // 2. Extension-less content route -> prerendered `{path}.html`.
+    if let Some(html) = page_html_path(raw) {
+        if let Ok(bytes) = tokio::fs::read(root.join(&html)).await {
+            return file_response(bytes, "text/html; charset=utf-8");
+        }
+    }
+
+    // 3. Site root -> index.html.
+    if rel.is_empty() {
+        if let Ok(bytes) = tokio::fs::read(root.join("index.html")).await {
+            return file_response(bytes, "text/html; charset=utf-8");
+        }
+    }
+
+    // 4. SPA shell for any other (dynamic / unknown) route.
     match tokio::fs::read(root.join("200.html")).await {
-        Ok(bytes) => html_response(bytes),
+        Ok(bytes) => file_response(bytes, "text/html; charset=utf-8"),
         Err(_) => StatusCode::NOT_FOUND.into_response(),
     }
 }
@@ -129,65 +168,56 @@ pub fn create_router(state: AppState) -> Router {
         .route("/pdfs/{*path}", get(pdfs::serve_pdf_file))
         .with_state(state);
 
-    // Serve static frontend files. ServeDir handles exact-file and directory-index
-    // matches (e.g. `/_app/...`, `/robots.txt`, `/` -> index.html). Anything it can't
-    // resolve falls through to `prerender_fallback`, which maps extension-less content
-    // URLs to their prerendered `.html` and otherwise serves the SPA shell `200.html`.
-    let static_files =
-        ServeDir::new(STATIC_ROOT).not_found_service(prerender_fallback.into_service());
-
-    // Combine API routes with static file serving
-    // API routes take precedence, then static files
+    // API/tdps/pdfs routes take precedence; everything else is served from the static
+    // build by `serve_static` (prerendered pages, assets, SPA shell).
     Router::new()
         .merge(api_routes)
         .merge(tdps_routes)
         .merge(pdfs_routes)
-        .fallback_service(static_files)
+        .fallback(serve_static)
         .layer(cors)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::resolve_prerendered;
-    use std::path::Path;
+    use super::{content_type_for, page_html_path};
 
     #[test]
-    fn resolves_extensionless_paper_path() {
-        let root = Path::new("static");
+    fn page_path_for_extensionless_paper() {
         assert_eq!(
-            resolve_prerendered(root, "/paper/soccer_smallsize__2024__RoboTeam_Twente"),
-            Some(root.join("paper/soccer_smallsize__2024__RoboTeam_Twente.html"))
+            page_html_path("/paper/soccer_smallsize__2024__RoboTeam_Twente").as_deref(),
+            Some("paper/soccer_smallsize__2024__RoboTeam_Twente.html")
         );
     }
 
     #[test]
-    fn root_has_no_prerendered_candidate() {
-        assert_eq!(resolve_prerendered(Path::new("static"), "/"), None);
+    fn page_path_none_for_root() {
+        assert_eq!(page_html_path("/"), None);
     }
 
     #[test]
-    fn resolves_top_level_route() {
+    fn page_path_for_top_level_route() {
         // Existence is checked at serve time, not here.
-        let root = Path::new("static");
-        assert_eq!(
-            resolve_prerendered(root, "/search"),
-            Some(root.join("search.html"))
-        );
+        assert_eq!(page_html_path("/search").as_deref(), Some("search.html"));
     }
 
     #[test]
-    fn rejects_path_traversal() {
-        assert_eq!(
-            resolve_prerendered(Path::new("static"), "/../etc/passwd"),
-            None
-        );
+    fn page_path_rejects_traversal() {
+        assert_eq!(page_html_path("/../etc/passwd"), None);
     }
 
     #[test]
-    fn ignores_paths_with_extension() {
-        assert_eq!(
-            resolve_prerendered(Path::new("static"), "/og-default.png"),
-            None
-        );
+    fn page_path_none_for_asset_with_extension() {
+        assert_eq!(page_html_path("/og-default.png"), None);
+    }
+
+    #[test]
+    fn content_types_cover_sveltekit_assets() {
+        assert_eq!(content_type_for("app.js"), "text/javascript; charset=utf-8");
+        assert_eq!(content_type_for("style.css"), "text/css; charset=utf-8");
+        assert_eq!(content_type_for("paper/x/__data.json"), "application/json");
+        assert_eq!(content_type_for("og-default.png"), "image/png");
+        assert_eq!(content_type_for("page.html"), "text/html; charset=utf-8");
+        assert_eq!(content_type_for("noext"), "application/octet-stream");
     }
 }
