@@ -38,7 +38,7 @@ export function articleJsonLd(opts: {
 	year: number;
 	league: string;
 }): string {
-	return JSON.stringify({
+	const obj = {
 		'@context': 'https://schema.org',
 		'@type': 'ScholarlyArticle',
 		headline: opts.title,
@@ -48,5 +48,8 @@ export function articleJsonLd(opts: {
 		author: { '@type': 'Organization', name: opts.team },
 		about: prettyLeague(opts.league),
 		isPartOf: { '@type': 'WebSite', name: 'TDPSearch', url: 'https://tdpsearch.com' }
-	});
+	};
+	// Escape `<` so a stray `</script>` surviving from markdown cannot terminate the
+	// injected <script type="application/ld+json"> tag early.
+	return JSON.stringify(obj).replace(/</g, '\\u003c');
 }

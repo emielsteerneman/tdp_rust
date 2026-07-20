@@ -6,7 +6,7 @@ const config = {
 	preprocess: vitePreprocess(),
 	kit: {
 		adapter: adapter({
-			fallback: 'index.html' // SPA fallback for non-prerendered (dynamic) routes
+			fallback: '200.html' // SPA fallback for non-prerendered (dynamic) routes; distinct from the prerendered homepage's index.html
 		}),
 		prerender: {
 			// A single missing/broken paper must not fail the whole corpus build.
