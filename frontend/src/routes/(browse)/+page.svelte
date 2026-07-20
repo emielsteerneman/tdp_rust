@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import PaperCard from '$lib/components/PaperCard.svelte';
 	import { getLeagueBadgeColor } from '$lib/leagueColors';
 	import type { TDPName, League, TeamName } from '$lib/types';
@@ -16,9 +17,9 @@
 	let { data }: Props = $props();
 
 	// Get selected filters from URL
-	let selectedLeagues = $derived($page.url.searchParams.getAll('league'));
-	let selectedYears = $derived($page.url.searchParams.getAll('year').map(y => parseInt(y)));
-	let selectedTeams = $derived($page.url.searchParams.getAll('team'));
+	let selectedLeagues = $derived(browser ? $page.url.searchParams.getAll('league') : []);
+	let selectedYears = $derived(browser ? $page.url.searchParams.getAll('year').map(y => parseInt(y)) : []);
+	let selectedTeams = $derived(browser ? $page.url.searchParams.getAll('team') : []);
 
 	// Filter papers based on selected filters
 	let filteredPapers = $derived(

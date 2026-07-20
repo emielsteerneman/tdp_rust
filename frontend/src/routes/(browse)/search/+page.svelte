@@ -4,6 +4,7 @@
 	import PaperGroup from '$lib/components/PaperGroup.svelte';
 	import { page } from '$app/stores';
 	import { navigating } from '$app/stores';
+	import { browser } from '$app/environment';
 
 	let { data }: { data: PageData } = $props();
 	let isNavigating = $derived($navigating !== null);
@@ -39,9 +40,11 @@
 	});
 
 	let hasFilters = $derived(
-		$page.url.searchParams.has('league') ||
-		$page.url.searchParams.has('year') ||
-		$page.url.searchParams.has('team')
+		browser && (
+			$page.url.searchParams.has('league') ||
+			$page.url.searchParams.has('year') ||
+			$page.url.searchParams.has('team')
+		)
 	);
 </script>
 

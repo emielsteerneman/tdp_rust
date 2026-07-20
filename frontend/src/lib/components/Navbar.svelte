@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import SearchBar from './SearchBar.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
 
-	let currentQuery = $derived($page.url.searchParams.get('q') || '');
+	let currentQuery = $derived(browser ? ($page.url.searchParams.get('q') || '') : '');
 </script>
 
 <nav class="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { slide } from 'svelte/transition';
 	import type { League, TeamName } from '$lib/types';
@@ -26,13 +27,13 @@
 
 	// Parse URL search params to get selected filters
 	let selectedLeagues = $derived(
-		$page.url.searchParams.getAll('league')
+		browser ? $page.url.searchParams.getAll('league') : []
 	);
 	let selectedYears = $derived(
-		$page.url.searchParams.getAll('year').map(y => parseInt(y))
+		browser ? $page.url.searchParams.getAll('year').map(y => parseInt(y)) : []
 	);
 	let selectedTeams = $derived(
-		$page.url.searchParams.getAll('team')
+		browser ? $page.url.searchParams.getAll('team') : []
 	);
 
 	// Filtered teams based on search query, selected float to top

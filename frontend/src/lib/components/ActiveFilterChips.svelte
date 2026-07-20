@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import type { League, TeamName } from '$lib/types';
 
@@ -10,9 +11,9 @@
 
 	let { leagues, teams }: Props = $props();
 
-	let selectedLeagues = $derived($page.url.searchParams.getAll('league'));
-	let selectedYears = $derived($page.url.searchParams.getAll('year'));
-	let selectedTeams = $derived($page.url.searchParams.getAll('team'));
+	let selectedLeagues = $derived(browser ? $page.url.searchParams.getAll('league') : []);
+	let selectedYears = $derived(browser ? $page.url.searchParams.getAll('year') : []);
+	let selectedTeams = $derived(browser ? $page.url.searchParams.getAll('team') : []);
 
 	let hasFilters = $derived(
 		selectedLeagues.length > 0 || selectedYears.length > 0 || selectedTeams.length > 0
