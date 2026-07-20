@@ -6,8 +6,13 @@ const config = {
 	preprocess: vitePreprocess(),
 	kit: {
 		adapter: adapter({
-			fallback: 'index.html' // SPA mode
-		})
+			fallback: 'index.html' // SPA fallback for non-prerendered (dynamic) routes
+		}),
+		prerender: {
+			// A single missing/broken paper must not fail the whole corpus build.
+			handleHttpError: 'warn',
+			handleMissingId: 'warn'
+		}
 	}
 };
 
