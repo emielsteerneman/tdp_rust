@@ -1,5 +1,8 @@
 ## Purpose
-SvelteKit 2 static SPA (Svelte 5) — the web UI for browsing and searching TDPs.
+SvelteKit 2 (Svelte 5) web UI for browsing and searching TDPs. Content routes
+(`/`, `/paper/[id]`, `/connect/*`) are prerendered to static HTML at build time (for SEO);
+dynamic routes (`/search`, `/suggestions`, `/teams/edit`) run client-side via the SPA
+fallback. All served as static files by the `web` (Axum) backend.
 
 ## Stack
 - Svelte 5 with runes (`$state`, `$derived`, `$effect`)
@@ -25,7 +28,10 @@ SvelteKit 2 static SPA (Svelte 5) — the web UI for browsing and searching TDPs
 
 ## Dev Setup
 - `npm run dev` proxies `/api/*` and `/tdps/*` to `http://localhost:50000`
-- `npm run build` outputs static files; symlink `frontend/build` → `static` for the web server.
+- `npm run build` prerenders content routes, so it needs a reachable API: run against a live
+  `web` via `PUBLIC_API_ORIGIN` (e.g. `PUBLIC_API_ORIGIN=http://localhost:50000 npm run build`),
+  or use `make prerender` / the compose `prerender` service. Output → `frontend/build/`; symlink
+  `frontend/build` → `static` for the web server locally.
 
 ## Patterns
 - Filters are stored in URL search params (shareable links).

@@ -25,7 +25,9 @@ PUBLIC_API_ORIGIN="${API_ORIGIN}" npm run build
 if [ -n "${OUT_DIR:-}" ]; then
   echo "prerender: syncing build -> ${OUT_DIR}"
   mkdir -p "${OUT_DIR}"
-  rm -rf "${OUT_DIR:?}/"* 2>/dev/null || true
+  # Clear all existing contents including dotfiles (a plain `rm -rf DIR/*` glob
+  # skips hidden entries), without removing the mount point itself.
+  find "${OUT_DIR:?}" -mindepth 1 -delete 2>/dev/null || true
   cp -r build/. "${OUT_DIR}/"
 fi
 echo "prerender: done"

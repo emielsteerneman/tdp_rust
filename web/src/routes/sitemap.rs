@@ -4,6 +4,24 @@ use axum::response::{IntoResponse, Response};
 
 use crate::state::AppState;
 
+/// Entity-escape a `<loc>` value per the sitemap protocol. Team-derived paper slugs are
+/// pipeline-curated (so metacharacters are unlikely), but a team name containing `&`, `<`,
+/// etc. must not be able to emit malformed XML.
+fn xml_escape(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&apos;"),
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
 fn build_sitemap_xml(base_url: &str, paper_lyts: &[String]) -> String {
     let base = base_url.trim_end_matches('/');
     let mut out = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -11,11 +29,13 @@ fn build_sitemap_xml(base_url: &str, paper_lyts: &[String]) -> String {
 
     // Static, prerendered pages.
     for path in ["/", "/connect/mcp", "/connect/api"] {
-        out.push_str(&format!("  <url><loc>{base}{path}</loc></url>\n"));
+        let loc = xml_escape(&format!("{base}{path}"));
+        out.push_str(&format!("  <url><loc>{loc}</loc></url>\n"));
     }
     // One entry per paper.
     for lyt in paper_lyts {
-        out.push_str(&format!("  <url><loc>{base}/paper/{lyt}</loc></url>\n"));
+        let loc = xml_escape(&format!("{base}/paper/{lyt}"));
+        out.push_str(&format!("  <url><loc>{loc}</loc></url>\n"));
     }
 
     out.push_str("</urlset>\n");
@@ -70,5 +90,16 @@ mod tests {
         let xml = build_sitemap_xml("https://tdpsearch.com/", &[]);
         assert!(xml.contains("<loc>https://tdpsearch.com/</loc>"));
         assert!(!xml.contains("tdpsearch.com//"));
+    }
+
+    #[test]
+    fn escapes_xml_metacharacters_in_paper_lyt() {
+        let xml = build_sitemap_xml(
+            "https://tdpsearch.com",
+            &["soccer__2024__Smith_&_Sons".to_string()],
+        );
+        // The raw ampersand must be entity-escaped, never emitted literally.
+        assert!(xml.contains("/paper/soccer__2024__Smith_&amp;_Sons</loc>"));
+        assert!(!xml.contains("Smith_&_Sons"));
     }
 }
