@@ -155,6 +155,11 @@ impl EventListener for TelegramListener {
     fn name(&self) -> &str {
         "telegram"
     }
+
+    // Crawlers fetch every paper in sight; they stay in the activity DB but not in the chat.
+    fn ignores_crawlers(&self) -> bool {
+        true
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -323,6 +328,11 @@ mod tests {
             .unwrap();
         assert!(msg.contains("Get references"));
         assert!(msg.contains("soccer_smallsize__2024__RoboTeam"));
+    }
+
+    #[test]
+    fn ignores_crawlers() {
+        assert!(make_listener().ignores_crawlers());
     }
 
     #[test]

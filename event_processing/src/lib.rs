@@ -1,3 +1,4 @@
+pub mod client;
 pub mod dispatcher;
 pub mod listeners;
 
@@ -245,6 +246,11 @@ pub enum EventListenerError {
 pub trait EventListener: Send + Sync {
     async fn on_event(&self, source: &EventSource, event: &Event) -> Result<(), EventListenerError>;
     fn name(&self) -> &str;
+
+    /// Whether events caused by crawlers should be withheld from this listener.
+    fn ignores_crawlers(&self) -> bool {
+        false
+    }
 }
 
 // ---------------------------------------------------------------------------

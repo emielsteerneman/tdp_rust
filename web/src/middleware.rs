@@ -2,6 +2,7 @@ use axum::body::Body;
 use axum::http::{Request, header};
 use axum::middleware::Next;
 use axum::response::Response;
+use event_processing::client;
 use std::time::Instant;
 
 use crate::state::AppState;
@@ -34,7 +35,8 @@ pub async fn activity_logging(
         });
 
     let start = Instant::now();
-    let response = next.run(request).await;
+    // Lets listeners (Telegram) tell crawlers from people for events dispatched in the handler.
+    let response = client::scope(client::is_crawler_user_agent(&user_agent), next.run(request)).await;
     let duration_ms = start.elapsed().as_millis() as u64;
 
     let status = response.status().as_u16();

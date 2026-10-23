@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::task;
 use tracing::warn;
 
-use crate::{Event, EventListener, EventSource};
+use crate::{client, Event, EventListener, EventSource};
 
 // ---------------------------------------------------------------------------
 // EventDispatcher
@@ -26,8 +26,13 @@ impl EventDispatcher {
 
     pub fn dispatch(&self, source: EventSource, event: Event) {
         let event = Arc::new(event);
+        let crawler = client::is_crawler();
 
         for listener in &self.listeners {
+            if crawler && listener.ignores_crawlers() {
+                continue;
+            }
+
             let listener = Arc::clone(listener);
             let source = source.clone();
             let event = Arc::clone(&event);
@@ -166,6 +171,47 @@ mod tests {
 
         assert_eq!(listener1.recorded().len(), 1);
         assert_eq!(listener2.recorded().len(), 1);
+    }
+
+    struct CrawlerShyListener(RecordingListener);
+
+    #[async_trait]
+    impl EventListener for CrawlerShyListener {
+        async fn on_event(
+            &self,
+            source: &EventSource,
+            event: &Event,
+        ) -> Result<(), EventListenerError> {
+            self.0.on_event(source, event).await
+        }
+
+        fn name(&self) -> &str {
+            "crawler-shy"
+        }
+
+        fn ignores_crawlers(&self) -> bool {
+            true
+        }
+    }
+
+    #[tokio::test]
+    async fn crawler_events_skip_listeners_that_ignore_crawlers() {
+        let shy = RecordingListener::new();
+        let all = Arc::new(RecordingListener::new());
+        let mut dispatcher = EventDispatcher::new();
+        dispatcher.register(Arc::new(CrawlerShyListener(shy.clone())));
+        dispatcher.register(all.clone());
+
+        client::scope(true, async {
+            dispatcher.dispatch(EventSource::Web, make_search_event())
+        })
+        .await;
+        dispatcher.dispatch(EventSource::Web, make_search_event());
+
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+        assert_eq!(shy.recorded().len(), 1, "only the non-crawler event");
+        assert_eq!(all.recorded().len(), 2);
     }
 
     #[tokio::test]

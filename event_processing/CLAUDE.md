@@ -9,7 +9,10 @@ Fire-and-forget event system for tracking usage across MCP and web interfaces.
 
 ## Listeners
 - `SqliteListener` — stores all events as JSON payloads in SQLite. Supports querying with filters (source, type, since, limit).
-- `TelegramListener` — sends formatted messages for "interesting" events. Skips noisy ones (list operations, HTTP requests).
+- `TelegramListener` — sends formatted messages for "interesting" events. Skips noisy ones (list operations, HTTP requests) and anything triggered by a self-identified crawler.
+
+## Crawler flag
+`client::is_crawler_user_agent()` classifies a user agent. The web middleware wraps each request in `client::scope(is_crawler, ..)`; `dispatch()` reads `client::is_crawler()` (`false` for MCP/CLI) and skips listeners whose `ignores_crawlers()` is true. Only self-identified crawlers are caught — scrapers posing as browsers still get through. The SQLite listener still records crawler events.
 
 ## Adding a New Event
 1. Add a struct and `Event` enum variant in `lib.rs`.
