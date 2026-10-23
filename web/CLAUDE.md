@@ -23,6 +23,7 @@ Web server runs on `:50000`.
 
 ## Static Serving
 - `/api/*` — API routes (with activity logging middleware)
+- `/healthz` — liveness probe for the compose healthcheck (no activity logging, no work)
 - `/tdps/{*path}` — serves TDP markdown files from `tdps_markdown_root` (with path traversal protection)
 - `/pdfs/{*path}` — serves original PDF files from `tdps_pdf_root`
 - Everything else — falls back to `static/index.html` (SPA routing)

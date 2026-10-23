@@ -1,5 +1,6 @@
 mod abstract_text;
 mod api_index;
+mod health;
 mod references;
 mod image;
 mod leagues;
@@ -159,6 +160,7 @@ pub fn create_router(state: AppState) -> Router {
 
     // TDP file routes (no activity logging, static file serving)
     let tdps_routes = Router::new()
+        .route("/healthz", get(health::healthz_handler))
         .route("/tdps/{*path}", get(tdps::serve_tdps_file))
         .route("/sitemap.xml", get(sitemap::sitemap_handler))
         .with_state(state.clone());

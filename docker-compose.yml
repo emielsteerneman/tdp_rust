@@ -62,8 +62,8 @@ services:
       - ${TDP_PDF_ROOT:?Set TDP_PDF_ROOT in .env}:/data/tdps_pdf:ro
       - web_static:/app/static
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:50000/api/papers"]
-      interval: 5s
+      test: ["CMD", "curl", "-f", "http://localhost:50000/healthz"]
+      interval: 30s
       timeout: 3s
       retries: 20
     # environment:
